@@ -1,12 +1,8 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { supabase } from '../lib/supabaseClient'
-import { CURSOS, CICLOS } from '../data/cursos'
 import '../styles/SidePanel.css'
 
 const PASS = 10.5 // nota mínima aprobatoria de referencia
-
-const byId = {}
-CURSOS.forEach(c => (byId[c.id] = c))
 
 const fmt = v => (Number.isInteger(v) ? String(v) : v.toFixed(2).replace(/0$/, ''))
 
@@ -87,7 +83,8 @@ function LineChartPonderado({ points }) {
 }
 
 // ---------- Panel lateral ----------
-export default function SidePanel({ user, open, onClose, done }) {
+// cursos/ciclos: la malla de la carrera del alumno (viene de MallaCurricular)
+export default function SidePanel({ user, open, onClose, done, cursos, ciclos }) {
   const [tab, setTab] = useState('graficos') // 'graficos' | 'ponderado' | 'tools'
   const [ciclo, setCiclo] = useState(1)
   const [grades, setGrades] = useState({})       // { course_id: number }
@@ -182,20 +179,20 @@ export default function SidePanel({ user, open, onClose, done }) {
 
   // ---------- Derivados ----------
   const cicloCourses = useMemo(
-    () => CURSOS.filter(c => c.c === Number(ciclo) && done.has(c.id)),
-    [ciclo, done]
+    () => cursos.filter(c => c.c === Number(ciclo) && done.has(c.id)),
+    [cursos, ciclo, done]
   )
 
   const cicloItems = useMemo(
-    () => CURSOS.filter(c => c.c === Number(ciclo) && grades[c.id] !== undefined)
+    () => cursos.filter(c => c.c === Number(ciclo) && grades[c.id] !== undefined)
       .map(c => ({ id: c.id, name: c.n, grade: grades[c.id] })),
-    [ciclo, grades]
+    [cursos, ciclo, grades]
   )
 
   const generalItems = useMemo(
-    () => CURSOS.filter(c => grades[c.id] !== undefined)
+    () => cursos.filter(c => grades[c.id] !== undefined)
       .map(c => ({ id: c.id, name: c.n, grade: grades[c.id] })),
-    [grades]
+    [cursos, grades]
   )
 
   const pondOf = items => {
@@ -204,17 +201,17 @@ export default function SidePanel({ user, open, onClose, done }) {
     return cr > 0 ? { value: sum / cr, cr } : null
   }
 
-  const general = useMemo(() => pondOf(CURSOS), [grades])
+  const general = useMemo(() => pondOf(cursos), [cursos, grades])
 
   const porCiclo = useMemo(() => {
     const out = []
-    Object.keys(CICLOS).forEach(num => {
+    Object.keys(ciclos).forEach(num => {
       if (Number(num) === 0) return
-      const p = pondOf(CURSOS.filter(c => c.c === Number(num)))
+      const p = pondOf(cursos.filter(c => c.c === Number(num)))
       if (p) out.push({ label: `C${num}`, num: Number(num), value: p.value, cr: p.cr })
     })
     return out
-  }, [grades])
+  }, [cursos, ciclos, grades])
 
   const aprobados = generalItems.filter(i => i.grade >= PASS).length
   const desaprobados = generalItems.length - aprobados
@@ -247,7 +244,7 @@ export default function SidePanel({ user, open, onClose, done }) {
               </div>
 
               <div className="sp-chips">
-                {Object.keys(CICLOS).map(num => (
+                {Object.keys(ciclos).map(num => (
                   <button
                     key={num}
                     className={'chip mono' + (Number(ciclo) === Number(num) ? ' on' : '')}
@@ -260,7 +257,7 @@ export default function SidePanel({ user, open, onClose, done }) {
 
               {cicloCourses.length === 0 ? (
                 <div className="sp-empty">
-                  No tienes cursos marcados como llevados en {CICLOS[ciclo].t}. Márcalos en la malla
+                  No tienes cursos marcados como llevados en {ciclos[ciclo].t}. Márcalos en la malla
                   («Marcar llevados») y aparecerán aquí.
                 </div>
               ) : (
@@ -284,7 +281,7 @@ export default function SidePanel({ user, open, onClose, done }) {
 
               {cicloItems.length > 0 && (
                 <section className="sp-section">
-                  <h3>{CICLOS[ciclo].t} · notas</h3>
+                  <h3>{ciclos[ciclo].t} · notas</h3>
                   <BarChartNotas items={cicloItems} />
                 </section>
               )}
@@ -292,14 +289,14 @@ export default function SidePanel({ user, open, onClose, done }) {
               {generalItems.length > 0 && (
                 <section className="sp-section">
                   <h3>General · {generalItems.length} {generalItems.length === 1 ? 'curso' : 'cursos'} con nota</h3>
-                  {Object.keys(CICLOS).map(num => {
-                    const items = CURSOS
+                  {Object.keys(ciclos).map(num => {
+                    const items = cursos
                       .filter(c => c.c === Number(num) && grades[c.id] !== undefined)
                       .map(c => ({ id: c.id, name: c.n, grade: grades[c.id] }))
                     if (items.length === 0) return null
                     return (
                       <div key={num} className="sp-subblock">
-                        <h4 className="sp-subhead mono">{CICLOS[num].t}</h4>
+                        <h4 className="sp-subhead mono">{ciclos[num].t}</h4>
                         <BarChartNotas items={items} />
                       </div>
                     )
@@ -346,7 +343,7 @@ export default function SidePanel({ user, open, onClose, done }) {
                   <div className="pond-list">
                     {porCiclo.map(p => (
                       <div key={p.label} className="pond-row">
-                        <span>{CICLOS[p.num].t}</span>
+                        <span>{ciclos[p.num].t}</span>
                         <span className="pond-cr mono">{p.cr} créd</span>
                         <span className="pond-val mono">{p.value.toFixed(2)}</span>
                       </div>

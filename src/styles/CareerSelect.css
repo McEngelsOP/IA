@@ -1,0 +1,123 @@
+/* Pantalla de elección de carrera — usa la paleta global de LoginPage.css */
+.cs-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 24px;
+  font-family: 'Inter', system-ui, sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+.cs-card {
+  width: 100%;
+  max-width: 520px;
+  padding: 40px 44px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+}
+
+.cs-eyebrow {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 2.2px;
+  color: var(--green);
+  margin-bottom: 10px;
+}
+
+.cs-title {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  margin-bottom: 10px;
+}
+
+.cs-sub {
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--ink-2);
+  margin-bottom: 26px;
+}
+
+.cs-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cs-option {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 18px 20px;
+  text-align: left;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s;
+}
+
+.cs-option:hover:not(:disabled) {
+  border-color: var(--green-border);
+  box-shadow: 0 0 0 3px var(--green-soft);
+  transform: translateY(-1px);
+}
+
+.cs-option:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.cs-name {
+  font-size: 16.5px;
+  font-weight: 600;
+}
+
+.cs-meta {
+  font-size: 10.5px;
+  letter-spacing: 1.4px;
+  color: var(--ink-3);
+}
+
+.cs-note {
+  margin-top: 16px;
+  font-size: 11px;
+  letter-spacing: 1.8px;
+  color: var(--ink-3);
+}
+
+.cs-error {
+  margin-top: 16px;
+  padding: 10px 14px;
+  font-size: 13.5px;
+  color: #8a2a2a;
+  background: #faeaea;
+  border: 1px solid #ecc8c8;
+  border-radius: 10px;
+}
+
+.cs-back {
+  margin-top: 20px;
+  padding: 0;
+  font: 500 13.5px 'Inter', sans-serif;
+  color: var(--ink-2);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.cs-back:hover {
+  color: var(--ink);
+}

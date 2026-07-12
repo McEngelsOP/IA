@@ -1,6 +1,10 @@
 // Malla curricular · Ingeniería en IA · ESAN
 // id: identificador corto · n: nombre · c: ciclo (0 = pre-formación)
-// cr: créditos · r: prerequisitos (ids)
+// cr: créditos · r: prerequisitos (ids) · rc: créditos aprobados requeridos
+//
+// OJO: algunos ids se comparten con cursosIndustrial.js (cursos equivalentes
+// entre carreras); ese id común hace que los profesores y sus votos se vean
+// desde ambas mallas. No renombrar ids sin migrar la tabla `professors`.
 
 export const TOTAL_CRED = 200
 
@@ -63,7 +67,7 @@ export const CURSOS = [
   { id: 'psico', n: 'Psicología cognitiva y percepción', c: 8, cr: 3, r: ['lpcv'] },
   { id: 'ele2', n: 'Electivo de Especialidad II', c: 8, cr: 3, r: [] },
   { id: 'tdcpe5', n: 'Taller: Comp. Personales V', c: 9, cr: 1, r: ['tdcpe4'] },
-  { id: 'tesis1', n: 'Tesis I', c: 9, cr: 3, r: [] },
+  { id: 'tesis1', n: 'Tesis I', c: 9, cr: 3, r: [], rc: 140 },
   { id: 'ele3', n: 'Electivo de Especialidad III', c: 9, cr: 3, r: [] },
   { id: 'ele4', n: 'Electivo de Especialidad IV', c: 9, cr: 3, r: [] },
   { id: 'ele5', n: 'Electivo de Especialidad V', c: 9, cr: 3, r: [] },

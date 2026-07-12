@@ -109,6 +109,38 @@
   color: var(--ink-3);
 }
 
+/* El desplegable de carrera hereda el mismo look que los inputs */
+.field select {
+  padding: 13px 16px;
+  font: 500 14.5px 'Inter', sans-serif;
+  color: var(--ink);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  transition: border-color 0.15s, box-shadow 0.15s;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%235c6672' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  cursor: pointer;
+}
+
+.field select:focus {
+  outline: none;
+  border-color: var(--green-border);
+  box-shadow: 0 0 0 3px var(--green-soft);
+}
+
+.field select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.field select:invalid {
+  color: var(--ink-3);
+}
+
 .field input:focus {
   outline: none;
   border-color: var(--green-border);

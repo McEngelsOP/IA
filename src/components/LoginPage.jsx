@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import { CARRERAS, CARRERA_KEYS } from '../data/carreras'
 import '../styles/LoginPage.css'
 
 // Resuelve el código de alumno en el servidor (Edge Function auth-by-code).
@@ -39,6 +40,7 @@ const errorMessage = (err, fallback) => {
 export default function LoginPage({ onLogin, onGuest }) {
   const [mode, setMode] = useState('login') // 'login' | 'register' | 'forgot'
   const [codigo, setCodigo] = useState('')
+  const [carrera, setCarrera] = useState('') // solo en registro; queda fija en el perfil
   const [correo, setCorreo] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
@@ -63,6 +65,7 @@ export default function LoginPage({ onLogin, onGuest }) {
     setNotice('')
     setPassword('')
     setConfirm('')
+    setCarrera('')
     setUnconfirmedCode(null)
     setCodeTaken(false)
   }
@@ -130,6 +133,10 @@ export default function LoginPage({ onLogin, onGuest }) {
       setError('Ese código de alumno no es válido.')
       return
     }
+    if (!CARRERAS[carrera]) {
+      setError('Elige tu carrera para armar tu malla.')
+      return
+    }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo.trim())) {
       setError('Ingresa un correo válido (lo usarás para recuperar tu contraseña)')
       return
@@ -157,7 +164,7 @@ export default function LoginPage({ onLogin, onGuest }) {
         email: correo.trim().toLowerCase(),
         password,
         options: {
-          data: { student_code: codigo.trim().toUpperCase() }
+          data: { student_code: codigo.trim().toUpperCase(), carrera }
         }
       })
 
@@ -242,7 +249,7 @@ export default function LoginPage({ onLogin, onGuest }) {
       {/* Panel izquierdo: formulario */}
       <div className="login-left">
         <div className="login-brand mono">
-          UNIVERSIDAD ESAN · INGENIERÍA EN IA
+          UNIVERSIDAD ESAN · INGENIERÍAS
         </div>
 
         <div className="login-form-wrap">
@@ -265,6 +272,24 @@ export default function LoginPage({ onLogin, onGuest }) {
                 required
               />
             </div>
+
+            {mode === 'register' && (
+              <div className="field">
+                <label htmlFor="carrera" className="mono">CARRERA</label>
+                <select
+                  id="carrera"
+                  value={carrera}
+                  onChange={(e) => setCarrera(e.target.value)}
+                  disabled={loading}
+                  required
+                >
+                  <option value="" disabled>Elige tu carrera</option>
+                  {CARRERA_KEYS.map(k => (
+                    <option key={k} value={k}>{CARRERAS[k].nombre}</option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {mode === 'register' && (
               <div className="field">
@@ -375,7 +400,7 @@ export default function LoginPage({ onLogin, onGuest }) {
           )}
         </div>
 
-        <div className="login-foot mono">PLAN 200 CRÉDITOS · 10 CICLOS</div>
+        <div className="login-foot mono">ING. EN IA · ING. INDUSTRIAL Y COMERCIAL</div>
       </div>
 
       {/* Panel derecho: visual estilo malla */}
@@ -450,7 +475,7 @@ export default function LoginPage({ onLogin, onGuest }) {
 
         <div className="right-caption">
           <p className="mono">TOCA UN CURSO PARA VER SU CADENA</p>
-          <h2>Tu ruta hacia la IA,<br />curso por curso.</h2>
+          <h2>Tu ruta de ingeniería,<br />curso por curso.</h2>
         </div>
       </div>
     </div>

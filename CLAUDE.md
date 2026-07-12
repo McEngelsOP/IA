@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Qué es
 
-Malla curricular interactiva de Ingeniería en IA (ESAN). React 18 + Vite, Supabase (auth + Postgres con RLS + una Edge Function), desplegada en Vercel: **push a `main` = deploy a producción**. Todo el texto de la interfaz y los mensajes de commit van en español.
+Malla curricular interactiva para dos carreras de ESAN: **Ingeniería en IA** e **Ingeniería Industrial y Comercial**. React 18 + Vite, Supabase (auth + Postgres con RLS + una Edge Function), desplegada en Vercel: **push a `main` = deploy a producción**. Todo el texto de la interfaz y los mensajes de commit van en español.
 
 ## Comandos
 
@@ -14,9 +14,17 @@ Malla curricular interactiva de Ingeniería en IA (ESAN). React 18 + Vite, Supab
 
 ## Arquitectura
 
-`App.jsx` decide una de tres pantallas según la sesión de Supabase: `LoginPage` (login/registro/recuperación), `UpdatePassword` (llega del enlace del correo) o `MallaCurricular`. La malla recibe `user` — si es `null` es **modo visitante**: puede explorar pero nada persiste, y las funciones sociales (profesores, panel lateral) ni se renderizan. El bloqueo real del visitante no es la UI: las tablas nuevas tienen políticas RLS solo para `authenticated`, el rol `anon` no tiene ninguna.
+`App.jsx` decide la pantalla según la sesión de Supabase: `LoginPage` (login/registro/recuperación), `UpdatePassword` (llega del enlace del correo), `CareerSelect` o `MallaCurricular`. La malla recibe `user` y `carrera` — si `user` es `null` es **modo visitante**: puede explorar (y alternar de carrera con `onSwitchCarrera`) pero nada persiste, y las funciones sociales (profesores, panel lateral) ni se renderizan. El bloqueo real del visitante no es la UI: las tablas nuevas tienen políticas RLS solo para `authenticated`, el rol `anon` no tiene ninguna.
 
-- `MallaCurricular.jsx` — grafo de cursos (layout calculado a nivel de módulo desde `data/cursos.js`; cada curso: `id`, `n` nombre, `c` ciclo, `cr` créditos, `r` prerequisitos). Tres modos: qué abre / qué requiere / marcar llevados (BFS sobre dependencias). El avance se guarda en la tabla `progress` (array `done`).
+### Carreras
+
+- `data/carreras.js` indexa las dos mallas: `data/cursos.js` (IA, 200 créd) y `data/cursosIndustrial.js` (Industrial y Comercial, 215 créd). Cada curso: `id`, `n` nombre, `c` ciclo, `cr` créditos, `r` prerequisitos, `rc` créditos aprobados requeridos (opcional; bloquea el marcado hasta alcanzar el umbral).
+- **Cursos equivalentes entre carreras comparten el mismo `id`** (calc1, fis1, est1, prog1, com1, fin, glob, talleres, pre-formación): así los profesores y sus votos se ven desde ambas mallas sin tocar la base. **No renombrar esos ids** sin migrar la tabla `professors`.
+- La carrera vive en `profiles.carrera` (`'ia'` | `'industrial'`), se elige en el registro (desplegable, va en los metadatos del signUp) y **es fija**: un trigger (`lock_carrera`) rechaza el cambio desde la app; solo el dueño la corrige desde el Table Editor. Cuentas anteriores a esta función tienen `carrera` NULL y `App.jsx` les muestra `CareerSelect` una sola vez.
+
+### Componentes
+
+- `MallaCurricular.jsx` — grafo de cursos (layout calculado por carrera a nivel de módulo en `buildMalla`). Tres modos: qué abre / qué requiere / marcar llevados (BFS sobre dependencias; los cursos con `rc` no se marcan sin los créditos y caen en cascada al desmarcar). El avance se guarda en la tabla `progress` (array `done`).
 - `ProfessorPanel.jsx` — tarjeta bajo la barra de estado al seleccionar un curso: profesores con likes/dislikes, orden por `likes − dislikes`, insignia al primero si su puntaje es positivo. Votos con actualización optimista.
 - `SidePanel.jsx` — panel lateral (botón "Mi panel"): notas por curso, gráficos SVG hechos a mano (barras y línea, sin librería de charts), ponderado `Σ(nota×créd)/Σcréd` ignorando cursos de 0 créditos, y herramientas compartidas.
 
@@ -29,7 +37,7 @@ Malla curricular interactiva de Ingeniería en IA (ESAN). React 18 + Vite, Supab
 
 ## Base de datos
 
-Los `.sql` de `supabase/` son scripts que el usuario corre **a mano** en el SQL Editor (guardados allí como queries numeradas 01–10); editarlos en el repo no cambia producción. Todos están aplicados en producción. Tablas: `profiles`, `progress`, `professors` + `professor_votes` (PK compuesta = un voto por alumno), `grades` (privadas por alumno), `tools` (compartidas).
+Los `.sql` de `supabase/` son scripts que el usuario corre **a mano** en el SQL Editor (guardados allí como queries numeradas); editarlos en el repo no cambia producción. Las queries 01–10 están aplicadas en producción; `carrera.sql` (11) debe correrse **antes** de desplegar el frontend multi-carrera. Tablas: `profiles` (incluye `carrera`), `progress`, `professors` + `professor_votes` (PK compuesta = un voto por alumno), `grades` (privadas por alumno), `tools` (compartidas).
 
 Decisiones que no hay que re-proponer:
 

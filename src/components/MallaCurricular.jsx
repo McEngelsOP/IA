@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '../lib/supabaseClient'
-import { CURSOS, CICLOS, TOTAL_CRED } from '../data/cursos'
+import { CARRERAS } from '../data/carreras'
 import SidePanel from './SidePanel'
 import ProfessorPanel from './ProfessorPanel'
 import '../styles/MallaCurricular.css'
@@ -9,27 +9,37 @@ import '../styles/MallaCurricular.css'
 const NODE_W = 200, NODE_H = 58, COL_GAP = 88, ROW_GAP = 18, TOP = 68, LEFT = 26
 const COL_W = NODE_W + COL_GAP
 
-const byId = {}
-CURSOS.forEach(c => (byId[c.id] = c))
+// Calcula el grafo y las posiciones de una malla; se hace una sola vez por carrera
+function buildMalla(carrera) {
+  const cursos = carrera.cursos.map(c => ({ ...c }))
+  const byId = {}
+  cursos.forEach(c => (byId[c.id] = c))
 
-const unlocks = {}
-const edges = []
-CURSOS.forEach(c =>
-  c.r.forEach(req => {
-    ;(unlocks[req] = unlocks[req] || []).push(c.id)
-    edges.push({ from: req, to: c.id })
+  const unlocks = {}
+  const edges = []
+  cursos.forEach(c =>
+    c.r.forEach(req => {
+      ;(unlocks[req] = unlocks[req] || []).push(c.id)
+      edges.push({ from: req, to: c.id })
+    })
+  )
+
+  const rowsPerCol = {}
+  cursos.forEach(c => {
+    c.row = rowsPerCol[c.c] = (rowsPerCol[c.c] ?? -1) + 1
+    c.x = LEFT + c.c * COL_W
+    c.y = TOP + c.row * (NODE_H + ROW_GAP)
   })
-)
+  const maxRows = Math.max(...Object.values(rowsPerCol)) + 1
+  const numCols = Math.max(...cursos.map(c => c.c)) + 1
+  const W = LEFT * 2 + numCols * COL_W - COL_GAP
+  const H = TOP + maxRows * (NODE_H + ROW_GAP) + 26
 
-const rowsPerCol = {}
-CURSOS.forEach(c => {
-  c.row = rowsPerCol[c.c] = (rowsPerCol[c.c] ?? -1) + 1
-  c.x = LEFT + c.c * COL_W
-  c.y = TOP + c.row * (NODE_H + ROW_GAP)
-})
-const maxRows = Math.max(...Object.values(rowsPerCol)) + 1
-const W = LEFT * 2 + 11 * COL_W - COL_GAP
-const H = TOP + maxRows * (NODE_H + ROW_GAP) + 26
+  return { ...carrera, cursos, byId, unlocks, edges, W, H }
+}
+
+const MALLAS = {}
+Object.values(CARRERAS).forEach(ca => (MALLAS[ca.key] = buildMalla(ca)))
 
 function bfs(startId, adj) {
   const seen = new Set()
@@ -43,7 +53,7 @@ function bfs(startId, adj) {
   return seen
 }
 
-const edgePath = e => {
+const edgePath = (e, byId) => {
   const a = byId[e.from], b = byId[e.to]
   const x1 = a.x + NODE_W, y1 = a.y + NODE_H / 2
   const x2 = b.x, y2 = b.y + NODE_H / 2
@@ -52,7 +62,11 @@ const edgePath = e => {
 }
 
 // ---------- Componente ----------
-export default function MallaCurricular({ user, onLogout }) {
+export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogout }) {
+  // Malla activa según la carrera del alumno (o la elegida por el visitante)
+  const M = MALLAS[carrera] || MALLAS.ia
+  const { byId, unlocks, edges } = M
+
   const [mode, setMode] = useState('open') // 'open' | 'req' | 'done'
   const [selected, setSelected] = useState(null)
   const [done, setDone] = useState(() => new Set())
@@ -111,10 +125,21 @@ export default function MallaCurricular({ user, onLogout }) {
     onLogout()
   }
 
+  // Ids ajenos a esta malla (p. ej. de la otra carrera) no suman ni rompen nada
   const creditosLlevados = (set) => {
     let cr = 0
-    set.forEach(id => (cr += byId[id].cr))
+    set.forEach(id => (cr += byId[id]?.cr || 0))
     return cr
+  }
+
+  // Primer curso del set cuyo requisito de créditos aprobados (rc) no se cumple
+  const rcUnmet = (set) => {
+    const total = creditosLlevados(set)
+    for (const id of set) {
+      const c = byId[id]
+      if (c?.rc && total - c.cr < c.rc) return c
+    }
+    return null
   }
 
   // ---------- Interacción ----------
@@ -130,14 +155,17 @@ export default function MallaCurricular({ user, onLogout }) {
       // Desmarcar: cae el curso, su cadena de requisitos y todo lo que dependía de ellos
       next.delete(id)
       let quitados = 0
-      bfs(id, x => byId[x].r).forEach(x => {
+      bfs(id, x => byId[x]?.r).forEach(x => {
         if (next.has(x)) { next.delete(x); quitados++ }
       })
       let cambio = true
       while (cambio) {
         cambio = false
+        const total = creditosLlevados(next)
         next.forEach(x => {
-          if (byId[x].r.some(req => !next.has(req))) {
+          const c = byId[x]
+          if (!c) return
+          if (c.r.some(req => !next.has(req)) || (c.rc && total - c.cr < c.rc)) {
             next.delete(x); quitados++; cambio = true
           }
         })
@@ -147,9 +175,15 @@ export default function MallaCurricular({ user, onLogout }) {
       // Marcar: sus requisitos previos se marcan en automático
       next.add(id)
       let agregados = 0
-      bfs(id, x => byId[x].r).forEach(x => {
+      bfs(id, x => byId[x]?.r).forEach(x => {
         if (!next.has(x)) { next.add(x); agregados++ }
       })
+      // Cursos con requisito de créditos: no se pueden marcar sin el avance suficiente
+      const falta = rcUnmet(next)
+      if (falta) {
+        setLastAction({ blocked: true, name: falta.n, rc: falta.rc, cred: creditosLlevados(done) })
+        return
+      }
       action = { verbo: 'marcado como llevado', name: byId[id].n, extra: agregados }
     }
     setDone(next)
@@ -210,7 +244,7 @@ export default function MallaCurricular({ user, onLogout }) {
   const chain = selected
     ? mode === 'open'
       ? bfs(selected, x => unlocks[x])
-      : bfs(selected, x => byId[x].r)
+      : bfs(selected, x => byId[x]?.r)
     : null
 
   const nodeClass = c => {
@@ -233,11 +267,18 @@ export default function MallaCurricular({ user, onLogout }) {
 
   // ---------- Barra de estado ----------
   const pill = done.size > 0 && (
-    <span className="pill g">{done.size} llevados · {creditosLlevados(done)} / {TOTAL_CRED} créd</span>
+    <span className="pill g">{done.size} llevados · {creditosLlevados(done)} / {M.total} créd</span>
   )
 
   let status
-  if (lastAction) {
+  if (lastAction?.blocked) {
+    status = (
+      <>
+        <strong>{lastAction.name}</strong> requiere <b>{lastAction.rc} créditos aprobados</b> y
+        llevas {lastAction.cred}. Marca más cursos llevados primero. {pill}
+      </>
+    )
+  } else if (lastAction) {
     status = (
       <>
         <strong>{lastAction.name}</strong>&nbsp;{lastAction.verbo}
@@ -254,9 +295,12 @@ export default function MallaCurricular({ user, onLogout }) {
     const c = byId[selected]
     const n = chain.size
     const pend = [...chain].filter(x => !done.has(x)).length
+    const rcNote = mode === 'req' && c.rc && (
+      <>&nbsp;Además necesita <b>{c.rc} créditos aprobados</b>.</>
+    )
     if (n === 0) {
       status = (
-        <><strong>{c.n}</strong>&nbsp;{mode === 'open' ? 'no abre ningún curso en la malla.' : 'no tiene cursos previos como requisito.'}</>
+        <><strong>{c.n}</strong>&nbsp;{mode === 'open' ? 'no abre ningún curso en la malla.' : 'no tiene cursos previos como requisito.'}{rcNote}</>
       )
     } else if (mode === 'open') {
       status = (
@@ -272,11 +316,12 @@ export default function MallaCurricular({ user, onLogout }) {
           <strong>{c.n}</strong> requiere en cadena&nbsp;
           <span className="pill a">{n} {n === 1 ? 'curso previo' : 'cursos previos'}</span>
           {pend < n && <>&nbsp;· solo {pend} {pend === 1 ? 'pendiente' : 'pendientes'}, {n - pend} ya {n - pend === 1 ? 'llevado' : 'llevados'}</>}
+          {rcNote}
         </>
       )
     }
   } else {
-    status = <>Explora la malla: <strong>Cálculo I</strong> y <strong>Álgebra Lineal</strong> son buenos puntos de partida. {pill}</>
+    status = <>Explora la malla: <strong>{M.hint[0]}</strong> y <strong>{M.hint[1]}</strong> son buenos puntos de partida. {pill}</>
   }
 
   if (!loaded) {
@@ -287,11 +332,11 @@ export default function MallaCurricular({ user, onLogout }) {
     <div className={'malla-page' + (mode === 'done' ? ' marking' : '')}>
       <header className="malla-top">
         <div>
-          <div className="eyebrow mono">Universidad ESAN · Ingeniería en Inteligencia Artificial</div>
+          <div className="eyebrow mono">Universidad ESAN · {M.nombre}</div>
           <h1>Malla curricular interactiva</h1>
           <div className="meta">
             Plan de estudios <b>presencial</b><span className="sep">·</span>
-            Total <b>200 créditos</b><span className="sep">·</span>
+            Total <b>{M.total} créditos</b><span className="sep">·</span>
             <b>10</b> ciclos + pre-formación
           </div>
           <div className="hint">
@@ -303,6 +348,11 @@ export default function MallaCurricular({ user, onLogout }) {
         <div className="user-box">
           <span className="mono user-code">{studentCode}</span>
           {syncError && <span className="sync-warn">⚠ sin guardar</span>}
+          {isGuest && onSwitchCarrera && (
+            <button className="panel-btn" onClick={onSwitchCarrera}>
+              ⇄ Cambiar de carrera
+            </button>
+          )}
           {!isGuest && (
             <button className="panel-btn" onClick={() => setPanelOpen(true)}>
               ☰ Mi panel
@@ -342,18 +392,18 @@ export default function MallaCurricular({ user, onLogout }) {
 
       <div className="frame">
         <div className="scroller" ref={scrollerRef} onClick={onScrollerClick} onMouseDown={onMouseDown}>
-          <div className="canvas" style={{ width: W, height: H }}>
-            <svg className="edges" width={W} height={H} viewBox={`0 0 ${W} ${H}`} xmlns="http://www.w3.org/2000/svg">
+          <div className="canvas" style={{ width: M.W, height: M.H }}>
+            <svg className="edges" width={M.W} height={M.H} viewBox={`0 0 ${M.W} ${M.H}`} xmlns="http://www.w3.org/2000/svg">
               {edges.map((e, i) => (
-                <path key={i} d={edgePath(e)} className={edgeClass(e)} />
+                <path key={i} d={edgePath(e, byId)} className={edgeClass(e)} />
               ))}
             </svg>
-            {Object.entries(CICLOS).map(([num, info]) => (
+            {Object.entries(M.ciclos).map(([num, info]) => (
               <div key={num} className="col-h mono" style={{ left: LEFT + num * COL_W }}>
                 {info.t}<em>{info.s}</em>
               </div>
             ))}
-            {CURSOS.map(c => (
+            {M.cursos.map(c => (
               <div
                 key={c.id}
                 className={nodeClass(c)}
@@ -363,7 +413,7 @@ export default function MallaCurricular({ user, onLogout }) {
                 <span className="chk">✓</span>
                 <div className="nm">{c.n}</div>
                 <div className="cr mono">
-                  {c.id === 'tesis1' ? `${c.cr} créd · 140 créd. previos` : `${c.cr} créd`}
+                  {c.rc ? `${c.cr} créd · ${c.rc} créd. previos` : `${c.cr} créd`}
                 </div>
               </div>
             ))}
@@ -372,11 +422,11 @@ export default function MallaCurricular({ user, onLogout }) {
       </div>
 
       <footer className="malla-foot mono">
-        TESIS I REQUIERE 140 CRÉDITOS APROBADOS · ELECTIVOS SEGÚN ESPECIALIDAD · CURSOS DE PRE-FORMACIÓN CONVALIDABLES POR EXAMEN
+        {M.foot}
       </footer>
 
       {!isGuest && (
-        <SidePanel user={user} open={panelOpen} onClose={() => setPanelOpen(false)} done={done} />
+        <SidePanel user={user} open={panelOpen} onClose={() => setPanelOpen(false)} done={done} cursos={M.cursos} ciclos={M.ciclos} />
       )}
     </div>
   )
