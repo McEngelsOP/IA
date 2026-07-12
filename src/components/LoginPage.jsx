@@ -158,6 +158,14 @@ export default function LoginPage({ onLogin, onGuest }) {
 
       if (authError) throw authError
 
+      // Con la confirmación por correo activada, Supabase no da error si el
+      // correo ya tiene cuenta (para no delatar correos registrados): devuelve
+      // un usuario "fantasma" sin identidades y no crea ni envía nada.
+      if (data.user?.identities?.length === 0) {
+        setError('Ese correo ya está registrado con otra cuenta.')
+        return
+      }
+
       if (data.session) {
         onLogin(data.user)
       } else {
