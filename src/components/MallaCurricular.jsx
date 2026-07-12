@@ -67,13 +67,10 @@ export default function MallaCurricular({ user, onLogout }) {
     ? 'VISITANTE'
     : user.user_metadata?.student_code || user.email
 
-  // Cargar progreso: de Supabase (alumno) o de localStorage (visitante)
+  // Cargar progreso desde Supabase (el visitante siempre parte de cero)
   useEffect(() => {
     if (isGuest) {
-      try {
-        const saved = JSON.parse(localStorage.getItem('malla-visitante') || '[]')
-        setDone(new Set(saved))
-      } catch { /* datos corruptos: se ignora y parte de cero */ }
+      localStorage.removeItem('malla-visitante') // limpia restos de versiones previas
       setLoaded(true)
       return
     }
@@ -92,12 +89,9 @@ export default function MallaCurricular({ user, onLogout }) {
     return () => { cancelled = true }
   }, [isGuest, user?.id])
 
-  // Guardar progreso
+  // Guardar progreso (el visitante no persiste nada: solo dura la sesión abierta)
   const persist = useCallback(async (set) => {
-    if (isGuest) {
-      localStorage.setItem('malla-visitante', JSON.stringify([...set]))
-      return
-    }
+    if (isGuest) return
     const { error } = await supabase
       .from('progress')
       .upsert({ student_id: user.id, done: [...set], updated_at: new Date().toISOString() })
@@ -299,7 +293,7 @@ export default function MallaCurricular({ user, onLogout }) {
           </div>
           <div className="hint">
             {isGuest
-              ? 'Modo visitante: puedes explorar y marcar cursos, pero el avance solo queda en este dispositivo. Crea una cuenta para guardarlo.'
+              ? 'Modo visitante: puedes explorar y marcar cursos, pero nada se guarda al salir. Crea una cuenta para conservar tu avance.'
               : 'Toca un curso para ver su cadena de dependencias. En el modo «Marcar llevados», toca los cursos que ya aprobaste — se guardan en tu cuenta.'}
           </div>
         </div>
