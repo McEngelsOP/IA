@@ -73,9 +73,17 @@ export default function ProfessorPanel({ user, course }) {
   }
 
   const remove = async p => {
-    if (!window.confirm(`¿Quitar a ${p.name} de este curso? Se pierden sus votos.`)) return
-    const { error } = await supabase.from('professors').delete().eq('id', p.id)
+    if (!window.confirm(`¿Quitar a ${p.name} de este curso?`)) return
+    // .select() devuelve las filas realmente borradas: si otro alumno votó
+    // hace un instante, la política RLS ya no permite borrar y llega vacío
+    const { data, error } = await supabase.from('professors').delete().eq('id', p.id).select()
     if (error) { console.error('[professors:delete]', error); setMsg('No se pudo eliminar.'); return }
+    if (!data || data.length === 0) {
+      setMsg('Ya no se puede quitar: otro alumno acaba de votar por este profesor.')
+      load()
+      return
+    }
+    setMsg(null)
     load()
   }
 
@@ -84,7 +92,11 @@ export default function ProfessorPanel({ user, course }) {
       const likes = p.professor_votes.filter(v => v.vote === 1).length
       const dislikes = p.professor_votes.filter(v => v.vote === -1).length
       const mine = p.professor_votes.find(v => v.student_id === user.id)?.vote ?? 0
-      return { ...p, likes, dislikes, score: likes - dislikes, mine }
+      // Con votos de otros alumnos, la entrada ya es de la comunidad:
+      // el creador pierde el botón de quitar (la RLS lo bloquea igual)
+      const removable = p.created_by === user.id &&
+        !p.professor_votes.some(v => v.student_id !== user.id)
+      return { ...p, likes, dislikes, score: likes - dislikes, mine, removable }
     })
     .sort((a, b) => b.score - a.score || b.likes - a.likes || a.name.localeCompare(b.name))
 
@@ -124,8 +136,8 @@ export default function ProfessorPanel({ user, course }) {
                 >
                   👎 <b className="mono">{p.dislikes}</b>
                 </button>
-                {p.created_by === user.id && (
-                  <button className="prof-del" onClick={() => remove(p)} title="Quitar (solo quien lo agregó)">×</button>
+                {p.removable && (
+                  <button className="prof-del" onClick={() => remove(p)} title="Quitar (posible mientras nadie más haya votado)">×</button>
                 )}
               </span>
             </li>
