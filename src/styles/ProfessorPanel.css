@@ -1,0 +1,196 @@
+/* Tarjeta de profesores del curso seleccionado (solo con sesión) */
+
+.prof-card {
+  margin: 0 40px 14px;
+  background: #ffffff;
+  border: 1px solid #e3e6e2;
+  border-radius: 14px;
+  box-shadow: 0 1px 2px rgba(21, 32, 46, 0.05), 0 4px 14px rgba(21, 32, 46, 0.05);
+  padding: 12px 18px 14px;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+.prof-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.prof-title {
+  font-size: 13.5px;
+  color: #5c6672;
+}
+
+.prof-title strong {
+  color: #15202e;
+  font-weight: 600;
+}
+
+.prof-sub {
+  font-size: 11px;
+  color: #8b94a0;
+}
+
+.prof-msg {
+  background: #faf0da;
+  color: #9a6b0b;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+
+.prof-empty {
+  font-size: 12.5px;
+  color: #8b94a0;
+  padding: 4px 0 8px;
+}
+
+.prof-list {
+  list-style: none;
+  margin: 0 0 10px;
+  padding: 0;
+  max-height: 150px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.prof-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  border: 1px solid #e7e9e5;
+  border-radius: 10px;
+  padding: 6px 10px;
+  background: #fff;
+}
+
+.prof-row.top {
+  border-color: #9cc9ad;
+  background: #f2f9f4;
+}
+
+.prof-badge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: #1b7a46;
+  background: #e4f1e8;
+  border-radius: 999px;
+  padding: 3px 9px;
+}
+
+.prof-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: #15202e;
+}
+
+.prof-votes {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.vote-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #e3e6e2;
+  background: #fff;
+  border-radius: 999px;
+  padding: 4px 11px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.vote-btn b {
+  font-size: 11px;
+  color: #5c6672;
+}
+
+.vote-btn:hover {
+  border-color: #b9c1bc;
+}
+
+.vote-btn.like.on {
+  background: #e4f1e8;
+  border-color: #1b7a46;
+}
+
+.vote-btn.like.on b { color: #1b7a46; }
+
+.vote-btn.dislike.on {
+  background: #faf0da;
+  border-color: #9a6b0b;
+}
+
+.vote-btn.dislike.on b { color: #9a6b0b; }
+
+.prof-del {
+  border: none;
+  background: transparent;
+  color: #8b94a0;
+  font-size: 15px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+.prof-del:hover {
+  background: #faf0da;
+  color: #9a6b0b;
+}
+
+.prof-form {
+  display: flex;
+  gap: 8px;
+}
+
+.prof-form input {
+  flex: 1;
+  border: 1px solid #e3e6e2;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font: 400 13px 'Inter', sans-serif;
+  background: #f5f6f4;
+}
+
+.prof-form input:focus {
+  outline: none;
+  border-color: #1b7a46;
+  background: #fff;
+}
+
+.prof-form button {
+  border: none;
+  background: #15202e;
+  color: #fff;
+  font: 600 12px 'Inter', sans-serif;
+  padding: 8px 18px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.prof-form button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.prof-form button:not(:disabled):hover {
+  background: #0d1520;
+}
+
+@media (max-width: 760px) {
+  .prof-card {
+    margin: 0 18px 12px;
+  }
+}

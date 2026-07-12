@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { CURSOS, CICLOS, TOTAL_CRED } from '../data/cursos'
+import SidePanel from './SidePanel'
+import ProfessorPanel from './ProfessorPanel'
 import '../styles/MallaCurricular.css'
 
 // ---------- Layout (idéntico al HTML original) ----------
@@ -57,6 +59,7 @@ export default function MallaCurricular({ user, onLogout }) {
   const [loaded, setLoaded] = useState(false)
   const [lastAction, setLastAction] = useState(null) // mensaje tras marcar/desmarcar
   const [syncError, setSyncError] = useState(false)
+  const [panelOpen, setPanelOpen] = useState(false) // panel lateral (solo con sesión)
 
   const scrollerRef = useRef(null)
   const dragRef = useRef(null)
@@ -300,6 +303,11 @@ export default function MallaCurricular({ user, onLogout }) {
         <div className="user-box">
           <span className="mono user-code">{studentCode}</span>
           {syncError && <span className="sync-warn">⚠ sin guardar</span>}
+          {!isGuest && (
+            <button className="panel-btn" onClick={() => setPanelOpen(true)}>
+              ☰ Mi panel
+            </button>
+          )}
           <button className="logout-btn" onClick={handleLogout}>
             {isGuest ? 'Crear cuenta / Entrar' : 'Cerrar sesión'}
           </button>
@@ -327,6 +335,10 @@ export default function MallaCurricular({ user, onLogout }) {
       </div>
 
       <div className="status">{status}</div>
+
+      {!isGuest && selected && (
+        <ProfessorPanel user={user} course={byId[selected]} />
+      )}
 
       <div className="frame">
         <div className="scroller" ref={scrollerRef} onClick={onScrollerClick} onMouseDown={onMouseDown}>
@@ -362,6 +374,10 @@ export default function MallaCurricular({ user, onLogout }) {
       <footer className="malla-foot mono">
         TESIS I REQUIERE 140 CRÉDITOS APROBADOS · ELECTIVOS SEGÚN ESPECIALIDAD · CURSOS DE PRE-FORMACIÓN CONVALIDABLES POR EXAMEN
       </footer>
+
+      {!isGuest && (
+        <SidePanel user={user} open={panelOpen} onClose={() => setPanelOpen(false)} done={done} />
+      )}
     </div>
   )
 }
