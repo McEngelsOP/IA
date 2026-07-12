@@ -2,11 +2,14 @@ import { useState, useEffect } from 'react'
 import { supabase } from './lib/supabaseClient'
 import LoginPage from './components/LoginPage'
 import MallaCurricular from './components/MallaCurricular'
+import UpdatePassword from './components/UpdatePassword'
 import './App.css'
 
 function App() {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
+  // true cuando el usuario llega desde el enlace de recuperación del correo
+  const [recovering, setRecovering] = useState(false)
 
   useEffect(() => {
     const checkSession = async () => {
@@ -22,8 +25,11 @@ function App() {
 
     checkSession()
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChanged(
-      (_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (event === 'PASSWORD_RECOVERY') {
+          setRecovering(true)
+        }
         setUser(session?.user || null)
       }
     )
@@ -33,6 +39,10 @@ function App() {
 
   if (loading) {
     return <div className="loading-container">Cargando...</div>
+  }
+
+  if (recovering) {
+    return <UpdatePassword onDone={() => setRecovering(false)} />
   }
 
   return (
