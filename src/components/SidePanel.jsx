@@ -190,7 +190,11 @@ export default function SidePanel({ user, open, onClose, done, cursos, ciclos })
     if (!/^https?:\/\//i.test(url)) url = 'https://' + url
     try { new URL(url) } catch { setMsg('Ese link no parece válido.'); return }
     const { error } = await supabase.from('tools').insert({ name, url, created_by: user.id })
-    if (error) { console.error('[tools:add]', error); setMsg('No se pudo agregar la herramienta.'); return }
+    if (error) {
+      console.error('[tools:add]', error)
+      setMsg(error.code === '42501' ? 'Llegaste al tope de 20 herramientas por alumno.' : 'No se pudo agregar la herramienta.')
+      return
+    }
     setToolName(''); setToolUrl(''); setMsg(null)
     loadTools()
   }
@@ -323,7 +327,7 @@ export default function SidePanel({ user, open, onClose, done, cursos, ciclos })
       <aside className={'sp' + (open ? ' open' : '')} aria-hidden={!open}>
         <header className="sp-head">
           <div>
-            <div className="sp-eyebrow mono">Mi panel</div>
+            <div className="sp-eyebrow mono">PANEL</div>
             <h2>Notas y herramientas</h2>
           </div>
           <button className="sp-close" onClick={onClose} aria-label="Cerrar panel">×</button>

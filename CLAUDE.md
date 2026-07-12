@@ -42,7 +42,7 @@ Los `.sql` de `supabase/` son scripts que el usuario corre **a mano** en el SQL 
 Decisiones que no hay que re-proponer:
 
 - **Borrado en listas compartidas**: el creador de un profesor solo puede borrarlo mientras nadie más haya votado (política RLS con `not exists`); después, solo el dueño del proyecto desde Table Editor. Herramientas: siempre el creador. Nunca borrado libre para todos — los dislikes son la señal comunitaria, no el borrado.
-- **Topes anti-spam** por RLS: 5 profesores por alumno por curso, 10 herramientas por alumno.
+- **Topes anti-spam** por RLS: 5 profesores por alumno por curso, 20 herramientas por alumno.
 - Nombres de profesor **siempre en mayúsculas** (toUpperCase al guardar + CHECK en la base + CSS).
 - Escala de notas 0–20, aprobado desde 10.5 (`PASS` en `SidePanel.jsx`).
 - **Comentarios de herramientas son anónimos de verdad**: se firman con el `alias` ("nombre secreto", único, se elige una vez — trigger `lock_alias`), el servidor lo estampa (`stamp_comment_alias`) y `tool_comments.author_id` NO es legible por el cliente (permiso a nivel de columna). Por eso los `select` a `tool_comments` deben pedir columnas explícitas — `select('*')` falla — y nunca hay que exponer `author_id` ni un join alias↔perfil al navegador. Tope: 5 comentarios por alumno por herramienta (300 caracteres).
