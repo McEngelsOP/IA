@@ -13,8 +13,13 @@ const authByCode = async (action, payload = {}) => {
   return data
 }
 
-// Código de alumno: exactamente 8 dígitos, empieza en 25 (año de la primera promoción) o más
-const isValidStudentCode = (code) => /^\d{8}$/.test(code) && Number(code.slice(0, 2)) >= 25
+// Código de alumno: exactamente 8 dígitos; los dos primeros son la promoción,
+// desde 25 (primera promoción) hasta el año en curso — 27 recién valdrá en 2027.
+const isValidStudentCode = (code) => {
+  if (!/^\d{8}$/.test(code)) return false
+  const promo = Number(code.slice(0, 2))
+  return promo >= 25 && promo <= new Date().getFullYear() % 100
+}
 
 // Enmascara el correo para mostrarlo sin exponerlo completo: ju•••@gmail.com
 const maskEmail = (email) => {
