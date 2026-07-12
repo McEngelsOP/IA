@@ -1,0 +1,292 @@
+/* Paleta tomada de la malla curricular */
+:root {
+  --bg: #f5f6f4;
+  --grid: #e7e9e5;
+  --card: #ffffff;
+  --ink: #15202e;
+  --ink-2: #5c6672;
+  --ink-3: #8b94a0;
+  --line: #e3e6e2;
+  --green: #1b7a46;
+  --green-soft: #e4f1e8;
+  --green-border: #9cc9ad;
+  --navy: #15202e;
+  --amber: #9a6b0b;
+  --amber-soft: #faf0da;
+  --shadow: 0 1px 2px rgba(21, 32, 46, 0.05), 0 4px 14px rgba(21, 32, 46, 0.05);
+}
+
+.mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.login-page {
+  display: flex;
+  min-height: 100vh;
+  font-family: 'Inter', system-ui, sans-serif;
+  color: var(--ink);
+}
+
+/* ---------- Panel izquierdo: formulario ---------- */
+.login-left {
+  flex: 1 1 46%;
+  display: flex;
+  flex-direction: column;
+  padding: 32px 48px;
+  background: var(--bg);
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+.login-brand {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 2.2px;
+  color: var(--ink-2);
+}
+
+.login-form-wrap {
+  margin: auto;
+  width: 100%;
+  max-width: 380px;
+}
+
+.login-eyebrow {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 2.2px;
+  color: var(--green);
+  margin-bottom: 10px;
+}
+
+.login-title {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 40px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  margin-bottom: 10px;
+}
+
+.login-sub {
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--ink-2);
+  margin-bottom: 30px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 18px;
+}
+
+.field label {
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 1.8px;
+  color: var(--ink-3);
+  margin-bottom: 7px;
+}
+
+.field input {
+  padding: 13px 16px;
+  font: 500 14.5px 'Inter', sans-serif;
+  color: var(--ink);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.field input::placeholder {
+  color: var(--ink-3);
+}
+
+.field input:focus {
+  outline: none;
+  border-color: var(--green-border);
+  box-shadow: 0 0 0 3px var(--green-soft);
+}
+
+.field input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.login-error {
+  font-size: 13px;
+  color: var(--amber);
+  background: var(--amber-soft);
+  border: 1px solid #dfc084;
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+}
+
+.login-btn {
+  width: 100%;
+  padding: 13px;
+  margin-top: 4px;
+  font: 600 14.5px 'Inter', sans-serif;
+  color: #fff;
+  background: var(--navy);
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  transition: background 0.15s, transform 0.15s;
+}
+
+.login-btn:hover:not(:disabled) {
+  background: #0d1520;
+  transform: translateY(-1px);
+}
+
+.login-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.login-help {
+  margin-top: 22px;
+  font-size: 13px;
+  color: var(--ink-3);
+  text-align: center;
+}
+
+.login-help span {
+  color: var(--green);
+  font-weight: 600;
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font: 600 13px 'Inter', sans-serif;
+  color: var(--green);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.link-btn:hover {
+  color: #14603a;
+}
+
+.login-notice {
+  font-size: 13px;
+  color: var(--green);
+  background: var(--green-soft);
+  border: 1px solid var(--green-border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+}
+
+.login-foot {
+  font-size: 10.5px;
+  letter-spacing: 2px;
+  color: var(--ink-3);
+}
+
+/* ---------- Panel derecho: arte de la malla ---------- */
+.login-right {
+  flex: 1 1 54%;
+  position: relative;
+  overflow: hidden;
+  background: var(--navy);
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+  background-size: 28px 28px;
+  display: flex;
+  align-items: stretch;
+}
+
+.malla-art {
+  width: 100%;
+  height: 100%;
+}
+
+.malla-art .edges path {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.22);
+  stroke-width: 1.5;
+}
+
+.malla-art .node {
+  fill: rgba(255, 255, 255, 0.05);
+  stroke: rgba(255, 255, 255, 0.28);
+}
+
+.malla-art .node.done {
+  fill: rgba(27, 122, 70, 0.35);
+  stroke: var(--green-border);
+}
+
+.malla-art .node.open {
+  fill: rgba(255, 255, 255, 0.12);
+  stroke: rgba(255, 255, 255, 0.55);
+}
+
+.malla-art .node.locked {
+  fill: rgba(255, 255, 255, 0.03);
+  stroke: rgba(255, 255, 255, 0.16);
+  stroke-dasharray: 4 4;
+}
+
+.malla-art text {
+  font: 600 13px 'Inter', sans-serif;
+  fill: rgba(255, 255, 255, 0.92);
+}
+
+.malla-art .cred {
+  font: 500 8.5px 'JetBrains Mono', monospace;
+  letter-spacing: 1.2px;
+  fill: rgba(255, 255, 255, 0.5);
+}
+
+.malla-art .locked text {
+  fill: rgba(255, 255, 255, 0.45);
+}
+
+.right-caption {
+  position: absolute;
+  left: 48px;
+  bottom: 42px;
+  color: #fff;
+}
+
+.right-caption .mono {
+  font-size: 10.5px;
+  letter-spacing: 2.2px;
+  color: rgba(255, 255, 255, 0.55);
+  margin-bottom: 10px;
+}
+
+.right-caption h2 {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.3px;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 860px) {
+  .login-right {
+    display: none;
+  }
+
+  .login-left {
+    padding: 24px 28px;
+  }
+
+  .login-title {
+    font-size: 32px;
+  }
+}

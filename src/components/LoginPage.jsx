@@ -1,0 +1,413 @@
+import { useState } from 'react'
+import { supabase } from '../lib/supabaseClient'
+import '../styles/LoginPage.css'
+
+// Busca en la tabla profiles el correo real asociado a un código de alumno
+const emailForCode = async (codigo) => {
+  const { data, error } = await supabase.rpc('email_for_student_code', {
+    code: codigo.trim()
+  })
+  if (error) throw error
+  return data // null si el código no existe
+}
+
+// Enmascara el correo para mostrarlo sin exponerlo completo: ju•••@gmail.com
+const maskEmail = (email) => {
+  const [user, domain] = email.split('@')
+  return `${user.slice(0, 2)}•••@${domain}`
+}
+
+// Extrae un mensaje legible de cualquier forma de error de Supabase
+const errorMessage = (err, fallback) => {
+  console.error('[auth]', err) // deja el error completo en la consola del navegador
+  const msg =
+    err?.message || err?.error_description || err?.error || err?.msg
+  if (typeof msg === 'string' && msg.trim() && msg.trim() !== '{}') return msg
+  return fallback
+}
+
+export default function LoginPage({ onLogin }) {
+  const [mode, setMode] = useState('login') // 'login' | 'register' | 'forgot'
+  const [codigo, setCodigo] = useState('')
+  const [correo, setCorreo] = useState('')
+  const [password, setPassword] = useState('')
+  const [confirm, setConfirm] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
+  // Email pendiente de confirmar, guardado para poder reenviar el correo
+  const [unconfirmedEmail, setUnconfirmedEmail] = useState(null)
+
+  const switchMode = (next) => {
+    setMode(next)
+    setError('')
+    setNotice('')
+    setPassword('')
+    setConfirm('')
+    setUnconfirmedEmail(null)
+  }
+
+  const handleLogin = async (e) => {
+    e.preventDefault()
+    setError('')
+    setNotice('')
+    setUnconfirmedEmail(null)
+    setLoading(true)
+
+    try {
+      const email = await emailForCode(codigo)
+      if (!email) {
+        setError('Código no registrado. Si es tu primera vez, crea tu cuenta abajo.')
+        return
+      }
+
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      })
+
+      if (authError) throw authError
+      onLogin(data.user)
+    } catch (err) {
+      if (err.message === 'Email not confirmed') {
+        setUnconfirmedEmail(await emailForCode(codigo))
+        setError('Aún no confirmas tu correo. Revisa tu bandeja (y spam) o reenvía el enlace.')
+      } else if (err.message === 'Invalid login credentials') {
+        setError('Contraseña incorrecta. ¿La olvidaste? Recupérala abajo.')
+      } else {
+        setError(errorMessage(err, 'Error al iniciar sesión'))
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleResendConfirmation = async () => {
+    if (!unconfirmedEmail) return
+    setError('')
+    setLoading(true)
+    try {
+      const { error: resendError } = await supabase.auth.resend({
+        type: 'signup',
+        email: unconfirmedEmail
+      })
+      if (resendError) throw resendError
+      setNotice(`Te reenviamos el enlace a ${maskEmail(unconfirmedEmail)}.`)
+    } catch (err) {
+      setError(err.message || 'No se pudo reenviar el correo')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleRegister = async (e) => {
+    e.preventDefault()
+    setError('')
+    setNotice('')
+
+    if (!codigo.trim()) {
+      setError('Ingresa tu código de alumno')
+      return
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo.trim())) {
+      setError('Ingresa un correo válido (lo usarás para recuperar tu contraseña)')
+      return
+    }
+    if (password.length < 6) {
+      setError('La contraseña debe tener al menos 6 caracteres')
+      return
+    }
+    if (password !== confirm) {
+      setError('Las contraseñas no coinciden')
+      return
+    }
+
+    setLoading(true)
+    try {
+      // Evita registros duplicados del mismo código
+      const existing = await emailForCode(codigo)
+      if (existing) {
+        setError('Este código ya tiene una cuenta. Vuelve a iniciar sesión o recupera tu contraseña.')
+        return
+      }
+
+      const { data, error: authError } = await supabase.auth.signUp({
+        email: correo.trim().toLowerCase(),
+        password,
+        options: {
+          data: { student_code: codigo.trim().toUpperCase() }
+        }
+      })
+
+      if (authError) throw authError
+
+      if (data.session) {
+        onLogin(data.user)
+      } else {
+        switchMode('login')
+        setNotice(
+          `Cuenta creada. Te enviamos un enlace a ${maskEmail(correo.trim())} — confírmalo antes de iniciar sesión.`
+        )
+      }
+    } catch (err) {
+      if (err.message === 'User already registered') {
+        setError('Ese correo ya está registrado con otra cuenta.')
+      } else if (/rate limit/i.test(err.message || '')) {
+        setError('Se alcanzó el límite de correos por hora. Espera un momento antes de reintentar.')
+      } else if (/Database error|Error sending/i.test(err.message || '')) {
+        setError('La cuenta pudo crearse pero falló el envío del correo. Revisa la configuración SMTP.')
+      } else {
+        setError(errorMessage(err, 'Error al crear la cuenta'))
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleForgot = async (e) => {
+    e.preventDefault()
+    setError('')
+    setNotice('')
+    setLoading(true)
+
+    try {
+      const email = await emailForCode(codigo)
+      if (!email) {
+        setError('No encontramos una cuenta con ese código.')
+        return
+      }
+
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin
+      })
+      if (resetError) throw resetError
+
+      setNotice(`Te enviamos un enlace de recuperación a ${maskEmail(email)}. Revisa tu bandeja (y spam).`)
+    } catch (err) {
+      setError(errorMessage(err, 'No se pudo enviar el correo de recuperación'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const copy = {
+    login: {
+      title: 'Inicia sesión',
+      sub: 'Accede con tu código de alumno para ver tu progreso, los cursos que te faltan y qué te abre cada uno.',
+      btn: 'Entrar a mi malla',
+      submit: handleLogin
+    },
+    register: {
+      title: 'Crea tu cuenta',
+      sub: 'Primera vez aquí: ingresa tu código, tu correo (para recuperar tu contraseña si la olvidas) y elige una contraseña.',
+      btn: 'Crear cuenta y entrar',
+      submit: handleRegister
+    },
+    forgot: {
+      title: 'Recupera tu contraseña',
+      sub: 'Ingresa tu código de alumno y te enviaremos un enlace de recuperación al correo con el que te registraste.',
+      btn: 'Enviarme el enlace',
+      submit: handleForgot
+    }
+  }[mode]
+
+  return (
+    <div className="login-page">
+      {/* Panel izquierdo: formulario */}
+      <div className="login-left">
+        <div className="login-brand mono">
+          UNIVERSIDAD ESAN · INGENIERÍA EN IA
+        </div>
+
+        <div className="login-form-wrap">
+          <p className="login-eyebrow mono">MALLA CURRICULAR INTERACTIVA</p>
+          <h1 className="login-title">{copy.title}</h1>
+          <p className="login-sub">{copy.sub}</p>
+
+          <form onSubmit={copy.submit} noValidate>
+            <div className="field">
+              <label htmlFor="codigo" className="mono">CÓDIGO DE ALUMNO</label>
+              <input
+                id="codigo"
+                type="text"
+                placeholder="p. ej. 25100123"
+                value={codigo}
+                onChange={(e) => setCodigo(e.target.value)}
+                disabled={loading}
+                autoComplete="username"
+                required
+              />
+            </div>
+
+            {mode === 'register' && (
+              <div className="field">
+                <label htmlFor="correo" className="mono">CORREO DE RECUPERACIÓN</label>
+                <input
+                  id="correo"
+                  type="email"
+                  placeholder="tucorreo@gmail.com"
+                  value={correo}
+                  onChange={(e) => setCorreo(e.target.value)}
+                  disabled={loading}
+                  autoComplete="email"
+                  required
+                />
+              </div>
+            )}
+
+            {mode !== 'forgot' && (
+              <div className="field">
+                <label htmlFor="password" className="mono">
+                  {mode === 'login' ? 'CONTRASEÑA' : 'NUEVA CONTRASEÑA'}
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  placeholder={mode === 'login' ? '••••••••' : 'Mínimo 6 caracteres'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={loading}
+                  autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                  required
+                />
+              </div>
+            )}
+
+            {mode === 'register' && (
+              <div className="field">
+                <label htmlFor="confirm" className="mono">CONFIRMAR CONTRASEÑA</label>
+                <input
+                  id="confirm"
+                  type="password"
+                  placeholder="Repite tu contraseña"
+                  value={confirm}
+                  onChange={(e) => setConfirm(e.target.value)}
+                  disabled={loading}
+                  autoComplete="new-password"
+                  required
+                />
+              </div>
+            )}
+
+            {error && (
+              <div className="login-error">
+                {error}
+                {unconfirmedEmail && (
+                  <>
+                    {' '}
+                    <button type="button" className="link-btn" onClick={handleResendConfirmation}>
+                      Reenviar enlace
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+            {notice && <div className="login-notice">{notice}</div>}
+
+            <button type="submit" className="login-btn" disabled={loading}>
+              {loading ? 'Procesando…' : copy.btn}
+            </button>
+          </form>
+
+          {mode === 'login' && (
+            <p className="login-help">
+              ¿Primera vez?{' '}
+              <button type="button" className="link-btn" onClick={() => switchMode('register')}>
+                Crea tu cuenta
+              </button>
+              {' · '}
+              <button type="button" className="link-btn" onClick={() => switchMode('forgot')}>
+                Olvidé mi contraseña
+              </button>
+            </p>
+          )}
+          {mode !== 'login' && (
+            <p className="login-help">
+              <button type="button" className="link-btn" onClick={() => switchMode('login')}>
+                ← Volver a iniciar sesión
+              </button>
+            </p>
+          )}
+        </div>
+
+        <div className="login-foot mono">PLAN 200 CRÉDITOS · 10 CICLOS</div>
+      </div>
+
+      {/* Panel derecho: visual estilo malla */}
+      <div className="login-right" aria-hidden="true">
+        <svg
+          className="malla-art"
+          viewBox="0 0 640 800"
+          preserveAspectRatio="xMidYMid slice"
+        >
+          <g className="edges">
+            <path d="M150 180 C 260 180, 240 300, 350 300" />
+            <path d="M150 180 C 280 190, 250 430, 350 430" />
+            <path d="M150 320 C 250 320, 260 310, 350 300" />
+            <path d="M350 300 C 460 300, 440 210, 540 210" />
+            <path d="M350 300 C 470 310, 430 470, 540 470" />
+            <path d="M350 430 C 460 430, 450 475, 540 470" />
+            <path d="M150 560 C 260 560, 250 435, 350 430" />
+            <path d="M350 560 C 460 560, 450 610, 540 610" />
+            <path d="M150 560 C 250 565, 260 555, 350 560" />
+          </g>
+
+          <g className="nodes">
+            <g transform="translate(70,150)">
+              <rect width="160" height="60" rx="12" className="node done" />
+              <text x="16" y="27">Cálculo I</text>
+              <text x="16" y="45" className="cred">5 CRÉD · LLEVADO</text>
+            </g>
+            <g transform="translate(70,290)">
+              <rect width="160" height="60" rx="12" className="node done" />
+              <text x="16" y="27">Programación I</text>
+              <text x="16" y="45" className="cred">4 CRÉD · LLEVADO</text>
+            </g>
+            <g transform="translate(70,530)">
+              <rect width="160" height="60" rx="12" className="node done" />
+              <text x="16" y="27">Matemática Discreta</text>
+              <text x="16" y="45" className="cred">4 CRÉD · LLEVADO</text>
+            </g>
+
+            <g transform="translate(270,270)">
+              <rect width="160" height="60" rx="12" className="node open" />
+              <text x="16" y="27">Cálculo II</text>
+              <text x="16" y="45" className="cred">5 CRÉD · DISPONIBLE</text>
+            </g>
+            <g transform="translate(270,400)">
+              <rect width="160" height="60" rx="12" className="node open" />
+              <text x="16" y="27">Programación II</text>
+              <text x="16" y="45" className="cred">3 CRÉD · DISPONIBLE</text>
+            </g>
+            <g transform="translate(270,530)">
+              <rect width="160" height="60" rx="12" className="node open" />
+              <text x="16" y="27">Estadística I</text>
+              <text x="16" y="45" className="cred">4 CRÉD · DISPONIBLE</text>
+            </g>
+
+            <g transform="translate(460,180)">
+              <rect width="160" height="60" rx="12" className="node locked" />
+              <text x="16" y="27">Ecuaciones Dif.</text>
+              <text x="16" y="45" className="cred">3 CRÉD · BLOQUEADO</text>
+            </g>
+            <g transform="translate(460,440)">
+              <rect width="160" height="60" rx="12" className="node locked" />
+              <text x="16" y="27">Fund. de ML</text>
+              <text x="16" y="45" className="cred">4 CRÉD · BLOQUEADO</text>
+            </g>
+            <g transform="translate(460,580)">
+              <rect width="160" height="60" rx="12" className="node locked" />
+              <text x="16" y="27">Optimización I</text>
+              <text x="16" y="45" className="cred">3 CRÉD · BLOQUEADO</text>
+            </g>
+          </g>
+        </svg>
+
+        <div className="right-caption">
+          <p className="mono">TOCA UN CURSO PARA VER SU CADENA</p>
+          <h2>Tu ruta hacia la IA,<br />curso por curso.</h2>
+        </div>
+      </div>
+    </div>
+  )
+}
