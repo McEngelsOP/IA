@@ -333,7 +333,7 @@ export default function LoginPage({ onLogin, onGuest }) {
               </button>
             </p>
           )}
-          {mode === 'register' && (
+          {mode !== 'forgot' && (
             <p className="login-note">
               ¿Escribiste mal tu correo? Avisa a{' '}
               <a href="mailto:hernandengels@gmail.com">hernandengels@gmail.com</a>{' '}
