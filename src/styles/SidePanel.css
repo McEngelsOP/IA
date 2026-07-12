@@ -154,6 +154,19 @@
   margin: 0 0 8px;
 }
 
+.sp-subblock {
+  margin-bottom: 12px;
+}
+
+.sp-subhead {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: #8b94a0;
+  margin: 0 0 5px;
+}
+
 /* ---------- Selector de ciclo ---------- */
 .sp-chips {
   display: flex;
@@ -208,6 +221,13 @@
   font-size: 12.5px;
   color: #15202e;
   line-height: 1.25;
+}
+
+.grade-saved {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: #1b7a46;
 }
 
 .grade-row input {

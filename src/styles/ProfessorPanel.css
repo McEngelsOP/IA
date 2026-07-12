@@ -90,6 +90,7 @@
   font-size: 13px;
   font-weight: 500;
   color: #15202e;
+  text-transform: uppercase;
 }
 
 .prof-votes {
@@ -162,6 +163,7 @@
   padding: 8px 14px;
   font: 400 13px 'Inter', sans-serif;
   background: #f5f6f4;
+  text-transform: uppercase;
 }
 
 .prof-form input:focus {
@@ -192,5 +194,15 @@
 @media (max-width: 760px) {
   .prof-card {
     margin: 0 18px 12px;
+    padding: 10px 14px 12px;
+  }
+
+  .prof-list {
+    max-height: 120px;
+  }
+
+  .prof-votes {
+    margin-left: 0;
+    width: 100%;
   }
 }

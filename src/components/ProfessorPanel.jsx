@@ -26,7 +26,7 @@ export default function ProfessorPanel({ user, course }) {
 
   const add = async e => {
     e.preventDefault()
-    const n = name.trim()
+    const n = name.trim().toUpperCase()
     if (n.length < 2) return
     setSaving(true)
     const { error } = await supabase
@@ -44,18 +44,32 @@ export default function ProfessorPanel({ user, course }) {
 
   const vote = async (p, v) => {
     const mine = p.professor_votes.find(x => x.student_id === user.id)
+    const removing = mine && mine.vote === v // tocar tu mismo voto lo quita
+
+    // Actualización optimista: el contador cambia al instante y solo
+    // se revierte si el guardado en Supabase falla
+    const prev = profs
+    setProfs(profs.map(row => {
+      if (row.id !== p.id) return row
+      const rest = row.professor_votes.filter(x => x.student_id !== user.id)
+      return { ...row, professor_votes: removing ? rest : [...rest, { student_id: user.id, vote: v }] }
+    }))
+
     let error
-    if (mine && mine.vote === v) {
-      // tocar tu mismo voto lo quita
+    if (removing) {
       ;({ error } = await supabase.from('professor_votes').delete().match({ professor_id: p.id, student_id: user.id }))
     } else {
       ;({ error } = await supabase.from('professor_votes').upsert({
         professor_id: p.id, student_id: user.id, vote: v, updated_at: new Date().toISOString()
       }))
     }
-    if (error) { console.error('[professors:vote]', error); setMsg('No se pudo registrar tu voto.'); return }
+    if (error) {
+      console.error('[professors:vote]', error)
+      setMsg('No se pudo registrar tu voto.')
+      setProfs(prev)
+      return
+    }
     setMsg(null)
-    load()
   }
 
   const remove = async p => {

@@ -2,14 +2,19 @@ import { useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import '../styles/LoginPage.css'
 
-// Busca en la tabla profiles el correo real asociado a un código de alumno
-const emailForCode = async (codigo) => {
-  const { data, error } = await supabase.rpc('email_for_student_code', {
-    code: codigo.trim()
+// Resuelve el código de alumno en el servidor (Edge Function auth-by-code).
+// El navegador nunca recibe el correo completo de nadie: solo la sesión o
+// el correo ya enmascarado, según la acción.
+const authByCode = async (action, payload = {}) => {
+  const { data, error } = await supabase.functions.invoke('auth-by-code', {
+    body: { action, ...payload }
   })
   if (error) throw error
-  return data // null si el código no existe
+  return data
 }
+
+// Código de alumno: exactamente 8 dígitos, empieza en 25 (año de la primera promoción) o más
+const isValidStudentCode = (code) => /^\d{8}$/.test(code) && Number(code.slice(0, 2)) >= 25
 
 // Enmascara el correo para mostrarlo sin exponerlo completo: ju•••@gmail.com
 const maskEmail = (email) => {
@@ -35,8 +40,17 @@ export default function LoginPage({ onLogin, onGuest }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
-  // Email pendiente de confirmar, guardado para poder reenviar el correo
-  const [unconfirmedEmail, setUnconfirmedEmail] = useState(null)
+  // Código con correo pendiente de confirmar, para poder reenviar el enlace
+  const [unconfirmedCode, setUnconfirmedCode] = useState(null)
+  // true cuando el código que intentan registrar ya tiene una cuenta (posible suplantación)
+  const [codeTaken, setCodeTaken] = useState(false)
+
+  // En registro forzamos el formato (8 dígitos); en login/recuperación se deja libre
+  // para no bloquear a alguien que ya tenga una cuenta con un código anterior.
+  const handleCodigoChange = (e) => {
+    const raw = e.target.value
+    setCodigo(mode === 'register' ? raw.replace(/\D/g, '').slice(0, 8) : raw)
+  }
 
   const switchMode = (next) => {
     setMode(next)
@@ -44,55 +58,56 @@ export default function LoginPage({ onLogin, onGuest }) {
     setNotice('')
     setPassword('')
     setConfirm('')
-    setUnconfirmedEmail(null)
+    setUnconfirmedCode(null)
+    setCodeTaken(false)
   }
 
   const handleLogin = async (e) => {
     e.preventDefault()
     setError('')
     setNotice('')
-    setUnconfirmedEmail(null)
+    setUnconfirmedCode(null)
     setLoading(true)
 
     try {
-      const email = await emailForCode(codigo)
-      if (!email) {
+      const res = await authByCode('login', { code: codigo, password })
+
+      if (res.error === 'code_not_found') {
         setError('Código no registrado. Si es tu primera vez, crea tu cuenta abajo.')
         return
       }
+      if (res.error === 'email_not_confirmed') {
+        setUnconfirmedCode(codigo)
+        setError('Aún no confirmas tu correo. Revisa tu bandeja (y spam) o reenvía el enlace.')
+        return
+      }
+      if (res.error === 'invalid_credentials') {
+        setError('Contraseña incorrecta. ¿La olvidaste? Recupérala abajo.')
+        return
+      }
+      if (!res.ok) {
+        setError(res.message || 'Error al iniciar sesión')
+        return
+      }
 
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      })
-
-      if (authError) throw authError
+      const { data, error: sessionError } = await supabase.auth.setSession(res.session)
+      if (sessionError) throw sessionError
       onLogin(data.user)
     } catch (err) {
-      if (err.message === 'Email not confirmed') {
-        setUnconfirmedEmail(await emailForCode(codigo))
-        setError('Aún no confirmas tu correo. Revisa tu bandeja (y spam) o reenvía el enlace.')
-      } else if (err.message === 'Invalid login credentials') {
-        setError('Contraseña incorrecta. ¿La olvidaste? Recupérala abajo.')
-      } else {
-        setError(errorMessage(err, 'Error al iniciar sesión'))
-      }
+      setError(errorMessage(err, 'Error al iniciar sesión'))
     } finally {
       setLoading(false)
     }
   }
 
   const handleResendConfirmation = async () => {
-    if (!unconfirmedEmail) return
+    if (!unconfirmedCode) return
     setError('')
     setLoading(true)
     try {
-      const { error: resendError } = await supabase.auth.resend({
-        type: 'signup',
-        email: unconfirmedEmail
-      })
-      if (resendError) throw resendError
-      setNotice(`Te reenviamos el enlace a ${maskEmail(unconfirmedEmail)}.`)
+      const res = await authByCode('resend', { code: unconfirmedCode })
+      if (!res.ok) throw new Error(res.message || 'No se pudo reenviar el correo')
+      setNotice(`Te reenviamos el enlace a ${res.masked}.`)
     } catch (err) {
       setError(err.message || 'No se pudo reenviar el correo')
     } finally {
@@ -104,9 +119,10 @@ export default function LoginPage({ onLogin, onGuest }) {
     e.preventDefault()
     setError('')
     setNotice('')
+    setCodeTaken(false)
 
-    if (!codigo.trim()) {
-      setError('Ingresa tu código de alumno')
+    if (!isValidStudentCode(codigo.trim())) {
+      setError('Ese código de alumno no es válido.')
       return
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo.trim())) {
@@ -125,9 +141,10 @@ export default function LoginPage({ onLogin, onGuest }) {
     setLoading(true)
     try {
       // Evita registros duplicados del mismo código
-      const existing = await emailForCode(codigo)
-      if (existing) {
-        setError('Este código ya tiene una cuenta. Vuelve a iniciar sesión o recupera tu contraseña.')
+      const { exists } = await authByCode('exists', { code: codigo })
+      if (exists) {
+        setCodeTaken(true)
+        setError('Este código de alumno ya tiene una cuenta.')
         return
       }
 
@@ -171,18 +188,14 @@ export default function LoginPage({ onLogin, onGuest }) {
     setLoading(true)
 
     try {
-      const email = await emailForCode(codigo)
-      if (!email) {
+      const res = await authByCode('recover', { code: codigo, origin: window.location.origin })
+      if (res.error === 'code_not_found') {
         setError('No encontramos una cuenta con ese código.')
         return
       }
+      if (!res.ok) throw new Error(res.message || 'No se pudo enviar el correo de recuperación')
 
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin
-      })
-      if (resetError) throw resetError
-
-      setNotice(`Te enviamos un enlace de recuperación a ${maskEmail(email)}. Revisa tu bandeja (y spam).`)
+      setNotice(`Te enviamos un enlace de recuperación a ${res.masked}. Revisa tu bandeja (y spam).`)
     } catch (err) {
       setError(errorMessage(err, 'No se pudo enviar el correo de recuperación'))
     } finally {
@@ -230,9 +243,10 @@ export default function LoginPage({ onLogin, onGuest }) {
               <input
                 id="codigo"
                 type="text"
-                placeholder="p. ej. 25100123"
+                inputMode="numeric"
+                placeholder={mode === 'register' ? '8 dígitos' : 'Tu código de alumno'}
                 value={codigo}
-                onChange={(e) => setCodigo(e.target.value)}
+                onChange={handleCodigoChange}
                 disabled={loading}
                 autoComplete="username"
                 required
@@ -292,12 +306,18 @@ export default function LoginPage({ onLogin, onGuest }) {
             {error && (
               <div className="login-error">
                 {error}
-                {unconfirmedEmail && (
+                {unconfirmedCode && (
                   <>
                     {' '}
                     <button type="button" className="link-btn" onClick={handleResendConfirmation}>
                       Reenviar enlace
                     </button>
+                  </>
+                )}
+                {codeTaken && (
+                  <>
+                    {' '}Si no fuiste tú, escribe a{' '}
+                    <a href="mailto:hernandengels@gmail.com">hernandengels@gmail.com</a> para resolverlo.
                   </>
                 )}
               </div>

@@ -449,6 +449,23 @@ path.e.dim { opacity: 0.07; }
 
   .malla-top h1 { font-size: 26px; }
 
+  .user-box {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding-top: 8px;
+  }
+
+  .user-code {
+    padding: 6px 11px;
+    font-size: 10.5px;
+  }
+
+  .panel-btn,
+  .logout-btn {
+    padding: 8px 13px;
+    font-size: 12px;
+  }
+
   .toolbar { padding: 12px 18px 10px; }
 
   .legend { margin-left: 0; }

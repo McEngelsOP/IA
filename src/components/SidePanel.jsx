@@ -92,6 +92,7 @@ export default function SidePanel({ user, open, onClose, done }) {
   const [ciclo, setCiclo] = useState(1)
   const [grades, setGrades] = useState({})       // { course_id: number }
   const [drafts, setDrafts] = useState({})       // texto del input mientras se edita
+  const [savedFlash, setSavedFlash] = useState({}) // { course_id: true } → muestra ✓ tras guardar
   const [gradesLoaded, setGradesLoaded] = useState(false)
   const [tools, setTools] = useState(null)
   const [toolName, setToolName] = useState('')
@@ -128,6 +129,14 @@ export default function SidePanel({ user, open, onClose, done }) {
     if (open && tab === 'tools' && tools === null) loadTools()
   }, [open, tab, tools, loadTools])
 
+  // Muestra un ✓ junto al campo durante un momento tras guardar con éxito
+  const flashSaved = courseId => {
+    setSavedFlash(s => ({ ...s, [courseId]: true }))
+    setTimeout(() => {
+      setSavedFlash(s => { const n = { ...s }; delete n[courseId]; return n })
+    }, 1800)
+  }
+
   const saveGrade = async (courseId, raw) => {
     const text = String(raw).trim().replace(',', '.')
     setDrafts(d => { const n = { ...d }; delete n[courseId]; return n })
@@ -136,7 +145,8 @@ export default function SidePanel({ user, open, onClose, done }) {
       if (grades[courseId] === undefined) return
       setGrades(g => { const n = { ...g }; delete n[courseId]; return n })
       const { error } = await supabase.from('grades').delete().match({ student_id: user.id, course_id: courseId })
-      if (error) { console.error('[grades:delete]', error); setMsg('No se pudo borrar la nota.') }
+      if (error) { console.error('[grades:delete]', error); setMsg('No se pudo borrar la nota.'); return }
+      flashSaved(courseId)
       return
     }
 
@@ -147,7 +157,8 @@ export default function SidePanel({ user, open, onClose, done }) {
     const { error } = await supabase
       .from('grades')
       .upsert({ student_id: user.id, course_id: courseId, grade: val, updated_at: new Date().toISOString() })
-    if (error) { console.error('[grades:save]', error); setMsg('No se pudo guardar la nota.') }
+    if (error) { console.error('[grades:save]', error); setMsg('No se pudo guardar la nota.'); return }
+    flashSaved(courseId)
   }
 
   const addTool = async e => {
@@ -257,6 +268,7 @@ export default function SidePanel({ user, open, onClose, done }) {
                   {cicloCourses.map(c => (
                     <label key={c.id} className="grade-row">
                       <span className="grade-name">{c.n}</span>
+                      {savedFlash[c.id] && <span className="grade-saved">✓ guardada</span>}
                       <input
                         className="mono"
                         type="number" min="0" max="20" step="0.5" placeholder="—"
@@ -280,7 +292,18 @@ export default function SidePanel({ user, open, onClose, done }) {
               {generalItems.length > 0 && (
                 <section className="sp-section">
                   <h3>General · {generalItems.length} {generalItems.length === 1 ? 'curso' : 'cursos'} con nota</h3>
-                  <BarChartNotas items={generalItems} />
+                  {Object.keys(CICLOS).map(num => {
+                    const items = CURSOS
+                      .filter(c => c.c === Number(num) && grades[c.id] !== undefined)
+                      .map(c => ({ id: c.id, name: c.n, grade: grades[c.id] }))
+                    if (items.length === 0) return null
+                    return (
+                      <div key={num} className="sp-subblock">
+                        <h4 className="sp-subhead mono">{CICLOS[num].t}</h4>
+                        <BarChartNotas items={items} />
+                      </div>
+                    )
+                  })}
                 </section>
               )}
             </>
