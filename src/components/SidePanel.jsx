@@ -95,6 +95,13 @@ export default function SidePanel({ user, open, onClose, done, cursos, ciclos })
   const [toolName, setToolName] = useState('')
   const [toolUrl, setToolUrl] = useState('')
   const [msg, setMsg] = useState(null)
+  // Nombre secreto para comentar: undefined = cargando · null = aún sin elegir
+  const [alias, setAlias] = useState(undefined)
+  const [aliasDraft, setAliasDraft] = useState('')
+  const [savingAlias, setSavingAlias] = useState(false)
+  const [openComments, setOpenComments] = useState(null) // id de la herramienta expandida
+  const [commentDraft, setCommentDraft] = useState('')
+  const [sendingComment, setSendingComment] = useState(false)
 
   // Cargar notas la primera vez que se abre el panel
   useEffect(() => {
@@ -112,19 +119,36 @@ export default function SidePanel({ user, open, onClose, done, cursos, ciclos })
       })
   }, [open, gradesLoaded, user.id])
 
-  // Cargar herramientas al entrar a esa pestaña
+  // Cargar herramientas al entrar a esa pestaña.
+  // OJO: tool_comments se pide con columnas explícitas — author_id no es
+  // legible desde el cliente (anonimato por permiso de columna).
   const loadTools = useCallback(async () => {
     const { data, error } = await supabase
       .from('tools')
-      .select('id, name, url, created_by')
+      .select('id, name, url, created_by, tool_likes ( student_id ), tool_comments ( id, alias, body, created_at )')
       .order('created_at', { ascending: true })
     if (error) { console.error('[tools:load]', error); setMsg('No se pudieron cargar las herramientas.'); return }
-    setTools(data || [])
+    // Más likes primero; a igualdad, se conserva el orden de creación
+    setTools((data || []).sort((a, b) => b.tool_likes.length - a.tool_likes.length))
   }, [])
 
   useEffect(() => {
     if (open && tab === 'tools' && tools === null) loadTools()
   }, [open, tab, tools, loadTools])
+
+  // El alias propio se lee del perfil (los demás nunca ven tu alias junto a tu identidad)
+  useEffect(() => {
+    if (!open || tab !== 'tools' || alias !== undefined) return
+    supabase
+      .from('profiles')
+      .select('alias')
+      .eq('id', user.id)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (error) { console.error('[alias:load]', error); return }
+        setAlias(data?.alias ?? null)
+      })
+  }, [open, tab, alias, user.id])
 
   // Muestra un ✓ junto al campo durante un momento tras guardar con éxito
   const flashSaved = courseId => {
@@ -174,6 +198,83 @@ export default function SidePanel({ user, open, onClose, done, cursos, ciclos })
   const removeTool = async id => {
     const { error } = await supabase.from('tools').delete().eq('id', id)
     if (error) { console.error('[tools:delete]', error); setMsg('No se pudo eliminar.'); return }
+    loadTools()
+  }
+
+  // Like con actualización optimista (mismo patrón que los votos de profesores).
+  // La lista no se reordena al instante para que las filas no salten.
+  const toggleLike = async t => {
+    const mine = t.tool_likes.some(l => l.student_id === user.id)
+    const prev = tools
+    setTools(tools.map(row => {
+      if (row.id !== t.id) return row
+      return {
+        ...row,
+        tool_likes: mine
+          ? row.tool_likes.filter(l => l.student_id !== user.id)
+          : [...row.tool_likes, { student_id: user.id }]
+      }
+    }))
+    let error
+    if (mine) {
+      ;({ error } = await supabase.from('tool_likes').delete().match({ tool_id: t.id, student_id: user.id }))
+    } else {
+      ;({ error } = await supabase.from('tool_likes').insert({ tool_id: t.id, student_id: user.id }))
+    }
+    if (error) {
+      console.error('[tools:like]', error)
+      setMsg('No se pudo registrar tu like.')
+      setTools(prev)
+      return
+    }
+    setMsg(null)
+  }
+
+  // Nombre secreto: se elige una sola vez (un trigger en la base impide cambiarlo)
+  const saveAlias = async e => {
+    e.preventDefault()
+    const a = aliasDraft.trim()
+    if (a.length < 3 || a.length > 24) {
+      setMsg('El nombre secreto debe tener entre 3 y 24 caracteres.')
+      return
+    }
+    setSavingAlias(true)
+    const { error } = await supabase.from('profiles').update({ alias: a }).eq('id', user.id)
+    setSavingAlias(false)
+    if (error) {
+      console.error('[alias:save]', error)
+      setMsg(error.code === '23505' ? 'Ese nombre secreto ya está en uso. Prueba con otro.' : 'No se pudo guardar tu nombre secreto.')
+      return
+    }
+    setAlias(a)
+    setAliasDraft('')
+    setMsg(null)
+  }
+
+  const addComment = async e => {
+    e.preventDefault()
+    const body = commentDraft.trim()
+    if (body.length < 2 || !openComments) return
+    setSendingComment(true)
+    // El alias NO se envía: lo estampa el servidor desde el perfil
+    const { error } = await supabase
+      .from('tool_comments')
+      .insert({ tool_id: openComments, author_id: user.id, body })
+    setSendingComment(false)
+    if (error) {
+      console.error('[comments:add]', error)
+      setMsg(error.code === '42501' ? 'Llegaste al tope de 5 comentarios en esta herramienta.' : 'No se pudo publicar el comentario.')
+      return
+    }
+    setCommentDraft('')
+    setMsg(null)
+    loadTools()
+  }
+
+  const removeComment = async c => {
+    const { error } = await supabase.from('tool_comments').delete().eq('id', c.id)
+    if (error) { console.error('[comments:delete]', error); setMsg('No se pudo eliminar el comentario.'); return }
+    setMsg(null)
     loadTools()
   }
 
@@ -362,7 +463,8 @@ export default function SidePanel({ user, open, onClose, done, cursos, ciclos })
           {tab === 'tools' && (
             <>
               <div className="sp-hint">
-                Sitios de ayuda compartidos entre todos los alumnos. Se abren en una pestaña nueva.
+                Sitios de ayuda compartidos entre todos los alumnos. Dales like y coméntalos —
+                los comentarios se firman con tu <b>nombre secreto</b>, nadie sabe quién eres.
               </div>
 
               {tools === null ? (
@@ -371,17 +473,86 @@ export default function SidePanel({ user, open, onClose, done, cursos, ciclos })
                 <div className="sp-empty">Todavía no hay herramientas. Agrega la primera abajo.</div>
               ) : (
                 <div className="tool-list">
-                  {tools.map(t => (
-                    <div key={t.id} className="tool-row">
-                      <a href={t.url} target="_blank" rel="noopener noreferrer">
-                        <span className="tool-name">{t.name}</span>
-                        <span className="tool-host mono">{new URL(t.url).hostname} ↗</span>
-                      </a>
-                      {t.created_by === user.id && (
-                        <button className="tool-del" onClick={() => removeTool(t.id)} aria-label={`Eliminar ${t.name}`}>×</button>
-                      )}
-                    </div>
-                  ))}
+                  {tools.map(t => {
+                    const liked = t.tool_likes.some(l => l.student_id === user.id)
+                    const expanded = openComments === t.id
+                    const comments = [...t.tool_comments].sort((a, b) => a.created_at.localeCompare(b.created_at))
+                    return (
+                      <div key={t.id} className="tool-row">
+                        <div className="tool-main">
+                          <a href={t.url} target="_blank" rel="noopener noreferrer">
+                            <span className="tool-name">{t.name}</span>
+                            <span className="tool-host mono">{new URL(t.url).hostname} ↗</span>
+                          </a>
+                          <button
+                            className={'tool-like' + (liked ? ' on' : '')}
+                            onClick={() => toggleLike(t)}
+                            title={liked ? 'Quitar mi like' : 'Me sirve esta herramienta'}
+                          >
+                            ♥ <b className="mono">{t.tool_likes.length}</b>
+                          </button>
+                          <button
+                            className={'tool-cmt' + (expanded ? ' on' : '')}
+                            onClick={() => { setOpenComments(expanded ? null : t.id); setCommentDraft('') }}
+                            title={expanded ? 'Ocultar comentarios' : 'Ver comentarios'}
+                          >
+                            💬 <b className="mono">{t.tool_comments.length}</b>
+                          </button>
+                          {t.created_by === user.id && (
+                            <button className="tool-del" onClick={() => removeTool(t.id)} aria-label={`Eliminar ${t.name}`}>×</button>
+                          )}
+                        </div>
+
+                        {expanded && (
+                          <div className="tc-box">
+                            {comments.length === 0 ? (
+                              <div className="tc-empty">Nadie ha comentado esta herramienta todavía. Sé el primero:</div>
+                            ) : (
+                              comments.map(c => (
+                                <div key={c.id} className="tc-row">
+                                  <span className="tc-alias mono">{c.alias}</span>
+                                  <p className="tc-body">{c.body}</p>
+                                  {alias && c.alias === alias && (
+                                    <button className="tc-del" onClick={() => removeComment(c)} title="Eliminar mi comentario">×</button>
+                                  )}
+                                </div>
+                              ))
+                            )}
+
+                            {alias === null ? (
+                              <form className="tc-alias-form" onSubmit={saveAlias}>
+                                <p className="tc-note">
+                                  Para comentar, elige tu <b>nombre secreto</b>: firmará tus comentarios
+                                  sin revelar quién eres, y <b>no se puede cambiar</b> después.
+                                </p>
+                                <div className="tc-line">
+                                  <input
+                                    type="text" maxLength="24" placeholder="3 a 24 caracteres"
+                                    value={aliasDraft} onChange={e => setAliasDraft(e.target.value)}
+                                  />
+                                  <button type="submit" disabled={savingAlias || aliasDraft.trim().length < 3}>
+                                    {savingAlias ? 'Guardando…' : 'Usar este nombre'}
+                                  </button>
+                                </div>
+                              </form>
+                            ) : alias ? (
+                              <form className="tc-line" onSubmit={addComment}>
+                                <input
+                                  type="text" maxLength="300" placeholder={`Comentar como ${alias}…`}
+                                  value={commentDraft} onChange={e => setCommentDraft(e.target.value)}
+                                />
+                                <button type="submit" disabled={sendingComment || commentDraft.trim().length < 2}>
+                                  {sendingComment ? '…' : 'Publicar'}
+                                </button>
+                              </form>
+                            ) : (
+                              <div className="tc-empty mono">CARGANDO…</div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
               )}
 

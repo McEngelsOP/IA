@@ -37,7 +37,7 @@ Malla curricular interactiva para dos carreras de ESAN: **Ingeniería en IA** e 
 
 ## Base de datos
 
-Los `.sql` de `supabase/` son scripts que el usuario corre **a mano** en el SQL Editor (guardados allí como queries numeradas); editarlos en el repo no cambia producción. Las queries 01–10 están aplicadas en producción; `carrera.sql` (11) debe correrse **antes** de desplegar el frontend multi-carrera. Tablas: `profiles` (incluye `carrera`), `progress`, `professors` + `professor_votes` (PK compuesta = un voto por alumno), `grades` (privadas por alumno), `tools` (compartidas).
+Los `.sql` de `supabase/` son scripts que el usuario corre **a mano** en el SQL Editor (guardados allí como queries numeradas); editarlos en el repo no cambia producción. Cada script nuevo debe correrse **antes** de desplegar el frontend que lo usa. Tablas: `profiles` (incluye `carrera` y `alias`), `progress`, `professors` + `professor_votes` (PK compuesta = un voto por alumno), `grades` (privadas por alumno), `tools` (compartidas) + `tool_likes` (un like por alumno) + `tool_comments` (anónimos).
 
 Decisiones que no hay que re-proponer:
 
@@ -45,6 +45,7 @@ Decisiones que no hay que re-proponer:
 - **Topes anti-spam** por RLS: 5 profesores por alumno por curso, 10 herramientas por alumno.
 - Nombres de profesor **siempre en mayúsculas** (toUpperCase al guardar + CHECK en la base + CSS).
 - Escala de notas 0–20, aprobado desde 10.5 (`PASS` en `SidePanel.jsx`).
+- **Comentarios de herramientas son anónimos de verdad**: se firman con el `alias` ("nombre secreto", único, se elige una vez — trigger `lock_alias`), el servidor lo estampa (`stamp_comment_alias`) y `tool_comments.author_id` NO es legible por el cliente (permiso a nivel de columna). Por eso los `select` a `tool_comments` deben pedir columnas explícitas — `select('*')` falla — y nunca hay que exponer `author_id` ni un join alias↔perfil al navegador. Tope: 5 comentarios por alumno por herramienta (300 caracteres).
 
 ## Gotchas
 
