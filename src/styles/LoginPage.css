@@ -191,6 +191,40 @@
   margin-bottom: 16px;
 }
 
+.guest-btn {
+  width: 100%;
+  margin-top: 12px;
+  padding: 12px;
+  font: 600 13.5px 'Inter', sans-serif;
+  color: var(--ink-2);
+  background: transparent;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.guest-btn:hover {
+  border-color: var(--green-border);
+  color: var(--green);
+  background: var(--green-soft);
+}
+
+.login-note {
+  margin-top: 14px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ink-3);
+  text-align: center;
+}
+
+.login-note a {
+  color: var(--green);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .login-foot {
   font-size: 10.5px;
   letter-spacing: 2px;

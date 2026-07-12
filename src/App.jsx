@@ -10,6 +10,8 @@ function App() {
   const [loading, setLoading] = useState(true)
   // true cuando el usuario llega desde el enlace de recuperación del correo
   const [recovering, setRecovering] = useState(false)
+  // modo visitante: ver la malla sin cuenta (el avance no se guarda en la nube)
+  const [guest, setGuest] = useState(false)
 
   useEffect(() => {
     const checkSession = async () => {
@@ -45,19 +47,19 @@ function App() {
     return <UpdatePassword onDone={() => setRecovering(false)} />
   }
 
+  if (user) {
+    return <MallaCurricular user={user} onLogout={() => setUser(null)} />
+  }
+
+  if (guest) {
+    return <MallaCurricular user={null} onLogout={() => setGuest(false)} />
+  }
+
   return (
-    <>
-      {user ? (
-        <MallaCurricular
-          user={user}
-          onLogout={() => setUser(null)}
-        />
-      ) : (
-        <LoginPage
-          onLogin={(userData) => setUser(userData)}
-        />
-      )}
-    </>
+    <LoginPage
+      onLogin={(userData) => setUser(userData)}
+      onGuest={() => setGuest(true)}
+    />
   )
 }
 

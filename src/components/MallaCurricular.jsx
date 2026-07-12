@@ -61,10 +61,22 @@ export default function MallaCurricular({ user, onLogout }) {
   const scrollerRef = useRef(null)
   const dragRef = useRef(null)
 
-  const studentCode = user?.user_metadata?.student_code || user?.email
+  // Sin usuario = modo visitante: el avance solo se guarda en este dispositivo
+  const isGuest = !user
+  const studentCode = isGuest
+    ? 'VISITANTE'
+    : user.user_metadata?.student_code || user.email
 
-  // Cargar progreso guardado del alumno
+  // Cargar progreso: de Supabase (alumno) o de localStorage (visitante)
   useEffect(() => {
+    if (isGuest) {
+      try {
+        const saved = JSON.parse(localStorage.getItem('malla-visitante') || '[]')
+        setDone(new Set(saved))
+      } catch { /* datos corruptos: se ignora y parte de cero */ }
+      setLoaded(true)
+      return
+    }
     let cancelled = false
     supabase
       .from('progress')
@@ -78,10 +90,14 @@ export default function MallaCurricular({ user, onLogout }) {
         setLoaded(true)
       })
     return () => { cancelled = true }
-  }, [user.id])
+  }, [isGuest, user?.id])
 
-  // Guardar progreso en Supabase
+  // Guardar progreso
   const persist = useCallback(async (set) => {
+    if (isGuest) {
+      localStorage.setItem('malla-visitante', JSON.stringify([...set]))
+      return
+    }
     const { error } = await supabase
       .from('progress')
       .upsert({ student_id: user.id, done: [...set], updated_at: new Date().toISOString() })
@@ -91,10 +107,10 @@ export default function MallaCurricular({ user, onLogout }) {
     } else {
       setSyncError(false)
     }
-  }, [user.id])
+  }, [isGuest, user?.id])
 
   const handleLogout = async () => {
-    await supabase.auth.signOut()
+    if (!isGuest) await supabase.auth.signOut()
     onLogout()
   }
 
@@ -282,13 +298,17 @@ export default function MallaCurricular({ user, onLogout }) {
             <b>10</b> ciclos + pre-formación
           </div>
           <div className="hint">
-            Toca un curso para ver su cadena de dependencias. En el modo «Marcar llevados», toca los cursos que ya aprobaste — se guardan en tu cuenta.
+            {isGuest
+              ? 'Modo visitante: puedes explorar y marcar cursos, pero el avance solo queda en este dispositivo. Crea una cuenta para guardarlo.'
+              : 'Toca un curso para ver su cadena de dependencias. En el modo «Marcar llevados», toca los cursos que ya aprobaste — se guardan en tu cuenta.'}
           </div>
         </div>
         <div className="user-box">
           <span className="mono user-code">{studentCode}</span>
           {syncError && <span className="sync-warn">⚠ sin guardar</span>}
-          <button className="logout-btn" onClick={handleLogout}>Cerrar sesión</button>
+          <button className="logout-btn" onClick={handleLogout}>
+            {isGuest ? 'Crear cuenta / Entrar' : 'Cerrar sesión'}
+          </button>
         </div>
       </header>
 

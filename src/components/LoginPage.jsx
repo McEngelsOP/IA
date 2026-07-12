@@ -26,7 +26,7 @@ const errorMessage = (err, fallback) => {
   return fallback
 }
 
-export default function LoginPage({ onLogin }) {
+export default function LoginPage({ onLogin, onGuest }) {
   const [mode, setMode] = useState('login') // 'login' | 'register' | 'forgot'
   const [codigo, setCodigo] = useState('')
   const [correo, setCorreo] = useState('')
@@ -310,22 +310,34 @@ export default function LoginPage({ onLogin }) {
           </form>
 
           {mode === 'login' && (
-            <p className="login-help">
-              ¿Primera vez?{' '}
-              <button type="button" className="link-btn" onClick={() => switchMode('register')}>
-                Crea tu cuenta
+            <>
+              <button type="button" className="guest-btn" onClick={onGuest}>
+                Explorar como visitante →
               </button>
-              {' · '}
-              <button type="button" className="link-btn" onClick={() => switchMode('forgot')}>
-                Olvidé mi contraseña
-              </button>
-            </p>
+              <p className="login-help">
+                ¿Primera vez?{' '}
+                <button type="button" className="link-btn" onClick={() => switchMode('register')}>
+                  Crea tu cuenta
+                </button>
+                {' · '}
+                <button type="button" className="link-btn" onClick={() => switchMode('forgot')}>
+                  Olvidé mi contraseña
+                </button>
+              </p>
+            </>
           )}
           {mode !== 'login' && (
             <p className="login-help">
               <button type="button" className="link-btn" onClick={() => switchMode('login')}>
                 ← Volver a iniciar sesión
               </button>
+            </p>
+          )}
+          {mode === 'register' && (
+            <p className="login-note">
+              ¿Escribiste mal tu correo? Avisa a{' '}
+              <a href="mailto:hernandengels@gmail.com">hernandengels@gmail.com</a>{' '}
+              para liberarlo y volver a registrarte.
             </p>
           )}
         </div>
