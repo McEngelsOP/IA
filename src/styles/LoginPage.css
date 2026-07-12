@@ -22,7 +22,10 @@
 
 .login-page {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
+  /* dvh: altura real visible en móviles (descuenta la barra del navegador) */
+  height: 100dvh;
+  overflow: hidden;
   font-family: 'Inter', system-ui, sans-serif;
   color: var(--ink);
 }
@@ -32,6 +35,7 @@
   flex: 1 1 46%;
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
   padding: 32px 48px;
   background: var(--bg);
   background-image:
@@ -208,6 +212,9 @@
 }
 
 .malla-art {
+  position: absolute;
+  inset: 0;
+  display: block;
   width: 100%;
   height: 100%;
 }
