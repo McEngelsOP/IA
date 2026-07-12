@@ -59,7 +59,7 @@
   font-weight: 500;
   letter-spacing: 2.2px;
   text-transform: uppercase;
-  color: var(--ink-2);
+  color: #059e9f; /* teal de la paleta nueva */
 }
 
 .malla-top h1 {
@@ -347,13 +347,14 @@
 }
 
 .node.sel {
-  background: var(--navy);
-  border-color: var(--navy);
-  box-shadow: 0 4px 14px rgba(21, 32, 46, 0.22);
+  /* azul petróleo de la paleta nueva del login */
+  background: #022f42;
+  border-color: #022f42;
+  box-shadow: 0 4px 14px rgba(2, 47, 66, 0.25);
 }
 
 .node.sel .nm { color: #fff; }
-.node.sel .cr { color: #93a0b0; }
+.node.sel .cr { color: #8fb0ba; }
 
 .node.open {
   background: var(--green-soft);

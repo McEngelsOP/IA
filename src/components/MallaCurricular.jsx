@@ -372,7 +372,7 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
         </div>
         <div className="legend">
           {mode !== 'done' && (
-            <span><span className="sw" style={{ background: 'var(--navy)' }} />Seleccionado</span>
+            <span><span className="sw" style={{ background: '#022F42' }} />Seleccionado</span>
           )}
           {mode === 'open' && (
             <span><span className="sw" style={{ background: 'var(--green-soft)', border: '1.5px solid var(--green)' }} />Cursos que abre</span>

@@ -1,5 +1,15 @@
-/* Pantalla de elección de carrera — usa la paleta global de LoginPage.css */
+/* Pantalla de elección de carrera — misma paleta beige/teal del login */
 .cs-page {
+  --cs-bg: #EDE5CF;                      /* fondo beige */
+  --cs-grid: rgba(235, 224, 144, 0.65);  /* líneas de cuadrícula (#EBE090) */
+  --cs-block: rgba(254, 253, 251, 0.78); /* bloques translúcidos (#FEFDFB) */
+  --cs-ink: #022F42;                     /* texto principal */
+  --cs-teal: #059E9E;                    /* subtítulos */
+  --cs-teal-mute: #0e7a78;               /* detalle mono pequeño */
+  --cs-green: #14744E;                   /* acentos y enlaces */
+  --cs-muted: #8a7f63;                   /* letra pequeña neutra cálida */
+  --cs-white: #FEFDFB;
+
   display: flex;
   align-items: center;
   justify-content: center;
@@ -7,11 +17,11 @@
   min-height: 100dvh;
   padding: 24px;
   font-family: 'Inter', system-ui, sans-serif;
-  color: var(--ink);
-  background: var(--bg);
+  color: var(--cs-ink);
+  background: var(--cs-bg);
   background-image:
-    linear-gradient(var(--grid) 1px, transparent 1px),
-    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    linear-gradient(var(--cs-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--cs-grid) 1px, transparent 1px);
   background-size: 28px 28px;
 }
 
@@ -19,17 +29,17 @@
   width: 100%;
   max-width: 520px;
   padding: 40px 44px;
-  background: var(--card);
-  border: 1px solid var(--line);
+  background: rgba(254, 253, 251, 0.88);
+  border: 1px solid rgba(2, 47, 66, 0.12);
   border-radius: 18px;
-  box-shadow: var(--shadow);
+  box-shadow: 0 1px 2px rgba(2, 47, 66, 0.05), 0 4px 14px rgba(2, 47, 66, 0.05);
 }
 
 .cs-eyebrow {
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 2.2px;
-  color: var(--green);
+  color: var(--cs-green);
   margin-bottom: 10px;
 }
 
@@ -38,13 +48,14 @@
   font-size: 34px;
   font-weight: 700;
   letter-spacing: -0.4px;
+  color: var(--cs-ink);
   margin-bottom: 10px;
 }
 
 .cs-sub {
   font-size: 14.5px;
   line-height: 1.55;
-  color: var(--ink-2);
+  color: var(--cs-teal);
   margin-bottom: 26px;
 }
 
@@ -60,17 +71,18 @@
   gap: 5px;
   padding: 18px 20px;
   text-align: left;
-  background: var(--card);
-  border: 1px solid var(--line);
+  background: var(--cs-block);
+  border: 1px solid rgba(2, 47, 66, 0.16);
   border-radius: 14px;
-  box-shadow: var(--shadow);
+  box-shadow: 0 1px 2px rgba(2, 47, 66, 0.05), 0 4px 14px rgba(2, 47, 66, 0.05);
   cursor: pointer;
-  transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s, background 0.15s;
 }
 
 .cs-option:hover:not(:disabled) {
-  border-color: var(--green-border);
-  box-shadow: 0 0 0 3px var(--green-soft);
+  background: var(--cs-white);
+  border-color: #08B4B4;
+  box-shadow: 0 0 0 3px rgba(8, 180, 180, 0.16);
   transform: translateY(-1px);
 }
 
@@ -82,19 +94,20 @@
 .cs-name {
   font-size: 16.5px;
   font-weight: 600;
+  color: var(--cs-ink);
 }
 
 .cs-meta {
   font-size: 10.5px;
   letter-spacing: 1.4px;
-  color: var(--ink-3);
+  color: var(--cs-teal-mute);
 }
 
 .cs-note {
   margin-top: 16px;
   font-size: 11px;
   letter-spacing: 1.8px;
-  color: var(--ink-3);
+  color: var(--cs-muted);
 }
 
 .cs-error {
@@ -102,7 +115,7 @@
   padding: 10px 14px;
   font-size: 13.5px;
   color: #8a2a2a;
-  background: #faeaea;
+  background: rgba(250, 234, 234, 0.85);
   border: 1px solid #ecc8c8;
   border-radius: 10px;
 }
@@ -110,14 +123,15 @@
 .cs-back {
   margin-top: 20px;
   padding: 0;
-  font: 500 13.5px 'Inter', sans-serif;
-  color: var(--ink-2);
+  font: 600 13.5px 'Inter', sans-serif;
+  color: var(--cs-green);
   background: none;
   border: none;
   cursor: pointer;
   text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .cs-back:hover {
-  color: var(--ink);
+  color: #0e5b3c;
 }

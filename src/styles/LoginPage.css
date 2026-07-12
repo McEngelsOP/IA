@@ -363,3 +363,140 @@
     font-size: 32px;
   }
 }
+
+/* ============================================================
+   Paleta beige/teal del login (mockup 2026-07)
+   Scoped a .login-page: las variables :root de arriba las
+   comparte el resto de la app, por eso aquí no se tocan.
+   Para revertir el estilo, basta borrar este bloque completo.
+   ============================================================ */
+.login-page {
+  --lp-bg: #EDE5CF;                      /* fondo beige */
+  --lp-grid: rgba(235, 224, 144, 0.65);  /* líneas de cuadrícula (#EBE090) */
+  --lp-block: rgba(254, 253, 251, 0.78); /* bloques translúcidos (#FEFDFB) */
+  --lp-ink: #022F42;                     /* texto principal / botón oscuro */
+  --lp-teal: #059E9E;                    /* subtítulos */
+  --lp-teal-2: #08B4B4;                  /* labels pequeñas */
+  --lp-green: #14744E;                   /* enlaces de letra pequeña */
+  --lp-muted: #8a7f63;                   /* letra pequeña neutra, tono cálido */
+  --lp-white: #FEFDFB;
+  color: var(--lp-ink);
+}
+
+.login-left {
+  background: var(--lp-bg);
+  background-image:
+    linear-gradient(var(--lp-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--lp-grid) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+.login-brand,
+.login-foot {
+  color: #730000;
+}
+
+.login-eyebrow {
+  color: var(--lp-green);
+}
+
+.login-title {
+  color: var(--lp-ink);
+}
+
+.login-sub {
+  color: #059E9F;
+}
+
+.field label {
+  /* teal apagado: el #08B4B4 puro quedaba fosforescente sobre el beige */
+  color: #0e7a78;
+}
+
+/* Bloques con transparencia: la cuadrícula se asoma detrás */
+.field input,
+.field select {
+  background: var(--lp-block);
+  border-color: rgba(2, 47, 66, 0.16);
+  color: var(--lp-ink);
+  box-shadow: 0 1px 2px rgba(2, 47, 66, 0.05), 0 4px 14px rgba(2, 47, 66, 0.05);
+}
+
+.field input::placeholder {
+  color: rgba(2, 47, 66, 0.35);
+}
+
+.field select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23059E9E' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+}
+
+.field select:invalid {
+  color: rgba(2, 47, 66, 0.35);
+}
+
+.field input:focus,
+.field select:focus {
+  border-color: var(--lp-teal-2);
+  box-shadow: 0 0 0 3px rgba(8, 180, 180, 0.16);
+}
+
+.login-error {
+  background: rgba(250, 240, 218, 0.85);
+}
+
+.login-notice {
+  background: rgba(228, 241, 236, 0.9); /* #E4F1EC */
+  border-color: rgba(20, 116, 78, 0.28);
+  color: var(--lp-green);
+}
+
+.login-btn {
+  background: var(--lp-ink);
+  color: var(--lp-white);
+}
+
+.login-btn:hover:not(:disabled) {
+  background: #01212f;
+}
+
+.guest-btn {
+  background: var(--lp-block);
+  border-color: rgba(2, 47, 66, 0.18);
+  color: var(--lp-ink);
+}
+
+.guest-btn:hover {
+  border-color: var(--lp-teal-2);
+  color: var(--lp-teal);
+  background: var(--lp-white);
+}
+
+/* Letra pequeña: tonos que encajan con el beige */
+.login-help {
+  color: var(--lp-muted);
+}
+
+.login-help span {
+  color: var(--lp-green);
+}
+
+.link-btn {
+  color: var(--lp-green);
+}
+
+.link-btn:hover {
+  color: #0e5b3c;
+}
+
+.login-note {
+  color: var(--lp-muted);
+}
+
+.login-note a {
+  color: var(--lp-green);
+}
+
+/* El panel derecho (arte de la malla) conserva su estilo original:
+   fondo navy y nodos llevados en verde — no se pisa nada aquí. */

@@ -227,7 +227,7 @@ export default function LoginPage({ onLogin, onGuest }) {
     login: {
       title: 'Inicia sesión',
       sub: 'Accede con tu código de alumno para ver tu progreso, los cursos que te faltan y qué te abre cada uno.',
-      btn: 'Entrar a mi malla',
+      btn: 'INGRESAR',
       submit: handleLogin
     },
     register: {
@@ -475,7 +475,7 @@ export default function LoginPage({ onLogin, onGuest }) {
 
         <div className="right-caption">
           <p className="mono">TOCA UN CURSO PARA VER SU CADENA</p>
-          <h2>Tu ruta de ingeniería,<br />curso por curso.</h2>
+          <h2>Un vistazo a tu malla,<br />curso por curso :3</h2>
         </div>
       </div>
     </div>
