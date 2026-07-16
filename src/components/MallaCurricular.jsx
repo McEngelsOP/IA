@@ -486,7 +486,7 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
           <div className="hint">
             {isGuest
               ? 'Modo visitante: puedes explorar y marcar cursos, pero nada se guarda al salir. Crea una cuenta para conservar tu avance.'
-              : 'Si evidencias errores en la malla curricular, tan solo manda un correro a <<solopcional16@gmail.com>> con el asunto "Error en la malla" y describe el problema. Gracias por tu ayuda.'}
+              : 'Si encuentras errores en la malla curricular, manda un correo a solopcional16@gmail.com con el asunto «Error en la malla» y describe el problema. Gracias por tu ayuda.'}
           </div>
         </div>
         <div className="user-box">
