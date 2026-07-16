@@ -17,8 +17,8 @@ export const CARRERAS = {
     total: TOTAL_CRED,
     ciclosLabel: '10 ciclos + pre-formación',
     // cursos sugeridos en la barra de estado cuando no hay nada seleccionado
-    hint: ['Cálculo I', 'Álgebra Lineal'],
-    foot: 'TESIS I REQUIERE 140 CRÉDITOS APROBADOS · ELECTIVOS SEGÚN ESPECIALIDAD · CURSOS DE PRE-FORMACIÓN CONVALIDABLES POR EXAMEN'
+    hint: ['Cálculo I', 'Fundamentos de Machine Learning'],
+    foot: 'PLAN 2025 (ACUERDO 208-09/2024) · TRABAJO DE TESIS I REQUIERE 140 CRÉDITOS APROBADOS · ELECTIVOS SEGÚN ESPECIALIDAD · PRE-FORMACIÓN CONVALIDABLE POR EXAMEN'
   },
   industrial: {
     key: 'industrial',
