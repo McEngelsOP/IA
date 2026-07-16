@@ -68,6 +68,30 @@ function App() {
     return () => { cancelled = true }
   }, [user?.id])
 
+  // Pantalla actual (la app no usa router: las vistas son estado de React)
+  const screen = recovering ? 'recover'
+    : user ? (carrera === undefined ? 'loading' : carrera ? 'malla' : 'career')
+    : guest ? (guestCarrera ? 'guest-malla' : 'guest-career')
+    : 'login'
+
+  // Botón «Atrás» del navegador. Sin ayuda, como no hay router, «Atrás»
+  // abandona el sitio de golpe (te «bota al inicio del navegador»). Mientras
+  // estemos en una pantalla interna dejamos una entrada-trampa en el historial:
+  // al retroceder volvemos a la pantalla anterior dentro de la app (malla de
+  // visitante → elegir carrera → login) en lugar de salir. Con sesión iniciada,
+  // «Atrás» simplemente no te expulsa del sitio (usa «Cerrar sesión» para eso).
+  useEffect(() => {
+    if (screen === 'login' || screen === 'recover' || screen === 'loading') return
+    window.history.pushState({ appTrap: true }, '')
+    const onPop = () => {
+      if (guest && guestCarrera) setGuestCarrera(null)      // malla visitante → elegir carrera
+      else if (guest) setGuest(false)                       // elegir carrera → login
+      else window.history.pushState({ appTrap: true }, '')  // con sesión: no salir del sitio
+    }
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [screen])
+
   // Elección única de carrera para cuentas que aún no la tienen
   const saveCarrera = async (key) => {
     setCarreraError('')

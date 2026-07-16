@@ -104,7 +104,7 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
   const M = MALLAS[carrera] || MALLAS.ia
   const { byId, unlocks, edges } = M
 
-  const [mode, setMode] = useState('open') // 'open' | 'req' | 'done' | 'ficha'
+  const [mode, setMode] = useState('open') // 'open' | 'req' | 'noreq' | 'done' | 'ficha'
   const [selected, setSelected] = useState(null)
   const [done, setDone] = useState(() => new Set())
   const [statuses, setStatuses] = useState({}) // { course_id: fila de course_status }
@@ -329,12 +329,13 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
   const changeMode = m => {
     setMode(m)
     setLastAction(null)
-    if (m === 'done' || m === 'ficha') setSelected(null)
+    if (m === 'done' || m === 'ficha' || m === 'noreq') setSelected(null)
   }
 
   const onNodeClick = (ev, id) => {
     ev.stopPropagation()
     if (mode === 'done') toggleDone(id)
+    else if (mode === 'noreq') return // vista de solo lectura: resalta lo disponible
     else select(id)
   }
 
@@ -385,10 +386,22 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
   // Estado efectivo en la ficha: fila guardada o aprobado implícito si está llevado
   const fichaStatus = c => statuses[c.id]?.status ?? (done.has(c.id) ? 'aprobado' : null)
 
+  // Curso disponible: aún no llevado y con todos sus requisitos cumplidos
+  // (cursos previos marcados y, si pide rc, créditos aprobados suficientes).
+  // Sin nada marcado equivale a «cursos sin requisitos».
+  const disponible = c => !done.has(c.id)
+    && c.r.every(req => done.has(req))
+    && (!c.rc || creditosLlevados(done) >= c.rc)
+
   const nodeClass = c => {
     if (mode === 'ficha') {
       const st = fichaStatus(c)
       return 'node ficha' + (st ? ' st-' + st : '') + (c.id === selected ? ' ring' : '')
+    }
+    if (mode === 'noreq') {
+      if (done.has(c.id)) return 'node free free-done' // ya llevado
+      if (disponible(c)) return 'node free free-todo' // puedes llevarlo ya
+      return 'node faded' // aún le faltan requisitos
     }
     if (mode === 'done' || !selected) {
       return 'node' + (done.has(c.id) ? ' done' : '')
@@ -399,6 +412,7 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
   }
 
   const edgeClass = e => {
+    if (mode === 'noreq') return 'e dim'
     if (!selected || mode === 'done' || mode === 'ficha') return 'e'
     const isOpen = mode === 'open'
     const inChain = isOpen
@@ -435,6 +449,16 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
     status = <>Toca los cursos que ya llevaste para marcarlos o desmarcarlos. {pill}</>
   } else if (mode === 'ficha') {
     status = <>Toca un curso para abrir su ficha: estado, nota, veces llevado, fecha de aprobación y reseñas anónimas. {pill}</>
+  } else if (mode === 'noreq') {
+    const disp = M.cursos.filter(disponible)
+    const credDisp = disp.reduce((a, c) => a + c.cr, 0)
+    status = (
+      <>
+        Cursos que <b>puedes llevar ahora mismo</b> (requisitos ya cumplidos con tus llevados), en blanco;
+        los llevados en teal y los bloqueados atenuados.&nbsp;
+        <span className="pill g">{disp.length} {disp.length === 1 ? 'disponible' : 'disponibles'} · {credDisp} créd</span> {pill}
+      </>
+    )
   } else if (selected) {
     const c = byId[selected]
     const n = chain.size
@@ -513,6 +537,7 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
           <button className={mode === 'open' ? 'on' : ''} onClick={ev => { ev.stopPropagation(); changeMode('open') }}>Qué abre</button>
           <button className={mode === 'req' ? 'on' : ''} onClick={ev => { ev.stopPropagation(); changeMode('req') }}>Qué requiere</button>
           <button className={mode === 'done' ? 'on' : ''} onClick={ev => { ev.stopPropagation(); changeMode('done') }}>Marcar llevados</button>
+          <button className={mode === 'noreq' ? 'on' : ''} onClick={ev => { ev.stopPropagation(); changeMode('noreq') }}>Qué puedo llevar</button>
           {!isGuest && (
             <button className={mode === 'ficha' ? 'on' : ''} onClick={ev => { ev.stopPropagation(); changeMode('ficha') }}>Ficha del curso</button>
           )}
@@ -524,6 +549,12 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
                 <span key={k}><span className="sw" style={{ background: m.soft, border: `1.5px solid ${m.color}` }} />{m.label}</span>
               ))}
               <span><span className="sw" style={{ background: '#fff', border: '1.5px solid #C7CDC7' }} />Pendiente</span>
+            </>
+          ) : mode === 'noreq' ? (
+            <>
+              <span><span className="sw" style={{ background: '#fff', border: '1.5px solid #059e9f' }} />Disponible ahora</span>
+              <span><span className="sw" style={{ background: '#e3f4f4', border: '1.5px solid #059e9f' }} />Llevado</span>
+              <span><span className="sw" style={{ background: '#EDEFEC', border: '1.5px solid #C7CDC7', opacity: 0.5 }} />Le faltan requisitos</span>
             </>
           ) : (
             <>
