@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import ProfessorPanel from './ProfessorPanel'
+import ConfirmDialog from './ConfirmDialog'
 import '../styles/CourseDetail.css'
 
 // Estados académicos de la ficha (null = pendiente, sin fila en la base)
@@ -44,6 +45,8 @@ export default function CourseDetail({ user, course, ciclos, byId, statusRow, is
   const [alias, setAlias] = useState(undefined)
   const [aliasDraft, setAliasDraft] = useState('')
   const [savingAlias, setSavingAlias] = useState(false)
+
+  const [confirmData, setConfirmData] = useState(null) // panel de confirmación de borrado
 
   // Estado efectivo: la fila guardada o, si el curso ya está marcado como
   // llevado sin fila propia, «aprobado» implícito (marcar llevados = aprobar)
@@ -216,12 +219,16 @@ export default function CourseDetail({ user, course, ciclos, byId, statusRow, is
     loadComments(course.id)
   }
 
-  const removeComment = async c => {
-    const { error } = await supabase.from('course_comments').delete().eq('id', c.id)
-    if (error) { console.error('[course_comments:delete]', error); setMsg('No se pudo eliminar la reseña.'); return }
-    setMsg(null)
-    loadComments(course.id)
-  }
+  const removeComment = c => setConfirmData({
+    message: '¿Eliminar tu reseña?',
+    detail: `Firmada como ${c.alias} · esto no se puede deshacer.`,
+    onConfirm: async () => {
+      const { error } = await supabase.from('course_comments').delete().eq('id', c.id)
+      if (error) { console.error('[course_comments:delete]', error); setMsg('No se pudo eliminar la reseña.'); return }
+      setMsg(null)
+      loadComments(course.id)
+    }
+  })
 
   return (
     <>
@@ -420,6 +427,8 @@ export default function CourseDetail({ user, course, ciclos, byId, statusRow, is
           </section>
         </div>
       </aside>
+
+      <ConfirmDialog data={confirmData} onClose={() => setConfirmData(null)} />
     </>
   )
 }

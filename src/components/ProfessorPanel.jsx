@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import ConfirmDialog from './ConfirmDialog'
 import '../styles/ProfessorPanel.css'
 
 // Etiquetas: cada alumno puede marcar hasta 3 por profesor (tope por RLS);
@@ -21,6 +22,7 @@ export default function ProfessorPanel({ user, course, embedded }) {
   const [msg, setMsg] = useState(null)
   const [saving, setSaving] = useState(false)
   const [tagPicker, setTagPicker] = useState(null) // id del profesor con el selector abierto
+  const [confirmData, setConfirmData] = useState(null) // panel de confirmación de borrado
 
   const load = useCallback(async () => {
     const { data, error } = await supabase
@@ -116,20 +118,23 @@ export default function ProfessorPanel({ user, course, embedded }) {
     setMsg(null)
   }
 
-  const remove = async p => {
-    if (!window.confirm(`¿Quitar a ${p.name} de este curso?`)) return
-    // .select() devuelve las filas realmente borradas: si otro alumno votó
-    // hace un instante, la política RLS ya no permite borrar y llega vacío
-    const { data, error } = await supabase.from('professors').delete().eq('id', p.id).select()
-    if (error) { console.error('[professors:delete]', error); setMsg('No se pudo eliminar.'); return }
-    if (!data || data.length === 0) {
-      setMsg('Ya no se puede quitar: otro alumno acaba de votar por este profesor.')
+  const remove = p => setConfirmData({
+    message: `¿Quitar a ${p.name} de este curso?`,
+    detail: 'Se quita para todos los alumnos (solo es posible mientras nadie más haya votado). Esto no se puede deshacer.',
+    onConfirm: async () => {
+      // .select() devuelve las filas realmente borradas: si otro alumno votó
+      // hace un instante, la política RLS ya no permite borrar y llega vacío
+      const { data, error } = await supabase.from('professors').delete().eq('id', p.id).select()
+      if (error) { console.error('[professors:delete]', error); setMsg('No se pudo eliminar.'); return }
+      if (!data || data.length === 0) {
+        setMsg('Ya no se puede quitar: otro alumno acaba de votar por este profesor.')
+        load()
+        return
+      }
+      setMsg(null)
       load()
-      return
     }
-    setMsg(null)
-    load()
-  }
+  })
 
   const ranked = (profs || [])
     .map(p => {
@@ -237,6 +242,8 @@ export default function ProfessorPanel({ user, course, embedded }) {
           {saving ? 'Agregando…' : 'Agregar'}
         </button>
       </form>
+
+      <ConfirmDialog data={confirmData} onClose={() => setConfirmData(null)} />
     </div>
   )
 }

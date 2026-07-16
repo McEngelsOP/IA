@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import ConfirmDialog from './ConfirmDialog'
 import '../styles/SidePanel.css'
 
 const PASS = 10.5 // nota mínima aprobatoria de referencia
@@ -140,6 +141,7 @@ export default function SidePanel({ user, open, onClose, done, cursos, ciclos, s
   const [openComments, setOpenComments] = useState(null) // id de la herramienta expandida
   const [commentDraft, setCommentDraft] = useState('')
   const [sendingComment, setSendingComment] = useState(false)
+  const [confirmData, setConfirmData] = useState(null) // panel de confirmación de borrado
 
   // Cargar notas cada vez que se abre el panel (la ficha del curso
   // también las edita, así que no se cachean entre aperturas)
@@ -237,11 +239,17 @@ export default function SidePanel({ user, open, onClose, done, cursos, ciclos, s
     loadTools()
   }
 
-  const removeTool = async id => {
-    const { error } = await supabase.from('tools').delete().eq('id', id)
-    if (error) { console.error('[tools:delete]', error); setMsg('No se pudo eliminar.'); return }
-    loadTools()
-  }
+  // Borrar pide confirmación: eliminar una herramienta se lleva también
+  // sus likes y comentarios (de todos), no solo lo tuyo
+  const removeTool = t => setConfirmData({
+    message: `¿Eliminar la herramienta «${t.name}»?`,
+    detail: 'Se borrará para todos los alumnos, junto con sus likes y comentarios. Esto no se puede deshacer.',
+    onConfirm: async () => {
+      const { error } = await supabase.from('tools').delete().eq('id', t.id)
+      if (error) { console.error('[tools:delete]', error); setMsg('No se pudo eliminar.'); return }
+      loadTools()
+    }
+  })
 
   // Like con actualización optimista (mismo patrón que los votos de profesores).
   // La lista no se reordena al instante para que las filas no salten.
@@ -313,12 +321,16 @@ export default function SidePanel({ user, open, onClose, done, cursos, ciclos, s
     loadTools()
   }
 
-  const removeComment = async c => {
-    const { error } = await supabase.from('tool_comments').delete().eq('id', c.id)
-    if (error) { console.error('[comments:delete]', error); setMsg('No se pudo eliminar el comentario.'); return }
-    setMsg(null)
-    loadTools()
-  }
+  const removeComment = c => setConfirmData({
+    message: '¿Eliminar tu comentario?',
+    detail: `Firmado como ${c.alias} · esto no se puede deshacer.`,
+    onConfirm: async () => {
+      const { error } = await supabase.from('tool_comments').delete().eq('id', c.id)
+      if (error) { console.error('[comments:delete]', error); setMsg('No se pudo eliminar el comentario.'); return }
+      setMsg(null)
+      loadTools()
+    }
+  })
 
   // ---------- Derivados ----------
   // Un curso cuenta para promedios y estadísticas solo si tiene nota Y sigue
@@ -648,7 +660,7 @@ export default function SidePanel({ user, open, onClose, done, cursos, ciclos, s
                             💬 <b className="mono">{t.tool_comments.length}</b>
                           </button>
                           {t.created_by === user.id && (
-                            <button className="tool-del" onClick={() => removeTool(t.id)} aria-label={`Eliminar ${t.name}`}>×</button>
+                            <button className="tool-del" onClick={() => removeTool(t)} aria-label={`Eliminar ${t.name}`}>×</button>
                           )}
                         </div>
 
@@ -722,6 +734,8 @@ export default function SidePanel({ user, open, onClose, done, cursos, ciclos, s
           )}
         </div>
       </aside>
+
+      <ConfirmDialog data={confirmData} onClose={() => setConfirmData(null)} />
     </>
   )
 }
