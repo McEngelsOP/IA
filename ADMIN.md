@@ -115,7 +115,7 @@ El creador puede hacerlo siempre desde la app. Tú también: Table Editor → `t
 
 - `progress`: una fila por alumno, columna `done` = array de ids de cursos marcados (los ids están en `src/data/cursos.js` y `src/data/cursosIndustrial.js`).
 - `grades`: una fila por alumno+curso, nota 0–20.
-- `course_status`: una fila por alumno+curso con el estado de la «Ficha del curso» (aprobado/convalidado/matriculado/desaprobado), veces llevado, fecha de aprobación y comentario personal. Un curso llevado sin fila aquí cuenta como aprobado; la app mantiene la coherencia con `progress` sola.
+- `course_status`: una fila por alumno+curso con el estado de la «Ficha del curso» (aprobado/convalidado/matriculado/desaprobado), veces llevado (1–3), fecha de aprobación y comentario personal. Un curso llevado sin fila aquí cuenta como aprobado; la app mantiene la coherencia con `progress` sola.
 
 Normalmente no hay que tocarlos (cada alumno gestiona lo suyo), pero puedes corregir o vaciar si alguien rompe algo.
 
@@ -151,7 +151,7 @@ select student_code, email, carrera, created_at from profiles order by created_a
 
 ## 7. Configuración y despliegues (lo que sí requiere cuidado)
 
-- **Scripts SQL**: las queries numeradas **01–14** ya están aplicadas en producción. No las vuelvas a correr (fallarían por objetos ya existentes). Los `.sql` del repo son solo el registro. **Pendientes de correr, en orden: `course_detail.sql` (query 15 · Ficha del curso) y `carrera_pucp.sql` (query 16 · Carreras nuevas: PUCP Mecatrónica + Comunicación y Marketing ESAN)** — ambas deben ejecutarse ANTES de desplegar el frontend que las usa. La 16 también restaura el tope de promoción por año para códigos ESAN (se había perdido al redefinir `handle_new_user` en la query 11) y acepta códigos PUCP (8 dígitos que empiezan en 20).
+- **Scripts SQL**: las queries numeradas **01–16** ya están aplicadas en producción. No las vuelvas a correr (fallarían por objetos ya existentes). Los `.sql` del repo son solo el registro. **Pendiente de correr: `times_taken_max_3.sql` (query 17 · Veces llevado máx. 3)**. La 16 también restauró el tope de promoción por año para códigos ESAN (se había perdido al redefinir `handle_new_user` en la query 11) y acepta códigos PUCP (8 dígitos que empiezan en 20).
 - **Edge Function `auth-by-code`**: se edita/redespliega a mano en Dashboard → Edge Functions (el push a Vercel NO la actualiza). No la toques si el login funciona.
 - **SMTP propio (recomendado pendiente)**: Authentication → SMTP Settings. El SMTP integrado permite poquísimos correos por hora — es el primer cuello de botella si muchos se registran el mismo día.
 - **CAPTCHA Turnstile**: ⚠️ **no lo actives en el dashboard** sin coordinar antes — requiere cambios simultáneos en el login y la Edge Function, o nadie podrá entrar.

@@ -135,13 +135,13 @@ export default function CourseDetail({ user, course, ciclos, byId, statusRow, is
     if (res?.error) setMsg(res.error)
   }
 
+  // Veces llevado: de 1 a 3; el valor se ajusta solo al rango, sin mensajes
+  // de error, y solo se guarda si de verdad cambió.
   const saveTimes = raw => {
     setTimesDraft(null)
-    const val = Number(raw)
-    if (!Number.isInteger(val) || val < 1 || val > 10) {
-      if (raw !== '') setMsg('Las veces llevado deben estar entre 1 y 10.')
-      return
-    }
+    if (raw === '' || !effectiveStatus) return
+    const val = Math.min(3, Math.max(1, Math.round(Number(raw)) || 1))
+    if (val === (statusRow?.times_taken ?? 1)) return
     saveField({ times_taken: val })
   }
 
@@ -311,7 +311,7 @@ export default function CourseDetail({ user, course, ciclos, byId, statusRow, is
               <label className="cd-field">
                 <span>Veces llevado</span>
                 <input
-                  className="mono" type="number" min="1" max="10" step="1"
+                  className="mono" type="number" min="1" max="3" step="1"
                   disabled={!effectiveStatus}
                   value={timesDraft !== null ? timesDraft : statusRow?.times_taken ?? (effectiveStatus ? 1 : '')}
                   onChange={e => setTimesDraft(e.target.value)}
