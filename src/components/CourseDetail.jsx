@@ -294,6 +294,12 @@ export default function CourseDetail({ user, course, ciclos, byId, statusRow, is
 
           <section className="cd-section">
             <h3>Mi registro</h3>
+            {!effectiveStatus && (
+              <p className="cd-note-txt">
+                Elige primero un <b>estado</b> arriba (aprobado, desaprobado…) y se
+                habilitarán las veces llevado, la fecha y los comentarios.
+              </p>
+            )}
             <div className="cd-reg">
               <label className="cd-field">
                 <span>Nota (0–20)</span>
