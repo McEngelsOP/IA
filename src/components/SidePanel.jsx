@@ -82,15 +82,52 @@ function LineChartPonderado({ points }) {
   )
 }
 
+// Histograma de distribución de notas (0–20, redondeadas al entero)
+function HistNotas({ values }) {
+  const counts = Array.from({ length: 21 }, () => 0)
+  values.forEach(v => counts[Math.min(20, Math.max(0, Math.round(v)))]++)
+  const max = Math.max(...counts, 1)
+  const W = 336, H = 150, ML = 8, MR = 8, MT = 18, MB = 20
+  const bw = (W - ML - MR) / 21
+  const y0 = H - MB
+  const hOf = c => (c / max) * (y0 - MT)
+
+  // Columna con tope redondeado (2.5px) y base recta, como las barras del panel
+  const colPath = (x, h, w) => {
+    if (h <= 3) return `M ${x} ${y0} h ${w} v ${-Math.max(h, 1.5)} h ${-w} Z`
+    const yt = y0 - h
+    return `M ${x} ${y0} V ${yt + 2.5} Q ${x} ${yt} ${x + 2.5} ${yt} H ${x + w - 2.5} Q ${x + w} ${yt} ${x + w} ${yt + 2.5} V ${y0} Z`
+  }
+
+  return (
+    <svg className="chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Distribución de notas">
+      <line x1={ML} y1={y0} x2={W - MR} y2={y0} className="ref" />
+      {counts.map((c, g) => {
+        if (c === 0) return null
+        const x = ML + g * bw + 1
+        return (
+          <g key={g}>
+            <title>{`Nota ${g}: ${c} ${c === 1 ? 'curso' : 'cursos'}`}</title>
+            <path d={colPath(x, hOf(c), bw - 2)} className={g >= PASS ? 'bar ok' : 'bar bad'} />
+            <text x={x + (bw - 2) / 2} y={y0 - hOf(c) - 4} className="hist-count" textAnchor="middle">{c}</text>
+          </g>
+        )
+      })}
+      {[0, 5, 10, 15, 20].map(g => (
+        <text key={g} x={ML + g * bw + bw / 2} y={H - 6} className="tick" textAnchor="middle">{g}</text>
+      ))}
+    </svg>
+  )
+}
+
 // ---------- Panel lateral ----------
 // cursos/ciclos: la malla de la carrera del alumno (viene de MallaCurricular)
 export default function SidePanel({ user, open, onClose, done, cursos, ciclos }) {
-  const [tab, setTab] = useState('graficos') // 'graficos' | 'ponderado' | 'tools'
+  const [tab, setTab] = useState('graficos') // 'graficos' | 'ponderado' | 'stats' | 'tools'
   const [ciclo, setCiclo] = useState(1)
   const [grades, setGrades] = useState({})       // { course_id: number }
   const [drafts, setDrafts] = useState({})       // texto del input mientras se edita
   const [savedFlash, setSavedFlash] = useState({}) // { course_id: true } → muestra ✓ tras guardar
-  const [gradesLoaded, setGradesLoaded] = useState(false)
   const [tools, setTools] = useState(null)
   const [toolName, setToolName] = useState('')
   const [toolUrl, setToolUrl] = useState('')
@@ -103,9 +140,10 @@ export default function SidePanel({ user, open, onClose, done, cursos, ciclos })
   const [commentDraft, setCommentDraft] = useState('')
   const [sendingComment, setSendingComment] = useState(false)
 
-  // Cargar notas la primera vez que se abre el panel
+  // Cargar notas cada vez que se abre el panel (la ficha del curso
+  // también las edita, así que no se cachean entre aperturas)
   useEffect(() => {
-    if (!open || gradesLoaded) return
+    if (!open) return
     supabase
       .from('grades')
       .select('course_id, grade')
@@ -115,9 +153,8 @@ export default function SidePanel({ user, open, onClose, done, cursos, ciclos })
         const g = {}
         ;(data || []).forEach(r => (g[r.course_id] = Number(r.grade)))
         setGrades(g)
-        setGradesLoaded(true)
       })
-  }, [open, gradesLoaded, user.id])
+  }, [open, user.id])
 
   // Cargar herramientas al entrar a esa pestaña.
   // OJO: tool_comments se pide con columnas explícitas — author_id no es
@@ -321,6 +358,20 @@ export default function SidePanel({ user, open, onClose, done, cursos, ciclos })
   const aprobados = generalItems.filter(i => i.grade >= PASS).length
   const desaprobados = generalItems.length - aprobados
 
+  // ---------- Estadísticas ----------
+  const stats = useMemo(() => {
+    if (generalItems.length === 0) return null
+    const simple = generalItems.reduce((s, i) => s + i.grade, 0) / generalItems.length
+    const mejor = generalItems.reduce((a, b) => (b.grade > a.grade ? b : a))
+    const peor = generalItems.reduce((a, b) => (b.grade < a.grade ? b : a))
+    const credLlevados = cursos.reduce((s, c) => s + (done.has(c.id) ? c.cr : 0), 0)
+    const credAprobados = cursos.reduce(
+      (s, c) => s + (grades[c.id] !== undefined && grades[c.id] >= PASS ? c.cr : 0), 0)
+    const mejorCiclo = porCiclo.length ? porCiclo.reduce((a, b) => (b.value > a.value ? b : a)) : null
+    const peorCiclo = porCiclo.length ? porCiclo.reduce((a, b) => (b.value < a.value ? b : a)) : null
+    return { simple, mejor, peor, credLlevados, credAprobados, mejorCiclo, peorCiclo }
+  }, [generalItems, cursos, grades, done, porCiclo])
+
   return (
     <>
       <div className={'sp-backdrop' + (open ? ' show' : '')} onClick={onClose} />
@@ -336,6 +387,7 @@ export default function SidePanel({ user, open, onClose, done, cursos, ciclos })
         <nav className="sp-tabs">
           <button className={tab === 'graficos' ? 'on' : ''} onClick={() => setTab('graficos')}>Gráficos</button>
           <button className={tab === 'ponderado' ? 'on' : ''} onClick={() => setTab('ponderado')}>Ponderado</button>
+          <button className={tab === 'stats' ? 'on' : ''} onClick={() => setTab('stats')}>Estadísticas</button>
           <button className={tab === 'tools' ? 'on' : ''} onClick={() => setTab('tools')}>Herramientas</button>
         </nav>
 
@@ -461,6 +513,89 @@ export default function SidePanel({ user, open, onClose, done, cursos, ciclos })
                 Aún no hay notas registradas. Ingresa tus promedios en la pestaña «Gráficos»
                 y aquí verás tu ponderado general.
               </div>
+            )
+          )}
+
+          {tab === 'stats' && (
+            !stats ? (
+              <div className="sp-empty">
+                Aún no hay notas registradas. Ingresa tus promedios en la pestaña «Gráficos»
+                y aquí verás tus estadísticas académicas.
+              </div>
+            ) : (
+              <>
+                {general && (
+                  <div className="sp-hero">
+                    <div className="sp-hero-num">{general.value.toFixed(2)}</div>
+                    <div className="sp-hero-sub">
+                      Ponderado general · promedio simple {stats.simple.toFixed(2)}
+                    </div>
+                  </div>
+                )}
+
+                <div className="sp-stats">
+                  <div className="stat">
+                    <span className="stat-lbl">Mejor nota</span>
+                    <span className="stat-val mono">{fmt(stats.mejor.grade)}</span>
+                    <span className="stat-sub">{stats.mejor.name}</span>
+                  </div>
+                  <div className="stat">
+                    <span className="stat-lbl">Peor nota</span>
+                    <span className="stat-val mono">{fmt(stats.peor.grade)}</span>
+                    <span className="stat-sub">{stats.peor.name}</span>
+                  </div>
+                </div>
+
+                <div className="sp-stats">
+                  <div className="stat">
+                    <span className="stat-lbl">Aprobados</span>
+                    <span className="stat-val mono">{aprobados}</span>
+                  </div>
+                  <div className="stat">
+                    <span className="stat-lbl">Desaprobados</span>
+                    <span className="stat-val mono">{desaprobados}</span>
+                  </div>
+                  <div className="stat">
+                    <span className="stat-lbl">Con nota</span>
+                    <span className="stat-val mono">{generalItems.length}</span>
+                  </div>
+                </div>
+
+                <div className="sp-stats">
+                  <div className="stat">
+                    <span className="stat-lbl">Créditos llevados</span>
+                    <span className="stat-val mono">{fmt(stats.credLlevados)}</span>
+                  </div>
+                  <div className="stat">
+                    <span className="stat-lbl">Créditos aprobados (con nota)</span>
+                    <span className="stat-val mono">{fmt(stats.credAprobados)}</span>
+                  </div>
+                </div>
+
+                {stats.mejorCiclo && (
+                  <div className="sp-stats">
+                    <div className="stat">
+                      <span className="stat-lbl">Mejor ciclo</span>
+                      <span className="stat-val mono">{stats.mejorCiclo.value.toFixed(2)}</span>
+                      <span className="stat-sub">{ciclos[stats.mejorCiclo.num].t}</span>
+                    </div>
+                    <div className="stat">
+                      <span className="stat-lbl">Ciclo más difícil</span>
+                      <span className="stat-val mono">{stats.peorCiclo.value.toFixed(2)}</span>
+                      <span className="stat-sub">{ciclos[stats.peorCiclo.num].t}</span>
+                    </div>
+                  </div>
+                )}
+
+                <section className="sp-section">
+                  <h3>Distribución de notas</h3>
+                  <HistNotas values={generalItems.map(i => i.grade)} />
+                  <div className="sp-hint" style={{ marginTop: 6 }}>
+                    Cada columna cuenta cuántos cursos tienen esa nota (redondeada).
+                    Verde = aprobado (≥ {PASS}), ámbar = desaprobado.
+                  </div>
+                </section>
+              </>
             )
           )}
 

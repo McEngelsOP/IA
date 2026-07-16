@@ -362,6 +362,21 @@
   color: #15202e;
 }
 
+.stat-sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 10.5px;
+  line-height: 1.35;
+  color: #5c6672;
+}
+
+.chart .hist-count {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8.5px;
+  font-weight: 700;
+  fill: #5c6672;
+}
+
 .pond-list {
   display: flex;
   flex-direction: column;

@@ -26,7 +26,7 @@ export default function CareerSelect({ onSelect, saving, error, guest, onBack })
               onClick={() => onSelect(k)}
             >
               <span className="cs-name">{CARRERAS[k].nombre}</span>
-              <span className="cs-meta mono">{CARRERAS[k].total} CRÉDITOS · 10 CICLOS + PRE-FORMACIÓN</span>
+              <span className="cs-meta mono">{CARRERAS[k].uni.toUpperCase()} · {CARRERAS[k].total} CRÉDITOS · 10 CICLOS</span>
             </button>
           ))}
         </div>

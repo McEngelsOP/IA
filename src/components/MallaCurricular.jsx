@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { CARRERAS } from '../data/carreras'
+import { AREAS } from '../data/areas'
 import SidePanel from './SidePanel'
 import ProfessorPanel from './ProfessorPanel'
+import CourseDetail, { STATUS_META } from './CourseDetail'
 import '../styles/MallaCurricular.css'
 
 // ---------- Layout (idéntico al HTML original) ----------
@@ -24,18 +26,53 @@ function buildMalla(carrera) {
     })
   )
 
-  const rowsPerCol = {}
-  cursos.forEach(c => {
-    c.row = rowsPerCol[c.c] = (rowsPerCol[c.c] ?? -1) + 1
-    c.x = LEFT + c.c * COL_W
-    c.y = TOP + c.row * (NODE_H + ROW_GAP)
+  // minC: primer ciclo de la malla (0 en ESAN por la pre-formación, 1 en PUCP);
+  // las columnas se normalizan para no dejar una franja vacía a la izquierda
+  const minC = Math.min(...cursos.map(c => c.c))
+
+  // Orden dentro de cada ciclo: heurística de baricentro (Sugiyama) para que
+  // las líneas se crucen lo menos posible. Cada curso se acomoda cerca del
+  // promedio vertical de sus requisitos (pasada →) y de los cursos que abre
+  // (pasada ←); los cursos sin conexiones caen al fondo de su columna.
+  const cols = {}
+  cursos.forEach(c => (cols[c.c] = cols[c.c] || []).push(c))
+  const colKeys = Object.keys(cols).map(Number).sort((a, b) => a - b)
+  const pos = {}
+  colKeys.forEach(k => cols[k].forEach((c, i) => (pos[c.id] = i)))
+  const suelto = c => c.r.length === 0 && !(unlocks[c.id]?.length)
+
+  const ordenarCol = (k, vecinos) => {
+    const keyed = cols[k].map((c, i) => {
+      const ps = vecinos(c).map(id => pos[id]).filter(p => p !== undefined)
+      const key = ps.length
+        ? ps.reduce((a, b) => a + b, 0) / ps.length
+        : suelto(c) ? 999 + i : pos[c.id]
+      return { c, key, i }
+    })
+    keyed.sort((a, b) => a.key - b.key || a.i - b.i)
+    keyed.forEach((x, i) => (pos[x.c.id] = i))
+    cols[k] = keyed.map(x => x.c)
+  }
+
+  for (let pasada = 0; pasada < 4; pasada++) {
+    colKeys.forEach(k => ordenarCol(k, c => c.r))
+    ;[...colKeys].reverse().forEach(k => ordenarCol(k, c => unlocks[c.id] || []))
+  }
+
+  let maxRows = 0
+  colKeys.forEach(k => {
+    maxRows = Math.max(maxRows, cols[k].length)
+    cols[k].forEach((c, i) => {
+      c.row = i
+      c.x = LEFT + (c.c - minC) * COL_W
+      c.y = TOP + i * (NODE_H + ROW_GAP)
+    })
   })
-  const maxRows = Math.max(...Object.values(rowsPerCol)) + 1
-  const numCols = Math.max(...cursos.map(c => c.c)) + 1
+  const numCols = Math.max(...cursos.map(c => c.c)) - minC + 1
   const W = LEFT * 2 + numCols * COL_W - COL_GAP
   const H = TOP + maxRows * (NODE_H + ROW_GAP) + 26
 
-  return { ...carrera, cursos, byId, unlocks, edges, W, H }
+  return { ...carrera, cursos, byId, unlocks, edges, W, H, minC }
 }
 
 const MALLAS = {}
@@ -67,9 +104,10 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
   const M = MALLAS[carrera] || MALLAS.ia
   const { byId, unlocks, edges } = M
 
-  const [mode, setMode] = useState('open') // 'open' | 'req' | 'done'
+  const [mode, setMode] = useState('open') // 'open' | 'req' | 'done' | 'ficha'
   const [selected, setSelected] = useState(null)
   const [done, setDone] = useState(() => new Set())
+  const [statuses, setStatuses] = useState({}) // { course_id: fila de course_status }
   const [loaded, setLoaded] = useState(false)
   const [lastAction, setLastAction] = useState(null) // mensaje tras marcar/desmarcar
   const [syncError, setSyncError] = useState(false)
@@ -102,6 +140,24 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
         if (error) console.error('[progress:load]', error)
         if (data?.done) setDone(new Set(data.done))
         setLoaded(true)
+      })
+    return () => { cancelled = true }
+  }, [isGuest, user?.id])
+
+  // Cargar los estados académicos (dan color a los cursos en la ficha)
+  useEffect(() => {
+    if (isGuest) return
+    let cancelled = false
+    supabase
+      .from('course_status')
+      .select('course_id, status, times_taken, passed_at, personal_note')
+      .eq('student_id', user.id)
+      .then(({ data, error }) => {
+        if (cancelled) return
+        if (error) { console.error('[status:load]', error); return }
+        const map = {}
+        ;(data || []).forEach(r => (map[r.course_id] = r))
+        setStatuses(map)
       })
     return () => { cancelled = true }
   }, [isGuest, user?.id])
@@ -148,53 +204,132 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
     setSelected(prev => (prev === id ? null : id))
   }
 
+  // Desmarcar en cascada: cae el curso, su cadena de requisitos y todo lo que dependía de ellos
+  const cascadeRemove = (id, base) => {
+    const next = new Set(base)
+    next.delete(id)
+    let quitados = 0
+    bfs(id, x => byId[x]?.r).forEach(x => {
+      if (next.has(x)) { next.delete(x); quitados++ }
+    })
+    let cambio = true
+    while (cambio) {
+      cambio = false
+      const total = creditosLlevados(next)
+      next.forEach(x => {
+        const c = byId[x]
+        if (!c) return
+        if (c.r.some(req => !next.has(req)) || (c.rc && total - c.cr < c.rc)) {
+          next.delete(x); quitados++; cambio = true
+        }
+      })
+    }
+    return { next, quitados }
+  }
+
+  // Marcar con requisitos previos en automático; falta = curso cuyo rc no se cumple
+  const cascadeAdd = (id, base) => {
+    const next = new Set(base)
+    next.add(id)
+    let agregados = 0
+    bfs(id, x => byId[x]?.r).forEach(x => {
+      if (!next.has(x)) { next.add(x); agregados++ }
+    })
+    return { next, agregados, falta: rcUnmet(next) }
+  }
+
+  // Mantiene course_status coherente con los llevados: los cursos que caen
+  // pierden su estado aprobado/convalidado, y los que entran dejan de estar
+  // matriculados/desaprobados (pasan a aprobado).
+  const reconcileStatuses = async (prevSet, nextSet) => {
+    if (isGuest) return
+    const dropped = [...prevSet].filter(x => !nextSet.has(x)
+      && (statuses[x]?.status === 'aprobado' || statuses[x]?.status === 'convalidado'))
+    const upgraded = [...nextSet].filter(x => !prevSet.has(x)
+      && (statuses[x]?.status === 'matriculado' || statuses[x]?.status === 'desaprobado'))
+    if (dropped.length) {
+      setStatuses(s => { const n = { ...s }; dropped.forEach(x => delete n[x]); return n })
+      const { error } = await supabase
+        .from('course_status').delete()
+        .eq('student_id', user.id).in('course_id', dropped)
+      if (error) console.error('[status:clean]', error)
+    }
+    if (upgraded.length) {
+      setStatuses(s => {
+        const n = { ...s }
+        upgraded.forEach(x => (n[x] = { ...n[x], status: 'aprobado' }))
+        return n
+      })
+      const { error } = await supabase
+        .from('course_status').update({ status: 'aprobado' })
+        .eq('student_id', user.id).in('course_id', upgraded)
+      if (error) console.error('[status:clean]', error)
+    }
+  }
+
   const toggleDone = id => {
-    const next = new Set(done)
-    let action
-    if (next.has(id)) {
-      // Desmarcar: cae el curso, su cadena de requisitos y todo lo que dependía de ellos
-      next.delete(id)
-      let quitados = 0
-      bfs(id, x => byId[x]?.r).forEach(x => {
-        if (next.has(x)) { next.delete(x); quitados++ }
-      })
-      let cambio = true
-      while (cambio) {
-        cambio = false
-        const total = creditosLlevados(next)
-        next.forEach(x => {
-          const c = byId[x]
-          if (!c) return
-          if (c.r.some(req => !next.has(req)) || (c.rc && total - c.cr < c.rc)) {
-            next.delete(x); quitados++; cambio = true
-          }
-        })
-      }
-      action = { verbo: 'desmarcado', name: byId[id].n, extra: quitados }
+    let next, action
+    if (done.has(id)) {
+      const r = cascadeRemove(id, done)
+      next = r.next
+      action = { verbo: 'desmarcado', name: byId[id].n, extra: r.quitados }
     } else {
-      // Marcar: sus requisitos previos se marcan en automático
-      next.add(id)
-      let agregados = 0
-      bfs(id, x => byId[x]?.r).forEach(x => {
-        if (!next.has(x)) { next.add(x); agregados++ }
-      })
+      const r = cascadeAdd(id, done)
       // Cursos con requisito de créditos: no se pueden marcar sin el avance suficiente
-      const falta = rcUnmet(next)
-      if (falta) {
-        setLastAction({ blocked: true, name: falta.n, rc: falta.rc, cred: creditosLlevados(done) })
+      if (r.falta) {
+        setLastAction({ blocked: true, name: r.falta.n, rc: r.falta.rc, cred: creditosLlevados(done) })
         return
       }
-      action = { verbo: 'marcado como llevado', name: byId[id].n, extra: agregados }
+      next = r.next
+      action = { verbo: 'marcado como llevado', name: byId[id].n, extra: r.agregados }
     }
+    reconcileStatuses(done, next)
     setDone(next)
     setLastAction(action)
     persist(next)
   }
 
+  // Guardar el estado académico desde la ficha (row = null → pendiente).
+  // Aprobado/convalidado marcan el curso como llevado; los demás lo quitan.
+  const saveStatus = async (courseId, row) => {
+    let next = done
+    if (row === null || row.status === 'matriculado' || row.status === 'desaprobado') {
+      if (done.has(courseId)) next = cascadeRemove(courseId, done).next
+    } else if (!done.has(courseId)) {
+      const r = cascadeAdd(courseId, done)
+      if (r.falta) {
+        return {
+          error: `${r.falta.n} requiere ${r.falta.rc} créditos aprobados y llevas ` +
+            `${creditosLlevados(done)}. Marca más cursos llevados primero.`
+        }
+      }
+      next = r.next
+    }
+    if (next !== done) {
+      await reconcileStatuses(done, next)
+      setDone(next)
+      persist(next)
+    }
+    if (row === null) {
+      const { error } = await supabase
+        .from('course_status').delete()
+        .match({ student_id: user.id, course_id: courseId })
+      if (error) { console.error('[status:delete]', error); return { error: 'No se pudo guardar el estado.' } }
+      setStatuses(s => { const n = { ...s }; delete n[courseId]; return n })
+    } else {
+      const { error } = await supabase
+        .from('course_status')
+        .upsert({ student_id: user.id, course_id: courseId, ...row, updated_at: new Date().toISOString() })
+      if (error) { console.error('[status:save]', error); return { error: 'No se pudo guardar el estado.' } }
+      setStatuses(s => ({ ...s, [courseId]: row }))
+    }
+    return { ok: true }
+  }
+
   const changeMode = m => {
     setMode(m)
     setLastAction(null)
-    if (m === 'done') setSelected(null)
+    if (m === 'done' || m === 'ficha') setSelected(null)
   }
 
   const onNodeClick = (ev, id) => {
@@ -241,13 +376,20 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
   }, [])
 
   // ---------- Clases visuales ----------
-  const chain = selected
+  const chain = selected && (mode === 'open' || mode === 'req')
     ? mode === 'open'
       ? bfs(selected, x => unlocks[x])
       : bfs(selected, x => byId[x]?.r)
     : null
 
+  // Estado efectivo en la ficha: fila guardada o aprobado implícito si está llevado
+  const fichaStatus = c => statuses[c.id]?.status ?? (done.has(c.id) ? 'aprobado' : null)
+
   const nodeClass = c => {
+    if (mode === 'ficha') {
+      const st = fichaStatus(c)
+      return 'node ficha' + (st ? ' st-' + st : '') + (c.id === selected ? ' ring' : '')
+    }
     if (mode === 'done' || !selected) {
       return 'node' + (done.has(c.id) ? ' done' : '')
     }
@@ -257,7 +399,7 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
   }
 
   const edgeClass = e => {
-    if (!selected || mode === 'done') return 'e'
+    if (!selected || mode === 'done' || mode === 'ficha') return 'e'
     const isOpen = mode === 'open'
     const inChain = isOpen
       ? chain.has(e.to) && (e.from === selected || chain.has(e.from))
@@ -291,6 +433,8 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
     )
   } else if (mode === 'done') {
     status = <>Toca los cursos que ya llevaste para marcarlos o desmarcarlos. {pill}</>
+  } else if (mode === 'ficha') {
+    status = <>Toca un curso para abrir su ficha: estado, nota, veces llevado, fecha de aprobación y reseñas anónimas. {pill}</>
   } else if (selected) {
     const c = byId[selected]
     const n = chain.size
@@ -332,12 +476,12 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
     <div className={'malla-page' + (mode === 'done' ? ' marking' : '')}>
       <header className="malla-top">
         <div>
-          <div className="eyebrow mono">Universidad ESAN · {M.nombre}</div>
+          <div className="eyebrow mono">{M.uni} · {M.nombre}</div>
           <h1>Malla curricular interactiva</h1>
           <div className="meta">
             Plan de estudios <b>presencial</b><span className="sep">·</span>
             Total <b>{M.total} créditos</b><span className="sep">·</span>
-            <b>10</b> ciclos + pre-formación
+            {M.ciclosLabel}
           </div>
           <div className="hint">
             {isGuest
@@ -369,24 +513,73 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
           <button className={mode === 'open' ? 'on' : ''} onClick={ev => { ev.stopPropagation(); changeMode('open') }}>Qué abre</button>
           <button className={mode === 'req' ? 'on' : ''} onClick={ev => { ev.stopPropagation(); changeMode('req') }}>Qué requiere</button>
           <button className={mode === 'done' ? 'on' : ''} onClick={ev => { ev.stopPropagation(); changeMode('done') }}>Marcar llevados</button>
+          {!isGuest && (
+            <button className={mode === 'ficha' ? 'on' : ''} onClick={ev => { ev.stopPropagation(); changeMode('ficha') }}>Ficha del curso</button>
+          )}
         </div>
         <div className="legend">
-          {mode !== 'done' && (
-            <span><span className="sw" style={{ background: '#022F42' }} />Seleccionado</span>
+          {mode === 'ficha' ? (
+            <>
+              {Object.entries(STATUS_META).map(([k, m]) => (
+                <span key={k}><span className="sw" style={{ background: m.soft, border: `1.5px solid ${m.color}` }} />{m.label}</span>
+              ))}
+              <span><span className="sw" style={{ background: '#fff', border: '1.5px solid #C7CDC7' }} />Pendiente</span>
+            </>
+          ) : (
+            <>
+              {mode !== 'done' && (
+                <span><span className="sw" style={{ background: '#022F42' }} />Seleccionado</span>
+              )}
+              {mode === 'open' && (
+                <span><span className="sw" style={{ background: 'var(--green-soft)', border: '1.5px solid var(--green)' }} />Cursos que abre</span>
+              )}
+              {mode === 'req' && (
+                <span><span className="sw" style={{ background: 'var(--amber-soft)', border: '1.5px solid var(--amber)' }} />Requisitos previos</span>
+              )}
+              <span><span className="sw" style={{ background: '#EDEFEC', border: '1.5px solid #C7CDC7' }} />Llevado</span>
+            </>
           )}
-          {mode === 'open' && (
-            <span><span className="sw" style={{ background: 'var(--green-soft)', border: '1.5px solid var(--green)' }} />Cursos que abre</span>
-          )}
-          {mode === 'req' && (
-            <span><span className="sw" style={{ background: 'var(--amber-soft)', border: '1.5px solid var(--amber)' }} />Requisitos previos</span>
-          )}
-          <span><span className="sw" style={{ background: '#EDEFEC', border: '1.5px solid #C7CDC7' }} />Llevado</span>
         </div>
+      </div>
+
+      <div className="area-legend">
+        <span className="area-title mono">LÍNEAS ·</span>
+        {Object.keys(AREAS).filter(k => M.cursos.some(c => c.a === k)).map(k => (
+          <span key={k}><span className="sw" style={{ background: AREAS[k].color }} />{AREAS[k].label}</span>
+        ))}
       </div>
 
       <div className="status">{status}</div>
 
-      {!isGuest && selected && (
+      {M.electivos && (
+        <details className="elec-panel">
+          <summary className="mono">
+            📚 CATÁLOGO DE ELECTIVOS · {M.electivos.length} GRUPOS
+          </summary>
+          <div className="elec-groups">
+            {M.electivos.map(g => (
+              <details key={g.grupo} className="elec-group">
+                <summary>
+                  {g.grupo} <span className="mono elec-count">{g.cursos.length} opciones</span>
+                </summary>
+                {g.nota && <p className="elec-nota">{g.nota}</p>}
+                <div className="elec-list">
+                  {g.cursos.map(cu => (
+                    <div key={cu.k} className="elec-row">
+                      <span className="elec-clave mono">{cu.k}</span>
+                      <span className="elec-nombre">{cu.n}</span>
+                      {cu.req && <span className="elec-req">req: {cu.req}</span>}
+                      <span className="elec-cr mono">{cu.cr} créd</span>
+                    </div>
+                  ))}
+                </div>
+              </details>
+            ))}
+          </div>
+        </details>
+      )}
+
+      {!isGuest && selected && mode !== 'ficha' && (
         <ProfessorPanel user={user} course={byId[selected]} />
       )}
 
@@ -394,12 +587,16 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
         <div className="scroller" ref={scrollerRef} onClick={onScrollerClick} onMouseDown={onMouseDown}>
           <div className="canvas" style={{ width: M.W, height: M.H }}>
             <svg className="edges" width={M.W} height={M.H} viewBox={`0 0 ${M.W} ${M.H}`} xmlns="http://www.w3.org/2000/svg">
-              {edges.map((e, i) => (
-                <path key={i} d={edgePath(e, byId)} className={edgeClass(e)} />
-              ))}
+              {edges.map((e, i) => {
+                const cls = edgeClass(e)
+                // Color por área del curso al que llega la línea; el resaltado
+                // verde/ámbar de la cadena seleccionada tiene prioridad
+                const style = cls.includes('hl') ? undefined : { stroke: AREAS[byId[e.to].a]?.color }
+                return <path key={i} d={edgePath(e, byId)} className={cls} style={style} />
+              })}
             </svg>
             {Object.entries(M.ciclos).map(([num, info]) => (
-              <div key={num} className="col-h mono" style={{ left: LEFT + num * COL_W }}>
+              <div key={num} className="col-h mono" style={{ left: LEFT + (num - M.minC) * COL_W }}>
                 {info.t}<em>{info.s}</em>
               </div>
             ))}
@@ -427,6 +624,19 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
 
       {!isGuest && (
         <SidePanel user={user} open={panelOpen} onClose={() => setPanelOpen(false)} done={done} cursos={M.cursos} ciclos={M.ciclos} />
+      )}
+
+      {!isGuest && (
+        <CourseDetail
+          user={user}
+          course={mode === 'ficha' && selected ? byId[selected] : null}
+          ciclos={M.ciclos}
+          byId={byId}
+          statusRow={selected ? statuses[selected] : undefined}
+          isDone={selected ? done.has(selected) : false}
+          onSaveStatus={saveStatus}
+          onClose={() => setSelected(null)}
+        />
       )}
     </div>
   )

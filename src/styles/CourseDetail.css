@@ -1,0 +1,352 @@
+/* Ficha del curso · drawer derecho (reusa el patrón visual del panel lateral;
+   las clases tc-* de las reseñas vienen de SidePanel.css, que siempre carga) */
+
+.cd-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(21, 32, 46, 0.35);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.22s ease;
+  z-index: 40;
+}
+
+.cd-backdrop.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.cd {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100dvh;
+  width: min(430px, 100vw);
+  background: #ffffff;
+  border-left: 1px solid #e3e6e2;
+  box-shadow: -8px 0 30px rgba(21, 32, 46, 0.12);
+  transform: translateX(102%);
+  transition: transform 0.26s ease;
+  z-index: 41;
+  display: flex;
+  flex-direction: column;
+  font-family: 'Inter', system-ui, sans-serif;
+  color: #15202e;
+}
+
+.cd.open {
+  transform: translateX(0);
+}
+
+.cd .mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.cd-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 22px 24px 14px;
+}
+
+.cd-eyebrow {
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #059e9f;
+}
+
+.cd-head h2 {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 21px;
+  font-weight: 700;
+  line-height: 1.25;
+  margin: 4px 0 0;
+}
+
+.cd-close {
+  flex-shrink: 0;
+  border: 1px solid #e3e6e2;
+  background: #fff;
+  color: #5c6672;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.cd-close:hover {
+  background: #f5f6f4;
+  color: #15202e;
+}
+
+.cd-msg {
+  margin: 0 24px 4px;
+  background: #faf0da;
+  color: #9a6b0b;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 12.5px;
+}
+
+.cd-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px 24px 28px;
+}
+
+/* ---------- Datos rápidos ---------- */
+.cd-facts {
+  display: flex;
+  gap: 8px;
+}
+
+.fact {
+  flex: 1;
+  border: 1px solid #e7e9e5;
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: #fff;
+}
+
+.fact-lbl {
+  display: block;
+  font-size: 10.5px;
+  color: #8b94a0;
+}
+
+.fact-val {
+  display: block;
+  margin-top: 3px;
+  font-size: 17px;
+  font-weight: 700;
+  color: #15202e;
+}
+
+.cd-section {
+  margin-top: 20px;
+}
+
+.cd-section h3 {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  color: #5c6672;
+  margin: 0 0 8px;
+}
+
+.cd-plain {
+  font-size: 12.5px;
+  color: #5c6672;
+  margin: 0;
+}
+
+.cd-empty {
+  font-size: 12.5px;
+  color: #5c6672;
+  background: #f5f6f4;
+  border: 1px dashed #d4d9d3;
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+}
+
+.cd-prereqs {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: #15202e;
+}
+
+.cd-rc {
+  color: #9a6b0b;
+}
+
+/* ---------- Estados ---------- */
+.cd-states {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.st-chip {
+  border: 1.5px solid #e3e6e2;
+  background: #fff;
+  color: #5c6672;
+  font: 600 12px 'Inter', sans-serif;
+  padding: 6px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+
+.st-chip:hover:not(:disabled) {
+  border-color: #b9c1bc;
+}
+
+.st-chip.on {
+  font-weight: 700;
+}
+
+.st-chip:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.cd-note-txt {
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: #8b94a0;
+  margin: 8px 0 10px;
+}
+
+/* ---------- Registro ---------- */
+.cd-reg {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cd-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid #e7e9e5;
+  border-radius: 10px;
+  padding: 8px 8px 8px 12px;
+  background: #fff;
+  font-size: 12.5px;
+  color: #15202e;
+}
+
+.cd-field-block {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+}
+
+.cd-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cd-saved {
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 700;
+  color: #1b7a46;
+}
+
+.cd-field input {
+  width: 110px;
+  flex-shrink: 0;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: #15202e;
+  border: 1px solid #e3e6e2;
+  border-radius: 8px;
+  padding: 6px 4px;
+  background: #f5f6f4;
+}
+
+.cd-field input[type='number'] {
+  width: 62px;
+}
+
+.cd-field input[type='date'] {
+  width: 150px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.cd-field input:focus,
+.cd-field textarea:focus {
+  outline: none;
+  border-color: #1b7a46;
+  background: #fff;
+}
+
+.cd-field input:disabled,
+.cd-field textarea:disabled {
+  opacity: 0.5;
+}
+
+.cd-field textarea {
+  border: 1px solid #e3e6e2;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font: 400 12.5px 'Inter', sans-serif;
+  background: #f5f6f4;
+  resize: vertical;
+}
+
+/* ---------- Reseñas ---------- */
+.cd-comments {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.cd-review-form textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #e3e6e2;
+  border-radius: 10px;
+  padding: 9px 12px;
+  font: 400 12.5px 'Inter', sans-serif;
+  background: #f5f6f4;
+  resize: vertical;
+}
+
+.cd-review-form textarea:focus {
+  outline: none;
+  border-color: #1b7a46;
+  background: #fff;
+}
+
+.cd-review-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.cd-words {
+  font-size: 11px;
+  color: #8b94a0;
+}
+
+.cd-words.over {
+  color: #c0392b;
+  font-weight: 700;
+}
+
+.cd-review-foot button {
+  border: none;
+  background: #15202e;
+  color: #fff;
+  font: 600 12px 'Inter', sans-serif;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.cd-review-foot button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.cd-review-foot button:not(:disabled):hover {
+  background: #0d1520;
+}

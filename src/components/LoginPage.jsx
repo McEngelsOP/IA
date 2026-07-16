@@ -14,10 +14,12 @@ const authByCode = async (action, payload = {}) => {
   return data
 }
 
-// Código de alumno: exactamente 8 dígitos; los dos primeros son la promoción,
-// desde 25 (primera promoción) hasta el año en curso — 27 recién valdrá en 2027.
-const isValidStudentCode = (code) => {
+// Código de alumno: exactamente 8 dígitos. La regla depende de la universidad:
+// - ESAN: los dos primeros son la promoción, desde 25 hasta el año en curso.
+// - PUCP: empieza con 20 (año de ingreso 20xx).
+const isValidStudentCode = (code, carrera) => {
   if (!/^\d{8}$/.test(code)) return false
+  if (carrera === 'pucp-mecatronica') return code.startsWith('20')
   const promo = Number(code.slice(0, 2))
   return promo >= 25 && promo <= new Date().getFullYear() % 100
 }
@@ -129,12 +131,13 @@ export default function LoginPage({ onLogin, onGuest }) {
     setNotice('')
     setCodeTaken(false)
 
-    if (!isValidStudentCode(codigo.trim())) {
-      setError('Ese código de alumno no es válido.')
-      return
-    }
+    // La carrera va primero: la regla del código depende de la universidad
     if (!CARRERAS[carrera]) {
       setError('Elige tu carrera para armar tu malla.')
+      return
+    }
+    if (!isValidStudentCode(codigo.trim(), carrera)) {
+      setError('Ese código de alumno no es válido.')
       return
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo.trim())) {
@@ -249,7 +252,7 @@ export default function LoginPage({ onLogin, onGuest }) {
       {/* Panel izquierdo: formulario */}
       <div className="login-left">
         <div className="login-brand mono">
-          UNIVERSIDAD ESAN · INGENIERÍAS
+          ESAN · PUCP — INGENIERÍAS
         </div>
 
         <div className="login-form-wrap">
@@ -285,7 +288,7 @@ export default function LoginPage({ onLogin, onGuest }) {
                 >
                   <option value="" disabled>Elige tu carrera</option>
                   {CARRERA_KEYS.map(k => (
-                    <option key={k} value={k}>{CARRERAS[k].nombre}</option>
+                    <option key={k} value={k}>{CARRERAS[k].nombre} · {CARRERAS[k].uni}</option>
                   ))}
                 </select>
               </div>
@@ -400,7 +403,7 @@ export default function LoginPage({ onLogin, onGuest }) {
           )}
         </div>
 
-        <div className="login-foot mono">ING. EN IA · ING. INDUSTRIAL Y COMERCIAL</div>
+        <div className="login-foot mono">ING. EN IA · ING. INDUSTRIAL · COMUNICACIÓN Y MKT. DIGITAL · MECATRÓNICA (PUCP)</div>
       </div>
 
       {/* Panel derecho: visual estilo malla */}
