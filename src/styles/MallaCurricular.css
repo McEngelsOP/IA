@@ -202,6 +202,47 @@
   margin-right: 6px;
 }
 
+/* ---------- Botón ARCADE (los estilos de la pantalla van en Arcade.css,
+   que se carga aparte; el botón debe verse desde el inicio) ---------- */
+.arcade-btn {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 2.5px;
+  padding: 10px 22px;
+  border-radius: 999px;
+  cursor: pointer;
+  color: #044e4e;
+  border: 1.5px solid transparent;
+  background:
+    linear-gradient(#ffffff, #ffffff) padding-box,
+    linear-gradient(120deg, #059e9f, #7b5cd6) border-box;
+  box-shadow: var(--shadow);
+  transition: transform 0.15s, box-shadow 0.15s, color 0.15s, background 0.15s;
+}
+
+.arcade-btn:hover {
+  transform: translateY(-1px);
+  color: #fff;
+  background:
+    linear-gradient(120deg, #0b6b6c, #5b3fb8) padding-box,
+    linear-gradient(120deg, #059e9f, #7b5cd6) border-box;
+  box-shadow: 0 4px 16px rgba(123, 92, 214, 0.3);
+}
+
+.arcade-loading {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0d1220;
+  color: #8b96c9;
+  font-size: 12px;
+  letter-spacing: 2px;
+}
+
 /* ---------- Leyenda de áreas (colores de las líneas) ---------- */
 .area-legend {
   display: flex;

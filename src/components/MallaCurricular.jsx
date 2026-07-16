@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { CARRERAS } from '../data/carreras'
 import { AREAS } from '../data/areas'
@@ -6,6 +6,10 @@ import SidePanel from './SidePanel'
 import ProfessorPanel from './ProfessorPanel'
 import CourseDetail, { STATUS_META } from './CourseDetail'
 import '../styles/MallaCurricular.css'
+
+// El arcade se descarga solo cuando alguien pulsa el botón (code-splitting):
+// así el juego no engorda la carga inicial de la malla.
+const Arcade = lazy(() => import('./Arcade'))
 
 // ---------- Layout (idéntico al HTML original) ----------
 const NODE_W = 200, NODE_H = 58, COL_GAP = 88, ROW_GAP = 18, TOP = 68, LEFT = 26
@@ -112,6 +116,7 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
   const [lastAction, setLastAction] = useState(null) // mensaje tras marcar/desmarcar
   const [syncError, setSyncError] = useState(false)
   const [panelOpen, setPanelOpen] = useState(false) // panel lateral (solo con sesión)
+  const [arcadeOpen, setArcadeOpen] = useState(false) // pantalla interna de juegos
 
   const scrollerRef = useRef(null)
   const dragRef = useRef(null)
@@ -542,6 +547,9 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
             <button className={mode === 'ficha' ? 'on' : ''} onClick={ev => { ev.stopPropagation(); changeMode('ficha') }}>Ficha del curso</button>
           )}
         </div>
+        <button className="arcade-btn" onClick={ev => { ev.stopPropagation(); setArcadeOpen(true) }}>
+          🕹 ARCADE
+        </button>
         <div className="legend">
           {mode === 'ficha' ? (
             <>
@@ -655,6 +663,12 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
 
       {!isGuest && (
         <SidePanel user={user} open={panelOpen} onClose={() => setPanelOpen(false)} done={done} cursos={M.cursos} ciclos={M.ciclos} statuses={statuses} />
+      )}
+
+      {arcadeOpen && (
+        <Suspense fallback={<div className="arcade-loading mono">CARGANDO ARCADE…</div>}>
+          <Arcade user={user} onClose={() => setArcadeOpen(false)} />
+        </Suspense>
       )}
 
       {!isGuest && (
