@@ -122,7 +122,8 @@ function HistNotas({ values }) {
 
 // ---------- Panel lateral ----------
 // cursos/ciclos: la malla de la carrera del alumno (viene de MallaCurricular)
-export default function SidePanel({ user, open, onClose, done, cursos, ciclos }) {
+// statuses: estados de la ficha del curso — los desaprobados cuentan en el ponderado
+export default function SidePanel({ user, open, onClose, done, cursos, ciclos, statuses = {} }) {
   const [tab, setTab] = useState('graficos') // 'graficos' | 'ponderado' | 'stats' | 'tools'
   const [ciclo, setCiclo] = useState(1)
   const [grades, setGrades] = useState({})       // { course_id: number }
@@ -320,30 +321,39 @@ export default function SidePanel({ user, open, onClose, done, cursos, ciclos })
   }
 
   // ---------- Derivados ----------
+  // Un curso cuenta para promedios y estadísticas solo si tiene nota Y sigue
+  // llevado (aprobado/convalidado) o está desaprobado en la ficha. Las notas
+  // de cursos que dejaron de estar llevados (retiros) quedan fuera: siguen
+  // guardadas, pero no arrastran el ponderado (reaparecen si se vuelve a
+  // marcar el curso).
+  const cuenta = c =>
+    grades[c.id] !== undefined &&
+    (done.has(c.id) || statuses[c.id]?.status === 'desaprobado')
+
   const cicloCourses = useMemo(
     () => cursos.filter(c => c.c === Number(ciclo) && done.has(c.id)),
     [cursos, ciclo, done]
   )
 
   const cicloItems = useMemo(
-    () => cursos.filter(c => c.c === Number(ciclo) && grades[c.id] !== undefined)
+    () => cursos.filter(c => c.c === Number(ciclo) && cuenta(c))
       .map(c => ({ id: c.id, name: c.n, grade: grades[c.id] })),
-    [cursos, ciclo, grades]
+    [cursos, ciclo, grades, done, statuses]
   )
 
   const generalItems = useMemo(
-    () => cursos.filter(c => grades[c.id] !== undefined)
+    () => cursos.filter(cuenta)
       .map(c => ({ id: c.id, name: c.n, grade: grades[c.id] })),
-    [cursos, grades]
+    [cursos, grades, done, statuses]
   )
 
   const pondOf = items => {
     let cr = 0, sum = 0
-    items.forEach(c => { if (c.cr > 0 && grades[c.id] !== undefined) { cr += c.cr; sum += grades[c.id] * c.cr } })
+    items.forEach(c => { if (c.cr > 0 && cuenta(c)) { cr += c.cr; sum += grades[c.id] * c.cr } })
     return cr > 0 ? { value: sum / cr, cr } : null
   }
 
-  const general = useMemo(() => pondOf(cursos), [cursos, grades])
+  const general = useMemo(() => pondOf(cursos), [cursos, grades, done, statuses])
 
   const porCiclo = useMemo(() => {
     const out = []
@@ -353,7 +363,7 @@ export default function SidePanel({ user, open, onClose, done, cursos, ciclos })
       if (p) out.push({ label: `C${num}`, num: Number(num), value: p.value, cr: p.cr })
     })
     return out
-  }, [cursos, ciclos, grades])
+  }, [cursos, ciclos, grades, done, statuses])
 
   const aprobados = generalItems.filter(i => i.grade >= PASS).length
   const desaprobados = generalItems.length - aprobados
@@ -366,11 +376,11 @@ export default function SidePanel({ user, open, onClose, done, cursos, ciclos })
     const peor = generalItems.reduce((a, b) => (b.grade < a.grade ? b : a))
     const credLlevados = cursos.reduce((s, c) => s + (done.has(c.id) ? c.cr : 0), 0)
     const credAprobados = cursos.reduce(
-      (s, c) => s + (grades[c.id] !== undefined && grades[c.id] >= PASS ? c.cr : 0), 0)
+      (s, c) => s + (cuenta(c) && grades[c.id] >= PASS ? c.cr : 0), 0)
     const mejorCiclo = porCiclo.length ? porCiclo.reduce((a, b) => (b.value > a.value ? b : a)) : null
     const peorCiclo = porCiclo.length ? porCiclo.reduce((a, b) => (b.value < a.value ? b : a)) : null
     return { simple, mejor, peor, credLlevados, credAprobados, mejorCiclo, peorCiclo }
-  }, [generalItems, cursos, grades, done, porCiclo])
+  }, [generalItems, cursos, grades, done, statuses, porCiclo])
 
   return (
     <>
@@ -448,7 +458,7 @@ export default function SidePanel({ user, open, onClose, done, cursos, ciclos })
                   <h3>General · {generalItems.length} {generalItems.length === 1 ? 'curso' : 'cursos'} con nota</h3>
                   {Object.keys(ciclos).map(num => {
                     const items = cursos
-                      .filter(c => c.c === Number(num) && grades[c.id] !== undefined)
+                      .filter(c => c.c === Number(num) && cuenta(c))
                       .map(c => ({ id: c.id, name: c.n, grade: grades[c.id] }))
                     if (items.length === 0) return null
                     return (

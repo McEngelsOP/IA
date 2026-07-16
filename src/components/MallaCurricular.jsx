@@ -623,7 +623,7 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
       </footer>
 
       {!isGuest && (
-        <SidePanel user={user} open={panelOpen} onClose={() => setPanelOpen(false)} done={done} cursos={M.cursos} ciclos={M.ciclos} />
+        <SidePanel user={user} open={panelOpen} onClose={() => setPanelOpen(false)} done={done} cursos={M.cursos} ciclos={M.ciclos} statuses={statuses} />
       )}
 
       {!isGuest && (
