@@ -2,16 +2,29 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import '../styles/ProfessorPanel.css'
 
-export default function ProfessorPanel({ user, course }) {
+// Etiquetas: cada alumno marca UNA por profesor (cambiable); se muestran
+// como conteos. Las claves deben coincidir con el CHECK de professor_tags.
+const TAGS = {
+  'estricto-bueno': 'Estricto pero bueno',
+  'estricto-mal': 'Estricto para mal',
+  pasa: 'Pasa por pasar',
+  aprender: 'Para aprender',
+  relajo: 'Relajo',
+  balance: 'Balance'
+}
+
+// embedded: versión sin tarjeta para incrustar en la ficha del curso
+export default function ProfessorPanel({ user, course, embedded }) {
   const [profs, setProfs] = useState(null)
   const [name, setName] = useState('')
   const [msg, setMsg] = useState(null)
   const [saving, setSaving] = useState(false)
+  const [tagPicker, setTagPicker] = useState(null) // id del profesor con el selector abierto
 
   const load = useCallback(async () => {
     const { data, error } = await supabase
       .from('professors')
-      .select('id, name, created_by, professor_votes ( student_id, vote )')
+      .select('id, name, created_by, professor_votes ( student_id, vote ), professor_tags ( student_id, tag )')
       .eq('course_id', course.id)
     if (error) { console.error('[professors:load]', error); setMsg('No se pudo cargar la lista de profesores.'); return }
     setProfs(data || [])
@@ -21,6 +34,7 @@ export default function ProfessorPanel({ user, course }) {
     setProfs(null)
     setMsg(null)
     setName('')
+    setTagPicker(null)
     load()
   }, [load])
 
@@ -72,6 +86,33 @@ export default function ProfessorPanel({ user, course }) {
     setMsg(null)
   }
 
+  // Etiqueta con actualización optimista; tocar tu misma etiqueta la quita
+  const setTag = async (p, tag) => {
+    const mine = p.professor_tags.find(t => t.student_id === user.id)
+    const removing = mine && mine.tag === tag
+    const prev = profs
+    setProfs(profs.map(row => {
+      if (row.id !== p.id) return row
+      const rest = row.professor_tags.filter(t => t.student_id !== user.id)
+      return { ...row, professor_tags: removing ? rest : [...rest, { student_id: user.id, tag }] }
+    }))
+    let error
+    if (removing) {
+      ;({ error } = await supabase.from('professor_tags').delete().match({ professor_id: p.id, student_id: user.id }))
+    } else {
+      ;({ error } = await supabase.from('professor_tags').upsert({
+        professor_id: p.id, student_id: user.id, tag, updated_at: new Date().toISOString()
+      }))
+    }
+    if (error) {
+      console.error('[professors:tag]', error)
+      setMsg('No se pudo guardar tu etiqueta.')
+      setProfs(prev)
+      return
+    }
+    setMsg(null)
+  }
+
   const remove = async p => {
     if (!window.confirm(`¿Quitar a ${p.name} de este curso?`)) return
     // .select() devuelve las filas realmente borradas: si otro alumno votó
@@ -92,22 +133,27 @@ export default function ProfessorPanel({ user, course }) {
       const likes = p.professor_votes.filter(v => v.vote === 1).length
       const dislikes = p.professor_votes.filter(v => v.vote === -1).length
       const mine = p.professor_votes.find(v => v.student_id === user.id)?.vote ?? 0
+      const tagCounts = {}
+      p.professor_tags.forEach(t => (tagCounts[t.tag] = (tagCounts[t.tag] || 0) + 1))
+      const myTag = p.professor_tags.find(t => t.student_id === user.id)?.tag ?? null
       // Con votos de otros alumnos, la entrada ya es de la comunidad:
       // el creador pierde el botón de quitar (la RLS lo bloquea igual)
       const removable = p.created_by === user.id &&
         !p.professor_votes.some(v => v.student_id !== user.id)
-      return { ...p, likes, dislikes, score: likes - dislikes, mine, removable }
+      return { ...p, likes, dislikes, score: likes - dislikes, mine, tagCounts, myTag, removable }
     })
     .sort((a, b) => b.score - a.score || b.likes - a.likes || a.name.localeCompare(b.name))
 
   const top = ranked.length > 0 && ranked[0].score > 0 ? ranked[0].id : null
 
   return (
-    <div className="prof-card">
-      <div className="prof-head">
-        <span className="prof-title">Profesores · <strong>{course.n}</strong></span>
-        <span className="prof-sub">Recomendados por los alumnos · un voto por persona</span>
-      </div>
+    <div className={'prof-card' + (embedded ? ' embedded' : '')}>
+      {!embedded && (
+        <div className="prof-head">
+          <span className="prof-title">Profesores · <strong>{course.n}</strong></span>
+          <span className="prof-sub">Un corazón por persona · etiqueta cómo enseña</span>
+        </div>
+      )}
 
       {msg && <div className="prof-msg">{msg}</div>}
 
@@ -125,9 +171,9 @@ export default function ProfessorPanel({ user, course }) {
                 <button
                   className={'vote-btn like' + (p.mine === 1 ? ' on' : '')}
                   onClick={() => vote(p, 1)}
-                  title={p.mine === 1 ? 'Quitar mi like' : 'Me gustó su curso'}
+                  title={p.mine === 1 ? 'Quitar mi corazón' : 'Me gustó su curso'}
                 >
-                  👍 <b className="mono">{p.likes}</b>
+                  ♥ <b className="mono">{p.likes}</b>
                 </button>
                 <button
                   className={'vote-btn dislike' + (p.mine === -1 ? ' on' : '')}
@@ -140,6 +186,37 @@ export default function ProfessorPanel({ user, course }) {
                   <button className="prof-del" onClick={() => remove(p)} title="Quitar (posible mientras nadie más haya votado)">×</button>
                 )}
               </span>
+
+              <div className="prof-tags">
+                {Object.entries(p.tagCounts)
+                  .sort((a, b) => b[1] - a[1])
+                  .map(([k, n]) => (
+                    <span key={k} className={'ptag' + (p.myTag === k ? ' mine' : '')}>
+                      {TAGS[k]} <b className="mono">×{n}</b>
+                    </span>
+                  ))}
+                <button
+                  className={'ptag-btn' + (tagPicker === p.id ? ' on' : '')}
+                  onClick={() => setTagPicker(tagPicker === p.id ? null : p.id)}
+                >
+                  🏷 {p.myTag ? 'Mi etiqueta' : 'Etiquetar'}
+                </button>
+              </div>
+
+              {tagPicker === p.id && (
+                <div className="tag-picker">
+                  {Object.entries(TAGS).map(([k, label]) => (
+                    <button
+                      key={k}
+                      className={'ptag pick' + (p.myTag === k ? ' mine' : '')}
+                      onClick={() => setTag(p, k)}
+                      title={p.myTag === k ? 'Quitar mi etiqueta' : 'Marcar esta etiqueta'}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </li>
           ))}
         </ul>

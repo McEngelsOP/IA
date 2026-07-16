@@ -103,8 +103,8 @@ El creador solo puede quitarlo mientras nadie más haya votado (decisión de dis
 ### Borrar una herramienta
 El creador puede hacerlo siempre desde la app. Tú también: Table Editor → `tools` (sus likes y comentarios caen en cascada).
 
-### Votos o likes sospechosos
-`professor_votes` y `tool_likes` guardan `student_id`: puedes ver quién votó qué y borrar filas puntuales. Estructuralmente solo puede existir un voto/like por alumno (clave primaria compuesta).
+### Votos, likes o etiquetas sospechosos
+`professor_votes`, `professor_tags` y `tool_likes` guardan `student_id`: puedes ver quién votó/etiquetó qué y borrar filas puntuales. Estructuralmente solo puede existir un voto/like/etiqueta por alumno (clave primaria compuesta).
 
 ### Topes anti-spam vigentes (por si alguien reporta que "no puede agregar")
 - 5 profesores por alumno por curso · 20 herramientas por alumno · 5 comentarios por alumno por herramienta (máx. 300 caracteres) · 3 reseñas por alumno por curso (máx. 50 palabras / 400 caracteres).
@@ -151,7 +151,7 @@ select student_code, email, carrera, created_at from profiles order by created_a
 
 ## 7. Configuración y despliegues (lo que sí requiere cuidado)
 
-- **Scripts SQL**: las queries numeradas **01–16** ya están aplicadas en producción. No las vuelvas a correr (fallarían por objetos ya existentes). Los `.sql` del repo son solo el registro. **Pendiente de correr: `times_taken_max_3.sql` (query 17 · Veces llevado máx. 3)**. La 16 también restauró el tope de promoción por año para códigos ESAN (se había perdido al redefinir `handle_new_user` en la query 11) y acepta códigos PUCP (8 dígitos que empiezan en 20).
+- **Scripts SQL**: las queries numeradas **01–16** ya están aplicadas en producción. No las vuelvas a correr (fallarían por objetos ya existentes). Los `.sql` del repo son solo el registro. **Pendientes de correr: `times_taken_max_3.sql` (query 17 · Veces llevado máx. 3) y `professor_tags.sql` (query 18 · Etiquetas de profesores — OBLIGATORIA antes del deploy que la usa: la lista de profesores hace join a esa tabla y sin ella deja de cargar)**. La 16 también restauró el tope de promoción por año para códigos ESAN (se había perdido al redefinir `handle_new_user` en la query 11) y acepta códigos PUCP (8 dígitos que empiezan en 20).
 - **Edge Function `auth-by-code`**: se edita/redespliega a mano en Dashboard → Edge Functions (el push a Vercel NO la actualiza). No la toques si el login funciona.
 - **SMTP propio (recomendado pendiente)**: Authentication → SMTP Settings. El SMTP integrado permite poquísimos correos por hora — es el primer cuello de botella si muchos se registran el mismo día.
 - **CAPTCHA Turnstile**: ⚠️ **no lo actives en el dashboard** sin coordinar antes — requiere cambios simultáneos en el login y la Edge Function, o nadie podrá entrar.

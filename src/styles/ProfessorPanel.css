@@ -122,12 +122,22 @@
   border-color: #b9c1bc;
 }
 
-.vote-btn.like.on {
-  background: #e4f1e8;
-  border-color: #1b7a46;
+.vote-btn.like {
+  color: #8b94a0;
 }
 
-.vote-btn.like.on b { color: #1b7a46; }
+.vote-btn.like:hover {
+  border-color: #d99a9a;
+  color: #b23b3b;
+}
+
+.vote-btn.like.on {
+  background: #faeaea;
+  border-color: #b23b3b;
+  color: #b23b3b;
+}
+
+.vote-btn.like.on b { color: #b23b3b; }
 
 .vote-btn.dislike.on {
   background: #faf0da;
@@ -149,6 +159,88 @@
 .prof-del:hover {
   background: #faf0da;
   color: #9a6b0b;
+}
+
+/* ---------- Etiquetas (una por alumno por profesor) ---------- */
+.prof-tags {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.ptag {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #5c6672;
+  background: #f5f6f4;
+  border: 1px solid #e3e6e2;
+  border-radius: 999px;
+  padding: 3px 9px;
+}
+
+.ptag b {
+  font-size: 10px;
+  color: #8b94a0;
+}
+
+.ptag.mine {
+  background: #e4f1e8;
+  border-color: #9cc9ad;
+  color: #1b7a46;
+}
+
+.ptag.mine b { color: #1b7a46; }
+
+.ptag-btn {
+  border: 1px dashed #c7cdc7;
+  background: transparent;
+  color: #8b94a0;
+  font: 600 10.5px 'Inter', sans-serif;
+  border-radius: 999px;
+  padding: 3px 9px;
+  cursor: pointer;
+}
+
+.ptag-btn:hover,
+.ptag-btn.on {
+  border-color: #1b7a46;
+  border-style: solid;
+  color: #1b7a46;
+}
+
+.tag-picker {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 7px 8px;
+  background: #f5f6f4;
+  border-radius: 8px;
+}
+
+.ptag.pick {
+  cursor: pointer;
+  background: #fff;
+}
+
+.ptag.pick:hover {
+  border-color: #9cc9ad;
+  color: #1b7a46;
+}
+
+/* ---------- Versión incrustada en la ficha del curso ---------- */
+.prof-card.embedded {
+  margin: 0;
+  padding: 0;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+}
+
+.prof-card.embedded .prof-list {
+  max-height: 260px;
 }
 
 .prof-form {

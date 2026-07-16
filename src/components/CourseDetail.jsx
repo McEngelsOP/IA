@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import ProfessorPanel from './ProfessorPanel'
 import '../styles/CourseDetail.css'
 
 // Estados académicos de la ficha (null = pendiente, sin fila en la base)
@@ -346,6 +347,15 @@ export default function CourseDetail({ user, course, ciclos, byId, statusRow, is
                 />
               </label>
             </div>
+          </section>
+
+          <section className="cd-section">
+            <h3>Profesores</h3>
+            <p className="cd-note-txt">
+              Dales un corazón a los que recomiendas y etiqueta cómo enseñan —
+              se comparte con las carreras que llevan este curso.
+            </p>
+            <ProfessorPanel user={user} course={course} embedded />
           </section>
 
           <section className="cd-section">
