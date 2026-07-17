@@ -3,7 +3,6 @@ import { supabase } from '../lib/supabaseClient'
 import { CARRERAS } from '../data/carreras'
 import { AREAS } from '../data/areas'
 import SidePanel from './SidePanel'
-import ProfessorPanel from './ProfessorPanel'
 import CourseDetail, { STATUS_META } from './CourseDetail'
 import '../styles/MallaCurricular.css'
 
@@ -616,10 +615,6 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
             ))}
           </div>
         </details>
-      )}
-
-      {!isGuest && selected && mode !== 'ficha' && (
-        <ProfessorPanel user={user} course={byId[selected]} />
       )}
 
       <div className="frame">
