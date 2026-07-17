@@ -137,7 +137,9 @@
 /* ---------- Grid ---------- */
 .acad-cal-grid-header {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  /* minmax(0, 1fr): sin esto, las pastillas con texto ensanchan su columna
+     y los 7 días salen de anchos distintos */
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   padding-bottom: 8px;
 }
 
@@ -153,7 +155,7 @@
 
 .acad-cal-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   grid-auto-rows: minmax(108px, 1fr);
   gap: 1px;
   background: #e9e9e7; /* líneas internas del grid */
@@ -165,6 +167,7 @@
 
 .acad-cal-cell {
   position: relative;
+  min-width: 0;
   background: #ffffff;
   padding: 6px;
   display: flex;
@@ -503,17 +506,44 @@
   .acad-cal-title h1 { font-size: 18px; }
   .acad-cal-icon { font-size: 20px; }
   .acad-cal-current-month { font-size: 14px; }
-  .acad-cal-grid { grid-auto-rows: minmax(84px, 1fr); }
+  .acad-cal-grid { grid-auto-rows: minmax(64px, auto); }
   .acad-cal-cell { padding: 4px; }
-  .acad-cal-pill { font-size: 9.5px; padding: 2px 4px; }
-  .acad-cal-date-num { font-size: 12px; min-width: 20px; height: 20px; }
+  .acad-cal-grid-header span { text-align: center; padding-right: 0; }
+  .acad-cal-date-num {
+    font-size: 12px;
+    min-width: 22px;
+    height: 22px;
+    align-self: center;
+  }
   .acad-cal-add { display: none; } /* en táctil basta tocar la celda */
   .acad-cal-legend { gap: 10px; font-size: 11px; }
+
+  /* los eventos se ven como puntos de color; tocar el día abre la lista */
+  .acad-cal-events {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-content: flex-start;
+    gap: 4px;
+    overflow: visible;
+  }
 
   /* 16px en campos de texto: evita el zoom automático de iOS al enfocar */
   .acad-cal-form-group input,
   .acad-cal-form-group textarea { font-size: 16px; }
 }
+
+/* punto de evento en móvil (el JSX quita el texto y el clic va a la celda) */
+.acad-cal-pill.dot-mode {
+  width: 9px;
+  height: 9px;
+  padding: 0;
+  flex: none;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.acad-cal-pill.dot-mode.cont { opacity: 0.55; }
 
 /* ---------- Modo oscuro ---------- */
 [data-theme='dark'] .acad-cal-backdrop {

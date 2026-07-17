@@ -5,6 +5,7 @@ import { AREAS } from '../data/areas'
 import SidePanel from './SidePanel'
 import CourseDetail, { STATUS_META } from './CourseDetail'
 import { LOGROS } from '../lib/logros'
+import useMediaQuery from '../lib/useMediaQuery'
 import '../styles/MallaCurricular.css'
 
 // El arcade se descarga solo cuando alguien pulsa el botón (code-splitting):
@@ -127,6 +128,17 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
   const [courseStats, setCourseStats] = useState(null) // agregados por curso (query 28) · null = sin pedir
   const [planModalOpen, setPlanModalOpen] = useState(false) // modal de detalles del plan
   const [calendarOpen, setCalendarOpen] = useState(false) // vista de calendario academico
+
+  // Pantalla chica = interfaz móvil: sin arcade (no está optimizado para
+  // táctil) y con zoom de pellizco sobre la malla. Reacciona al girar.
+  const isMobile = useMediaQuery('(max-width: 760px)')
+
+  // Zoom del lienzo: en móvil arranca un poco más grande para que los
+  // cursos se lean; en desktop siempre es 1 (idéntico a antes).
+  const [zoom, setZoom] = useState(() => {
+    try { return window.matchMedia('(max-width: 760px)').matches ? 1.15 : 1 } catch { return 1 }
+  })
+  const zoomRef = useRef(zoom)
 
   // Hint «desliza» solo en pantallas chicas y solo la primera visita
   const [swipeHint, setSwipeHint] = useState(() => {
@@ -404,6 +416,51 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
     setSelected(null)
     setLastAction(null)
   }
+
+  // Cambiar el zoom manteniendo fijo el punto (cx, cy) de la pantalla
+  // (el centro del pellizco, o el centro visible con los botones ±)
+  const applyZoom = (nz, cx, cy) => {
+    const s = scrollerRef.current
+    const oz = zoomRef.current
+    nz = Math.min(1.8, Math.max(0.6, nz))
+    if (!s || nz === oz) return
+    const rect = s.getBoundingClientRect()
+    const px = (cx ?? rect.left + rect.width / 2) - rect.left
+    const py = (cy ?? rect.top + rect.height / 2) - rect.top
+    const sl = (s.scrollLeft + px) * (nz / oz) - px
+    const st = (s.scrollTop + py) * (nz / oz) - py
+    zoomRef.current = nz
+    setZoom(nz)
+    requestAnimationFrame(() => { s.scrollLeft = sl; s.scrollTop = st })
+  }
+
+  // Pellizco con dos dedos (solo móvil; un dedo sigue desplazando normal)
+  useEffect(() => {
+    const s = scrollerRef.current
+    if (!s || !isMobile) return
+    let d0 = 0, z0 = 1
+    const dist = t => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY)
+    const onStart = e => {
+      if (e.touches.length === 2) { d0 = dist(e.touches); z0 = zoomRef.current }
+    }
+    const onMove = e => {
+      if (e.touches.length === 2 && d0 > 0) {
+        e.preventDefault() // que el pellizco no haga zoom a toda la página
+        const cx = (e.touches[0].clientX + e.touches[1].clientX) / 2
+        const cy = (e.touches[0].clientY + e.touches[1].clientY) / 2
+        applyZoom(z0 * dist(e.touches) / d0, cx, cy)
+      }
+    }
+    const onEnd = () => { d0 = 0 }
+    s.addEventListener('touchstart', onStart, { passive: true })
+    s.addEventListener('touchmove', onMove, { passive: false })
+    s.addEventListener('touchend', onEnd)
+    return () => {
+      s.removeEventListener('touchstart', onStart)
+      s.removeEventListener('touchmove', onMove)
+      s.removeEventListener('touchend', onEnd)
+    }
+  }, [isMobile]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Arrastrar para desplazar el lienzo
   const onMouseDown = ev => {
@@ -725,9 +782,12 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
             <button className="buscar-clear" onClick={() => setBusca('')} aria-label="Limpiar búsqueda">×</button>
           )}
         </div>
-        <button className="arcade-btn" onClick={ev => { ev.stopPropagation(); setArcadeOpen(true) }}>
-          🕹 ARCADE
-        </button>
+        {/* El arcade no está optimizado para táctil: en móvil no se ofrece */}
+        {!isMobile && (
+          <button className="arcade-btn" onClick={ev => { ev.stopPropagation(); setArcadeOpen(true) }}>
+            🕹 ARCADE
+          </button>
+        )}
         <div className="legend">
           {mode === 'ficha' ? (
             <>
@@ -805,7 +865,10 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
 
       <div className="frame">
         <div className="scroller" ref={scrollerRef} onClick={onScrollerClick} onMouseDown={onMouseDown}>
-          <div className="canvas" style={{ width: M.W, height: M.H }}>
+          {/* El wrapper reserva el tamaño escalado para que el scroll alcance;
+              con zoom = 1 (desktop) es idéntico a no existir */}
+          <div className="canvas-zoom" style={{ width: M.W * zoom, height: M.H * zoom }}>
+          <div className="canvas" style={{ width: M.W, height: M.H, transform: `scale(${zoom})`, transformOrigin: '0 0' }}>
             <svg className="edges" width={M.W} height={M.H} viewBox={`0 0 ${M.W} ${M.H}`} xmlns="http://www.w3.org/2000/svg">
               {edges.map((e, i) => {
                 const cls = edgeClass(e)
@@ -835,7 +898,14 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
               </div>
             ))}
           </div>
+          </div>
         </div>
+        {isMobile && (
+          <div className="zoom-ctrl">
+            <button onClick={() => applyZoom(zoomRef.current - 0.15)} aria-label="Alejar">−</button>
+            <button onClick={() => applyZoom(zoomRef.current + 0.15)} aria-label="Acercar">+</button>
+          </div>
+        )}
       </div>
 
       <footer className="malla-foot mono">

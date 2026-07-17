@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { CALENDARIO_POR_UNI, TIPOS_EVENTO, COLORES_PERSONAL } from '../data/calendario'
+import useMediaQuery from '../lib/useMediaQuery'
 import '../styles/AcademicCalendar.css'
 
 const MESES = [
@@ -37,6 +38,10 @@ export default function AcademicCalendar({ user, uni, onClose }) {
   // Cada universidad ve SOLO su calendario oficial (la PUCP aún no tiene:
   // sus alumnos usan el calendario solo para eventos personales)
   const cal = CALENDARIO_POR_UNI[uni] || { titulo: 'Calendario', eventos: [] }
+
+  // En pantallas chicas los eventos se ven como puntos de color y tocar
+  // el día abre su lista completa (las celdas no dan para texto legible)
+  const isMobile = useMediaQuery('(max-width: 720px)')
 
   const hoy = new Date()
   const hoyStr = toDateString(hoy.getFullYear(), hoy.getMonth(), hoy.getDate())
@@ -105,6 +110,16 @@ export default function AcademicCalendar({ user, uni, onClose }) {
   const openCreate = dateStr => {
     setFormColor('gris')
     setModalConfig({ mode: 'create', date: dateStr })
+  }
+
+  // Móvil: tocar un día con eventos abre su lista; sin eventos, crea uno
+  const handleCellTap = d => {
+    if (d.empty) return
+    if (isMobile && d.events.length > 0) {
+      setModalConfig({ mode: 'day', date: d.dateStr, events: d.events })
+    } else {
+      openCreate(d.dateStr)
+    }
   }
 
   const openEvent = e => {
@@ -210,7 +225,7 @@ export default function AcademicCalendar({ user, uni, onClose }) {
             <div
               key={i}
               className={`acad-cal-cell ${d.empty ? 'empty' : 'clickable'}${!d.empty && d.dateStr < hoyStr ? ' past' : ''}`}
-              onClick={() => { if (!d.empty) openCreate(d.dateStr) }}
+              onClick={() => handleCellTap(d)}
             >
               {!d.empty && (
                 <>
@@ -224,17 +239,17 @@ export default function AcademicCalendar({ user, uni, onClose }) {
                     {d.date}
                   </span>
                   <div className="acad-cal-events">
-                    {d.events.slice(0, MAX_PILLS).map(e => (
+                    {d.events.slice(0, isMobile ? 8 : MAX_PILLS).map(e => (
                       <div
                         key={e.id}
-                        className={`${pillClass(e)}${e.start && d.dateStr !== e.start ? ' cont' : ''}`}
-                        onClick={ev => { ev.stopPropagation(); openEvent(e) }}
+                        className={`${pillClass(e)}${e.start && d.dateStr !== e.start ? ' cont' : ''}${isMobile ? ' dot-mode' : ''}`}
+                        onClick={isMobile ? undefined : ev => { ev.stopPropagation(); openEvent(e) }}
                         title={e.title}
                       >
-                        {e.title}
+                        {isMobile ? '' : e.title}
                       </div>
                     ))}
-                    {d.events.length > MAX_PILLS && (
+                    {!isMobile && d.events.length > MAX_PILLS && (
                       <button
                         className="acad-cal-more"
                         onClick={ev => {
