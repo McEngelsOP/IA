@@ -1,11 +1,14 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import ConfirmDialog from './ConfirmDialog'
+import { LOGROS } from '../lib/logros'
 import '../styles/SidePanel.css'
 
 const PASS = 10.5 // nota mínima aprobatoria de referencia
 
 const fmt = v => (Number.isInteger(v) ? String(v) : v.toFixed(2).replace(/0$/, ''))
+const fdate = iso =>
+  new Date(iso).toLocaleDateString('es-PE', { day: 'numeric', month: 'short', year: 'numeric' })
 
 // ---------- Gráficos (SVG a mano, una sola serie) ----------
 
@@ -125,7 +128,8 @@ function HistNotas({ values }) {
 // cursos/ciclos: la malla de la carrera del alumno (viene de MallaCurricular)
 // statuses: estados de la ficha del curso — los desaprobados cuentan en el ponderado
 export default function SidePanel({ user, open, onClose, done, cursos, ciclos, statuses = {} }) {
-  const [tab, setTab] = useState('graficos') // 'graficos' | 'ponderado' | 'stats' | 'tools'
+  const [tab, setTab] = useState('graficos') // 'graficos' | 'ponderado' | 'stats' | 'tools' | 'logros' | 'historia'
+  const [logrosMap, setLogrosMap] = useState(null) // { clave: earned_at } · null = sin cargar
   const [ciclo, setCiclo] = useState(1)
   const [grades, setGrades] = useState({})       // { course_id: number }
   const [drafts, setDrafts] = useState({})       // texto del input mientras se edita
@@ -175,6 +179,21 @@ export default function SidePanel({ user, open, onClose, done, cursos, ciclos, s
   useEffect(() => {
     if (open && tab === 'tools' && tools === null) loadTools()
   }, [open, tab, tools, loadTools])
+
+  // Logros del alumno (RLS: solo los propios). Se otorgan vía la RPC
+  // reclamar_logros desde MallaCurricular; aquí solo se leen.
+  useEffect(() => {
+    if (!open || (tab !== 'logros' && tab !== 'historia') || logrosMap !== null) return
+    supabase
+      .from('logros')
+      .select('logro, earned_at')
+      .then(({ data, error }) => {
+        if (error) { console.error('[logros:load]', error); setLogrosMap({}); return }
+        const m = {}
+        ;(data || []).forEach(r => { m[r.logro] = r.earned_at })
+        setLogrosMap(m)
+      })
+  }, [open, tab, logrosMap])
 
   // El alias propio se lee del perfil (los demás nunca ven tu alias junto a tu identidad)
   useEffect(() => {
@@ -380,6 +399,39 @@ export default function SidePanel({ user, open, onClose, done, cursos, ciclos, s
   const aprobados = generalItems.filter(i => i.grade >= PASS).length
   const desaprobados = generalItems.length - aprobados
 
+  // ---------- Historia académica (línea de tiempo privada) ----------
+  // Se arma en el cliente con lo ya registrado: cursos llevados por ciclo,
+  // hitos de avance en créditos y ponderado por ciclo si hay notas.
+  const historia = useMemo(() => {
+    const items = []
+    const total = cursos.reduce((s, c) => s + c.cr, 0)
+    const hitos = [25, 50, 75, 100]
+    let acum = 0
+    let hi = 0
+    Object.keys(ciclos).map(Number).sort((a, b) => a - b).forEach(num => {
+      const llevados = cursos.filter(c => c.c === num && done.has(c.id))
+      if (llevados.length === 0) return
+      const cr = llevados.reduce((s, c) => s + c.cr, 0)
+      acum += cr
+      const p = porCiclo.find(x => x.num === num)
+      items.push({
+        icon: '📚',
+        t: `${ciclos[num].t}: ${llevados.length} ${llevados.length === 1 ? 'curso llevado' : 'cursos llevados'}`,
+        s: `${fmt(cr)} créditos${p ? ` · ponderado ${p.value.toFixed(2)}` : ''}`
+      })
+      const pct = total > 0 ? (acum / total) * 100 : 0
+      while (hi < hitos.length && pct >= hitos[hi]) {
+        items.push({
+          icon: hitos[hi] === 100 ? '🏁' : '⭐',
+          t: `${hitos[hi]} % de la carrera completado`,
+          s: `${fmt(acum)} de ${fmt(total)} créditos`
+        })
+        hi++
+      }
+    })
+    return items
+  }, [cursos, ciclos, done, porCiclo])
+
   // ---------- Estadísticas ----------
   const stats = useMemo(() => {
     if (generalItems.length === 0) return null
@@ -401,7 +453,7 @@ export default function SidePanel({ user, open, onClose, done, cursos, ciclos, s
         <header className="sp-head">
           <div>
             <div className="sp-eyebrow mono">PANEL</div>
-            <h2>Notas y herramientas</h2>
+            <h2>Mi panel</h2>
           </div>
           <button className="sp-close" onClick={onClose} aria-label="Cerrar panel">×</button>
         </header>
@@ -411,6 +463,8 @@ export default function SidePanel({ user, open, onClose, done, cursos, ciclos, s
           <button className={tab === 'ponderado' ? 'on' : ''} onClick={() => setTab('ponderado')}>Ponderado</button>
           <button className={tab === 'stats' ? 'on' : ''} onClick={() => setTab('stats')}>Estadísticas</button>
           <button className={tab === 'tools' ? 'on' : ''} onClick={() => setTab('tools')}>Herramientas</button>
+          <button className={tab === 'logros' ? 'on' : ''} onClick={() => setTab('logros')}>Logros</button>
+          <button className={tab === 'historia' ? 'on' : ''} onClick={() => setTab('historia')}>Historia</button>
         </nav>
 
         {msg && <div className="sp-msg">{msg}</div>}
@@ -730,6 +784,88 @@ export default function SidePanel({ user, open, onClose, done, cursos, ciclos, s
                   Agregar herramienta
                 </button>
               </form>
+            </>
+          )}
+
+          {tab === 'logros' && (
+            logrosMap === null ? (
+              <div className="sp-empty">Cargando…</div>
+            ) : (
+              <>
+                <div className="sp-hint">
+                  Se desbloquean con tu participación: avance de malla, reseñas, profesores,
+                  herramientas y arcade. Son privados — solo tú los ves. Las notas no influyen.
+                </div>
+                <div className="sp-hero">
+                  <div className="sp-hero-num">
+                    {Object.keys(logrosMap).length}<span className="lg-total"> / {Object.keys(LOGROS).length}</span>
+                  </div>
+                  <div className="sp-hero-sub">logros desbloqueados</div>
+                </div>
+                <div className="lg-grid">
+                  {Object.entries(LOGROS).map(([k, m]) => {
+                    const won = logrosMap[k]
+                    return (
+                      <div key={k} className={'lg-card' + (won ? ' won' : '')}>
+                        <span className="lg-icon">{m.icon}</span>
+                        <span className="lg-name">{m.name}</span>
+                        <span className="lg-desc">{won ? `Desbloqueado · ${fdate(won)}` : m.desc}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </>
+            )
+          )}
+
+          {tab === 'historia' && (
+            <>
+              <div className="sp-hint">
+                Tu línea de tiempo universitaria, armada con lo que registras en la malla.
+                Privada — solo tú la ves.
+              </div>
+              <div className="tl">
+                <div className="tl-item">
+                  <span className="tl-icon">🎉</span>
+                  <div className="tl-txt">
+                    <div className="tl-t">Te uniste a la malla interactiva</div>
+                    <div className="tl-s">{fdate(user.created_at)}</div>
+                  </div>
+                </div>
+                {historia.map((it, i) => (
+                  <div key={i} className="tl-item">
+                    <span className="tl-icon">{it.icon}</span>
+                    <div className="tl-txt">
+                      <div className="tl-t">{it.t}</div>
+                      <div className="tl-s">{it.s}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {historia.length === 0 && (
+                <div className="sp-empty">
+                  Marca cursos como llevados en la malla y tu historia se irá escribiendo aquí:
+                  ciclos, créditos y hitos de avance.
+                </div>
+              )}
+              {logrosMap && Object.keys(logrosMap).length > 0 && (
+                <section className="sp-section">
+                  <h3>Logros conseguidos</h3>
+                  <div className="tl">
+                    {Object.entries(logrosMap)
+                      .sort((a, b) => a[1].localeCompare(b[1]))
+                      .map(([k, d]) => LOGROS[k] && (
+                        <div key={k} className="tl-item">
+                          <span className="tl-icon">{LOGROS[k].icon}</span>
+                          <div className="tl-txt">
+                            <div className="tl-t">{LOGROS[k].name}</div>
+                            <div className="tl-s">{fdate(d)}</div>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </section>
+              )}
             </>
           )}
         </div>

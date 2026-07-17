@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import { temporadaActual, listaTemporadas } from '../lib/temporada'
 import DinoGame from './DinoGame'
 import AstroDefensa from './AstroDefensa'
 import Galaxia from './Galaxia'
@@ -12,6 +13,11 @@ import '../styles/Arcade.css'
 
 // Figuritas que flotan en el fondo (posición/tiempos vía CSS)
 const DECO = ['👾', '🎮', '🕹️', '⭐', '🚀', '💾', '👻', '🍄']
+
+// Temporada actual del ranking (2026-I, 2026-II…); las pasadas quedan
+// como salón de la fama, solo lectura
+const TEMPORADA = temporadaActual()
+const TEMPORADAS = listaTemporadas()
 
 // Catálogo de juegos: la portada los lista en vertical; al elegir uno,
 // la vista se centra solo en ese juego con su ranking y estadísticas.
@@ -57,6 +63,7 @@ export default function Arcade({ user, onClose }) {
   const [pendingScore, setPendingScore] = useState(null)
   const [guestBest, setGuestBest] = useState({}) // visitante: por juego, solo esta sesión
   const [msg, setMsg] = useState(null)
+  const [season, setSeason] = useState(TEMPORADA) // temporada mostrada en el ranking
 
   // Mis mejores puntajes (se muestran en las tarjetas de la portada)
   useEffect(() => {
@@ -71,12 +78,13 @@ export default function Arcade({ user, onClose }) {
       .then(({ data }) => setAlias(data?.alias ?? null))
   }, [user])
 
-  const loadRanking = useCallback(async game => {
+  const loadRanking = useCallback(async (game, ssn) => {
     if (!user || !game) return
     const { data, error } = await supabase
       .from('game_scores')
       .select('alias, score, updated_at') // columnas explícitas: student_id no es legible
       .eq('game', game)
+      .eq('season', ssn || TEMPORADA)
       .order('score', { ascending: false })
       .limit(10)
     if (error) { console.error('[arcade:ranking]', error); return }
@@ -88,7 +96,14 @@ export default function Arcade({ user, onClose }) {
     setRanking(null)
     setMsg(null)
     setNeedAlias(false)
-    loadRanking(k)
+    setSeason(TEMPORADA)
+    loadRanking(k, TEMPORADA)
+  }
+
+  const changeSeason = ssn => {
+    setSeason(ssn)
+    setRanking(null)
+    loadRanking(activeGame, ssn)
   }
 
   const backToList = () => {
@@ -122,7 +137,9 @@ export default function Arcade({ user, onClose }) {
     }
     setMsg(null)
     setBests(b => ({ ...b, [activeGame]: data }))
-    loadRanking(activeGame)
+    // el puntaje entra a la temporada ACTUAL: el ranking vuelve a ella
+    setSeason(TEMPORADA)
+    loadRanking(activeGame, TEMPORADA)
   }, [user, activeGame, loadRanking])
 
   // Elegir el nombre secreto (una sola vez, igual que en las reseñas)
@@ -141,7 +158,7 @@ export default function Arcade({ user, onClose }) {
     setAlias(a)
     setNeedAlias(false)
     setMsg(null)
-    if (activeGame) loadRanking(activeGame)
+    if (activeGame) loadRanking(activeGame, season)
     if (pendingScore) { submitScore(pendingScore, true); setPendingScore(null) }
   }
 
@@ -277,6 +294,21 @@ export default function Arcade({ user, onClose }) {
 
           <aside className="arcade-rank">
             <h2 className="mono">🏆 RANKING GLOBAL</h2>
+            {TEMPORADAS.length > 1 ? (
+              <div className="rank-season mono">
+                <label htmlFor="rank-season-sel">TEMPORADA</label>
+                <select id="rank-season-sel" value={season} onChange={e => changeSeason(e.target.value)}>
+                  {TEMPORADAS.map(t => (
+                    <option key={t} value={t}>{t}{t === TEMPORADA ? ' · actual' : ''}</option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <p className="rank-season mono">TEMPORADA {TEMPORADA}</p>
+            )}
+            {season !== TEMPORADA && (
+              <p className="rank-note">🏛️ Salón de la fama: temporada finalizada, solo lectura.</p>
+            )}
             <p className="rank-note">{G.name}: {G.rankNote}</p>
             {!user ? (
               <p className="rank-empty">
@@ -286,7 +318,11 @@ export default function Arcade({ user, onClose }) {
             ) : ranking === null ? (
               <p className="rank-empty mono">CARGANDO…</p>
             ) : ranking.length === 0 ? (
-              <p className="rank-empty">Aún no hay puntajes. ¡Sé la primera persona del ranking!</p>
+              <p className="rank-empty">
+                {season === TEMPORADA
+                  ? 'Aún no hay puntajes esta temporada. ¡Sé la primera persona del ranking!'
+                  : 'No hubo puntajes en esta temporada.'}
+              </p>
             ) : (
               <ol className="rank-list">
                 {ranking.map((r, i) => (

@@ -764,3 +764,53 @@ path.e.dim { opacity: 0.07; }
 
 [data-theme='dark'] .elec-group { background: #161d2b; }
 [data-theme='dark'] path.e { stroke: #3a4557; }
+
+/* ---------- Aviso de logro desbloqueado (toast) ---------- */
+.logro-toast {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 320px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  cursor: pointer;
+  background: #15202e;
+  color: #f2f5f9;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 12px 34px rgba(21, 32, 46, 0.35);
+  animation: logro-in 0.3s ease;
+}
+
+@keyframes logro-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logro-toast { animation: none; }
+}
+
+.logro-toast-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.logro-toast-row b { color: #ffd166; }
+
+.logro-toast-icon { font-size: 20px; }
+
+.logro-toast-hint {
+  font-size: 10.5px;
+  color: #9aa6b5;
+}
+
+[data-theme='dark'] .logro-toast {
+  background: #1c2739;
+  border-color: #2e3a52;
+}

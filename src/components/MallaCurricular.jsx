@@ -4,6 +4,7 @@ import { CARRERAS } from '../data/carreras'
 import { AREAS } from '../data/areas'
 import SidePanel from './SidePanel'
 import CourseDetail, { STATUS_META } from './CourseDetail'
+import { LOGROS } from '../lib/logros'
 import '../styles/MallaCurricular.css'
 
 // El arcade se descarga solo cuando alguien pulsa el botón (code-splitting):
@@ -116,6 +117,23 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
   const [syncError, setSyncError] = useState(false)
   const [panelOpen, setPanelOpen] = useState(false) // panel lateral (solo con sesión)
   const [arcadeOpen, setArcadeOpen] = useState(false) // pantalla interna de juegos
+  const [logroToast, setLogroToast] = useState(null) // logros recién desbloqueados
+
+  // Reclamar logros: el servidor valida las condiciones y devuelve SOLO
+  // los nuevos. Corre al entrar y al abrir/cerrar el arcade (los puntajes
+  // pueden desbloquear logros); reclamar dos veces es inofensivo.
+  useEffect(() => {
+    if (!user) return
+    let t
+    supabase.rpc('reclamar_logros').then(({ data, error }) => {
+      if (error) { console.error('[logros:reclamar]', error); return }
+      if (data && data.length) {
+        setLogroToast(data)
+        t = setTimeout(() => setLogroToast(null), 8000)
+      }
+    })
+    return () => clearTimeout(t)
+  }, [user, arcadeOpen])
 
   const scrollerRef = useRef(null)
   const dragRef = useRef(null)
@@ -658,6 +676,18 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
 
       {!isGuest && (
         <SidePanel user={user} open={panelOpen} onClose={() => setPanelOpen(false)} done={done} cursos={M.cursos} ciclos={M.ciclos} statuses={statuses} />
+      )}
+
+      {!isGuest && logroToast && !arcadeOpen && (
+        <div className="logro-toast" onClick={() => setLogroToast(null)} role="status">
+          {logroToast.map(k => LOGROS[k] && (
+            <div key={k} className="logro-toast-row">
+              <span className="logro-toast-icon">{LOGROS[k].icon}</span>
+              <span><b>¡Logro desbloqueado!</b> {LOGROS[k].name}</span>
+            </div>
+          ))}
+          <span className="logro-toast-hint">Míralos en «Mi panel» → Logros</span>
+        </div>
       )}
 
       {arcadeOpen && (

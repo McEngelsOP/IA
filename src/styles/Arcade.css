@@ -534,6 +534,30 @@
   margin: 0 0 12px;
 }
 
+/* Selector de temporada del ranking (2026-I, 2026-II…) */
+.rank-season {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: -6px 0 10px;
+  font-size: 10px;
+  letter-spacing: 1.2px;
+  color: #8b96c9;
+}
+
+.rank-season select {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+  color: #dfe4f5;
+}
+
+.rank-season select:hover { border-color: #ffd166; }
+
 .rank-note {
   margin: -6px 0 10px;
   font-size: 11px;
