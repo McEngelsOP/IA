@@ -1,0 +1,129 @@
+/* «Tu avance en números» · modal con el póster compartible */
+
+.rc-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(21, 32, 46, 0.55);
+}
+
+.rc-modal {
+  width: min(400px, 94vw);
+  max-height: 92dvh;
+  overflow-y: auto;
+  background: #ffffff;
+  border: 1px solid #e3e6e2;
+  border-radius: 18px;
+  padding: 18px 20px;
+  box-shadow: 0 18px 50px rgba(21, 32, 46, 0.3);
+  font-family: 'Inter', system-ui, sans-serif;
+  color: #15202e;
+}
+
+.rc-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.rc-head h3 { margin: 0; font-size: 17px; }
+
+.rc-close {
+  border: none;
+  background: transparent;
+  font-size: 22px;
+  cursor: pointer;
+  color: #5c6672;
+  line-height: 1;
+}
+
+.rc-hint {
+  font-size: 12.5px;
+  color: #5c6672;
+  margin: 8px 0 10px;
+  line-height: 1.5;
+}
+
+.rc-scope {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.rc-scope select {
+  font: 500 13px 'Inter', sans-serif;
+  padding: 5px 8px;
+  border-radius: 8px;
+  border: 1px solid #d5d9d4;
+  background: #f5f6f4;
+  color: #15202e;
+  cursor: pointer;
+}
+
+.rc-canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 12px;
+  border: 1px solid #e3e6e2;
+}
+
+.rc-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.rc-btn {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  font: 600 13px 'Inter', sans-serif;
+  background: #15202e;
+  color: #fff;
+}
+
+.rc-btn:hover { background: #2b3a4e; }
+
+.rc-btn.ghost {
+  background: #f5f6f4;
+  color: #15202e;
+  border: 1px solid #d5d9d4;
+}
+
+/* ---------- Modo oscuro ---------- */
+[data-theme='dark'] .rc-backdrop { background: rgba(0, 0, 0, 0.6); }
+
+[data-theme='dark'] .rc-modal {
+  background: #141c2b;
+  border-color: #2e3a52;
+  color: #e6eaf3;
+}
+
+[data-theme='dark'] .rc-hint { color: #a7b0c0; }
+[data-theme='dark'] .rc-close { color: #a7b0c0; }
+
+[data-theme='dark'] .rc-scope select {
+  background: #1c2739;
+  border-color: #2e3a52;
+  color: #e6eaf3;
+}
+
+[data-theme='dark'] .rc-canvas { border-color: #2e3a52; }
+
+[data-theme='dark'] .rc-btn { background: #2de2e6; color: #062a33; }
+[data-theme='dark'] .rc-btn:hover { background: #59eef1; }
+
+[data-theme='dark'] .rc-btn.ghost {
+  background: #1c2739;
+  color: #e6eaf3;
+  border-color: #2e3a52;
+}

@@ -814,3 +814,116 @@ path.e.dim { opacity: 0.07; }
   background: #1c2739;
   border-color: #2e3a52;
 }
+
+/* ---------- Buscador de cursos ---------- */
+.buscar-box {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px 4px 12px;
+  border-radius: 999px;
+  border: 1.5px solid #C7CDC7;
+  background: #fff;
+}
+
+.buscar-box input {
+  border: none;
+  outline: none;
+  background: transparent;
+  font: 500 13px 'Inter', sans-serif;
+  color: #15202e;
+  width: 150px;
+}
+
+.buscar-count {
+  font-size: 11px;
+  color: #5c6672;
+  white-space: nowrap;
+}
+
+.buscar-clear {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  color: #5c6672;
+  padding: 2px 6px;
+}
+
+/* resultado de búsqueda: resalta encima de cualquier modo */
+.node.hit {
+  outline: 3px solid #f0a500;
+  outline-offset: 2px;
+  z-index: 5;
+}
+
+/* ---------- Planificador del próximo ciclo ---------- */
+.node.plan-sel {
+  background: #efe8fb;
+  border-color: #7b5cc6;
+  box-shadow: 0 0 0 3px rgba(123, 92, 198, 0.18);
+}
+
+.node.plan-sel .nm { color: #4c3a80; }
+
+.node.plan-sel.plan-warn { border-color: #c0392b; }
+
+.pill.v {
+  background: #efe8fb;
+  color: #6b4fc0;
+}
+
+.pill.r {
+  background: #fdeceb;
+  color: #c0392b;
+}
+
+.plan-clear {
+  margin-left: 10px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid #C7CDC7;
+  background: #fff;
+  font: 600 11.5px 'Inter', sans-serif;
+  color: #5c6672;
+  cursor: pointer;
+}
+
+.plan-clear:hover { color: #c0392b; border-color: #c0392b; }
+
+/* ---------- Modo oscuro: buscador y planificador ---------- */
+[data-theme='dark'] .buscar-box {
+  background: #161d2b;
+  border-color: #3a4557;
+}
+
+[data-theme='dark'] .buscar-box input { color: #e6eaf3; }
+[data-theme='dark'] .buscar-count,
+[data-theme='dark'] .buscar-clear { color: #a7b0c0; }
+
+[data-theme='dark'] .node.hit { outline-color: #ffd166; }
+
+[data-theme='dark'] .node.plan-sel {
+  background: rgba(123, 92, 198, 0.22);
+  border-color: #a488e0;
+  box-shadow: 0 0 0 3px rgba(123, 92, 198, 0.25);
+}
+
+[data-theme='dark'] .node.plan-sel .nm { color: #cbb8f5; }
+
+[data-theme='dark'] .pill.v {
+  background: rgba(123, 92, 198, 0.22);
+  color: #cbb8f5;
+}
+
+[data-theme='dark'] .pill.r {
+  background: rgba(192, 57, 43, 0.2);
+  color: #ff8a80;
+}
+
+[data-theme='dark'] .plan-clear {
+  background: #161d2b;
+  border-color: #3a4557;
+  color: #a7b0c0;
+}

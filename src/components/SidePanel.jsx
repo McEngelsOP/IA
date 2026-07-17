@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import ConfirmDialog from './ConfirmDialog'
+import ResumenCiclo from './ResumenCiclo'
 import { LOGROS } from '../lib/logros'
 import '../styles/SidePanel.css'
 
@@ -127,9 +128,10 @@ function HistNotas({ values }) {
 // ---------- Panel lateral ----------
 // cursos/ciclos: la malla de la carrera del alumno (viene de MallaCurricular)
 // statuses: estados de la ficha del curso — los desaprobados cuentan en el ponderado
-export default function SidePanel({ user, open, onClose, done, cursos, ciclos, statuses = {} }) {
+export default function SidePanel({ user, open, onClose, done, cursos, ciclos, statuses = {}, uni = '', nombreCarrera = '' }) {
   const [tab, setTab] = useState('graficos') // 'graficos' | 'ponderado' | 'stats' | 'tools' | 'logros' | 'historia'
   const [logrosMap, setLogrosMap] = useState(null) // { clave: earned_at } · null = sin cargar
+  const [resumenOpen, setResumenOpen] = useState(false) // póster «Tu avance en números»
   const [ciclo, setCiclo] = useState(1)
   const [grades, setGrades] = useState({})       // { course_id: number }
   const [drafts, setDrafts] = useState({})       // texto del input mientras se edita
@@ -824,6 +826,9 @@ export default function SidePanel({ user, open, onClose, done, cursos, ciclos, s
                 Tu línea de tiempo universitaria, armada con lo que registras en la malla.
                 Privada — solo tú la ves.
               </div>
+              <button className="sp-resumen-btn" onClick={() => setResumenOpen(true)}>
+                🎁 Generar mi resumen para compartir
+              </button>
               <div className="tl">
                 <div className="tl-item">
                   <span className="tl-icon">🎉</span>
@@ -872,6 +877,20 @@ export default function SidePanel({ user, open, onClose, done, cursos, ciclos, s
       </aside>
 
       <ConfirmDialog data={confirmData} onClose={() => setConfirmData(null)} />
+
+      <ResumenCiclo
+        open={resumenOpen}
+        onClose={() => setResumenOpen(false)}
+        user={user}
+        cursos={cursos}
+        ciclos={ciclos}
+        done={done}
+        grades={grades}
+        statuses={statuses}
+        logrosCount={logrosMap ? Object.keys(logrosMap).length : 0}
+        uni={uni}
+        nombre={nombreCarrera}
+      />
     </>
   )
 }

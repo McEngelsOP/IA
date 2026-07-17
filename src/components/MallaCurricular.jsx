@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { CARRERAS } from '../data/carreras'
 import { AREAS } from '../data/areas'
@@ -10,6 +10,9 @@ import '../styles/MallaCurricular.css'
 // El arcade se descarga solo cuando alguien pulsa el botón (code-splitting):
 // así el juego no engorda la carga inicial de la malla.
 const Arcade = lazy(() => import('./Arcade'))
+
+// Para el buscador: sin tildes ni mayúsculas ("Calculo" encuentra "Cálculo")
+const norm = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
 
 // ---------- Layout (idéntico al HTML original) ----------
 const NODE_W = 200, NODE_H = 58, COL_GAP = 88, ROW_GAP = 18, TOP = 68, LEFT = 26
@@ -118,6 +121,21 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
   const [panelOpen, setPanelOpen] = useState(false) // panel lateral (solo con sesión)
   const [arcadeOpen, setArcadeOpen] = useState(false) // pantalla interna de juegos
   const [logroToast, setLogroToast] = useState(null) // logros recién desbloqueados
+  const [busca, setBusca] = useState('') // buscador de cursos
+  const [matchIdx, setMatchIdx] = useState(0) // Enter salta al siguiente resultado
+  const [courseStats, setCourseStats] = useState(null) // agregados por curso (query 28) · null = sin pedir
+
+  // Plan del próximo ciclo: se guarda solo en este dispositivo (localStorage)
+  const planKey = `malla-plan-${carrera}-${user?.id || 'guest'}`
+  const [plan, setPlan] = useState(() => {
+    try { return new Set(JSON.parse(localStorage.getItem(planKey) || '[]')) } catch { return new Set() }
+  })
+  useEffect(() => {
+    try { setPlan(new Set(JSON.parse(localStorage.getItem(planKey) || '[]'))) } catch { setPlan(new Set()) }
+  }, [planKey])
+  useEffect(() => {
+    try { localStorage.setItem(planKey, JSON.stringify([...plan])) } catch { /* almacenamiento lleno o bloqueado */ }
+  }, [plan, planKey])
 
   // Reclamar logros: el servidor valida las condiciones y devuelve SOLO
   // los nuevos. Corre al entrar y al abrir/cerrar el arcade (los puntajes
@@ -351,12 +369,13 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
   const changeMode = m => {
     setMode(m)
     setLastAction(null)
-    if (m === 'done' || m === 'ficha' || m === 'noreq') setSelected(null)
+    if (m === 'done' || m === 'ficha' || m === 'noreq' || m === 'plan') setSelected(null)
   }
 
   const onNodeClick = (ev, id) => {
     ev.stopPropagation()
     if (mode === 'done') toggleDone(id)
+    else if (mode === 'plan') togglePlan(id)
     else if (mode === 'noreq') return // vista de solo lectura: resalta lo disponible
     else select(id)
   }
@@ -415,6 +434,72 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
     && c.r.every(req => done.has(req))
     && (!c.rc || creditosLlevados(done) >= c.rc)
 
+  // ---------- Planificador del próximo ciclo ----------
+  // Si un curso planificado se marca como llevado, sale solo del plan
+  useEffect(() => {
+    setPlan(p => {
+      const n = [...p].filter(id => byId[id] && !done.has(id))
+      return n.length === p.size ? p : new Set(n)
+    })
+  }, [done, byId])
+
+  const togglePlan = id => {
+    const c = byId[id]
+    if (plan.has(id)) {
+      const n = new Set(plan)
+      n.delete(id)
+      setPlan(n)
+      setLastAction(null)
+    } else if (done.has(id)) {
+      setLastAction({ planInfo: `${c.n} ya está marcado como llevado: no necesita entrar al plan.` })
+    } else if (!disponible(c)) {
+      setLastAction({
+        planInfo: c.rc && c.r.every(r => done.has(r))
+          ? `${c.n} pide ${c.rc} créditos aprobados y llevas ${creditosLlevados(done)}: aún no puedes planificarlo.`
+          : `${c.n} todavía tiene requisitos pendientes: no podrías llevarlo el próximo ciclo.`
+      })
+    } else {
+      setPlan(new Set(plan).add(id))
+      setLastAction(null)
+    }
+  }
+
+  // Estadísticas anónimas agregadas (query 28) para señalar cursos exigentes.
+  // Si la RPC no existe o eres visitante, el medidor funciona sin esta señal.
+  useEffect(() => {
+    if (mode !== 'plan' || courseStats !== null || isGuest) return
+    supabase.rpc('stats_cursos', { cids: M.cursos.map(c => c.id) }).then(({ data, error }) => {
+      if (error) { console.error('[stats:cursos]', error); setCourseStats({}); return }
+      const m = {}
+      ;(data || []).forEach(r => { m[r.course_id] = r })
+      setCourseStats(m)
+    })
+  }, [mode, courseStats, isGuest, M])
+
+  const esExigente = id => {
+    const s = courseStats?.[id]
+    return !!s && s.registros >= 5 && s.aprobados_primera / s.registros < 0.5
+  }
+
+  // ---------- Buscador ----------
+  const matches = useMemo(() => {
+    const q = norm(busca.trim())
+    if (q.length < 2) return []
+    return M.cursos.filter(c => norm(c.n).includes(q))
+  }, [busca, M])
+  const matchSet = useMemo(() => new Set(matches.map(c => c.id)), [matches])
+
+  useEffect(() => { setMatchIdx(0) }, [busca])
+  useEffect(() => {
+    const c = matches[matchIdx]
+    if (!c || !scrollerRef.current) return
+    scrollerRef.current.scrollTo({
+      left: Math.max(0, c.x - 140),
+      top: Math.max(0, c.y - 160),
+      behavior: 'smooth'
+    })
+  }, [matches, matchIdx])
+
   const nodeClass = c => {
     if (mode === 'ficha') {
       const st = fichaStatus(c)
@@ -425,6 +510,12 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
       if (disponible(c)) return 'node free free-todo' // puedes llevarlo ya
       return 'node faded' // aún le faltan requisitos
     }
+    if (mode === 'plan') {
+      if (plan.has(c.id)) return 'node plan-sel' + (esExigente(c.id) ? ' plan-warn' : '')
+      if (done.has(c.id)) return 'node free free-done'
+      if (disponible(c)) return 'node free free-todo'
+      return 'node faded'
+    }
     if (mode === 'done' || !selected) {
       return 'node' + (done.has(c.id) ? ' done' : '')
     }
@@ -434,7 +525,7 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
   }
 
   const edgeClass = e => {
-    if (mode === 'noreq') return 'e dim'
+    if (mode === 'noreq' || mode === 'plan') return 'e dim'
     if (!selected || mode === 'done' || mode === 'ficha') return 'e'
     const isOpen = mode === 'open'
     const inChain = isOpen
@@ -449,7 +540,34 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
   )
 
   let status
-  if (lastAction?.blocked) {
+  if (lastAction?.planInfo) {
+    status = <>{lastAction.planInfo}</>
+  } else if (mode === 'plan') {
+    const sel = M.cursos.filter(c => plan.has(c.id))
+    const cred = sel.reduce((a, c) => a + c.cr, 0)
+    const unionDone = new Set([...done, ...plan])
+    // qué se desbloquearía DESPUÉS de aprobar el plan (nuevo respecto a hoy)
+    const desbloquea = M.cursos.filter(c =>
+      !done.has(c.id) && !plan.has(c.id) && c.r.length > 0 &&
+      c.r.every(r => unionDone.has(r)) && !c.r.every(r => done.has(r))
+    ).length
+    const temidos = sel.filter(c => esExigente(c.id))
+    status = sel.length === 0 ? (
+      <>Arma tu <b>próximo ciclo</b>: toca los cursos disponibles para sumarlos al plan (se guarda en este dispositivo). {pill}</>
+    ) : (
+      <>
+        Tu plan:&nbsp;
+        <span className="pill v">{sel.length} {sel.length === 1 ? 'curso' : 'cursos'} · {cred} créd</span>
+        {cred > 22 && <>&nbsp;<span className="pill r">⚠ carga alta (más de 22 créd)</span></>}
+        {desbloquea > 0 && <>&nbsp;· al aprobarlo desbloquearías <b>{desbloquea}</b> {desbloquea === 1 ? 'curso' : 'cursos'} más</>}
+        {temidos.length > 0 && (
+          <>&nbsp;· <span className="pill r">⚠ {temidos.length} {temidos.length === 1 ? 'curso exigente' : 'cursos exigentes'}</span>
+          &nbsp;(menos de la mitad lo aprueba a la primera)</>
+        )}
+        <button className="plan-clear" onClick={ev => { ev.stopPropagation(); setPlan(new Set()) }}>Vaciar plan</button>
+      </>
+    )
+  } else if (lastAction?.blocked) {
     status = (
       <>
         <strong>{lastAction.name}</strong> requiere <b>{lastAction.rc} créditos aprobados</b> y
@@ -560,8 +678,29 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
           <button className={mode === 'req' ? 'on' : ''} onClick={ev => { ev.stopPropagation(); changeMode('req') }}>Qué requiere</button>
           <button className={mode === 'done' ? 'on' : ''} onClick={ev => { ev.stopPropagation(); changeMode('done') }}>Marcar llevados</button>
           <button className={mode === 'noreq' ? 'on' : ''} onClick={ev => { ev.stopPropagation(); changeMode('noreq') }}>Qué puedo llevar</button>
+          <button className={mode === 'plan' ? 'on' : ''} onClick={ev => { ev.stopPropagation(); changeMode('plan') }}>Planificar ciclo</button>
           {!isGuest && (
             <button className={mode === 'ficha' ? 'on' : ''} onClick={ev => { ev.stopPropagation(); changeMode('ficha') }}>Ficha del curso</button>
+          )}
+        </div>
+        <div className="buscar-box" onClick={ev => ev.stopPropagation()}>
+          <input
+            type="text"
+            placeholder="🔍 Buscar curso…"
+            value={busca}
+            onChange={e => setBusca(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter' && matches.length > 1) setMatchIdx(i => (i + 1) % matches.length)
+              if (e.key === 'Escape') setBusca('')
+            }}
+          />
+          {busca.trim().length >= 2 && (
+            <span className="buscar-count mono">
+              {matches.length === 0 ? '0' : `${matchIdx + 1}/${matches.length}`}
+            </span>
+          )}
+          {busca && (
+            <button className="buscar-clear" onClick={() => setBusca('')} aria-label="Limpiar búsqueda">×</button>
           )}
         </div>
         <button className="arcade-btn" onClick={ev => { ev.stopPropagation(); setArcadeOpen(true) }}>
@@ -578,6 +717,13 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
           ) : mode === 'noreq' ? (
             <>
               <span><span className="sw" style={{ background: '#fff', border: '1.5px solid #059e9f' }} />Disponible ahora</span>
+              <span><span className="sw" style={{ background: '#e3f4f4', border: '1.5px solid #059e9f' }} />Llevado</span>
+              <span><span className="sw" style={{ background: '#EDEFEC', border: '1.5px solid #C7CDC7', opacity: 0.5 }} />Le faltan requisitos</span>
+            </>
+          ) : mode === 'plan' ? (
+            <>
+              <span><span className="sw" style={{ background: '#efe8fb', border: '1.5px solid #7b5cc6' }} />En tu plan</span>
+              <span><span className="sw" style={{ background: '#fff', border: '1.5px solid #059e9f' }} />Puedes planificarlo</span>
               <span><span className="sw" style={{ background: '#e3f4f4', border: '1.5px solid #059e9f' }} />Llevado</span>
               <span><span className="sw" style={{ background: '#EDEFEC', border: '1.5px solid #C7CDC7', opacity: 0.5 }} />Le faltan requisitos</span>
             </>
@@ -655,7 +801,7 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
             {M.cursos.map(c => (
               <div
                 key={c.id}
-                className={nodeClass(c)}
+                className={nodeClass(c) + (matchSet.has(c.id) ? ' hit' : '')}
                 style={{ left: c.x, top: c.y }}
                 onClick={ev => onNodeClick(ev, c.id)}
               >
@@ -675,7 +821,7 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
       </footer>
 
       {!isGuest && (
-        <SidePanel user={user} open={panelOpen} onClose={() => setPanelOpen(false)} done={done} cursos={M.cursos} ciclos={M.ciclos} statuses={statuses} />
+        <SidePanel user={user} open={panelOpen} onClose={() => setPanelOpen(false)} done={done} cursos={M.cursos} ciclos={M.ciclos} statuses={statuses} uni={M.uni} nombreCarrera={M.nombre} />
       )}
 
       {!isGuest && logroToast && !arcadeOpen && (

@@ -983,3 +983,27 @@
 
 [data-theme='dark'] .tl-t { color: #e6eaf3; }
 [data-theme='dark'] .tl-s { color: #a7b0c0; }
+
+/* Botón del póster compartible («Tu avance en números») */
+.sp-resumen-btn {
+  width: 100%;
+  margin: 2px 0 10px;
+  padding: 11px 14px;
+  border-radius: 12px;
+  border: 1px solid #bfd9c6;
+  background: #eef6f0;
+  color: #15202e;
+  font: 600 13px 'Inter', sans-serif;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.sp-resumen-btn:hover { background: #e0efe4; }
+
+[data-theme='dark'] .sp-resumen-btn {
+  border-color: #2f5d45;
+  background: #182e26;
+  color: #e6eaf3;
+}
+
+[data-theme='dark'] .sp-resumen-btn:hover { background: #1e3a2f; }
