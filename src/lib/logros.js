@@ -23,5 +23,12 @@ export const LOGROS = {
   'ojo-clinico': { icon: '⭐', name: 'Ojo clínico', desc: 'Un profesor que sugeriste llega a +10 de puntaje' },
   'pentacampeon': { icon: '🏆', name: 'Pentacampeón', desc: 'Supera los 10 000 puntos en los 5 juegos' },
   'dos-temporadas': { icon: '📅', name: 'Dos temporadas', desc: 'Guarda puntaje en dos temporadas del arcade' },
-  'coleccionista': { icon: '💎', name: 'Coleccionista', desc: 'Desbloquea 10 logros' }
+  'coleccionista': { icon: '💎', name: 'Coleccionista', desc: 'Desbloquea 10 logros' },
+  // El cierre del catálogo (query 30 · logros3.sql)
+  'archivista': { icon: '🗂️', name: 'Archivista', desc: 'Registra el estado académico de 20 cursos' },
+  'elector': { icon: '🗳️', name: 'Elector responsable', desc: 'Vota a 20 profesores' },
+  'herramienta-estrella': { icon: '🔥', name: 'Herramienta estrella', desc: 'Una herramienta tuya junta 10 likes' },
+  'cincuenta-mil': { icon: '🚀', name: 'Cincuenta mil', desc: 'Supera los 50 000 puntos en un juego' },
+  'leyenda-temporada': { icon: '🥇', name: 'Leyenda de temporada', desc: 'Cierra una temporada en el top 3 de un juego' },
+  'un-anio': { icon: '🕰️', name: 'Un año en la malla', desc: 'Tu cuenta cumple un año' }
 }
