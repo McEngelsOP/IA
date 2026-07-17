@@ -129,6 +129,7 @@ export default function Arcade({ user, onClose }) {
     setAlias(a)
     setNeedAlias(false)
     setMsg(null)
+    if (activeGame) loadRanking(activeGame)
     if (pendingScore) { submitScore(pendingScore, true); setPendingScore(null) }
   }
 
@@ -157,11 +158,39 @@ export default function Arcade({ user, onClose }) {
             ? <>{G.icon} {G.name} — {G.rankNote}</>
             : 'Tómate un descanso entre ciclo y ciclo. Elige un juego y compite con tu nombre secreto.'}
         </p>
+        {user && alias && !activeGame && (
+          <div className="arcade-user-info mono">
+            JUEGAS COMO: <span className="arcade-user-alias">{alias}</span>
+            <button className="arcade-change-alias-btn" onClick={() => { setAliasDraft(alias); setNeedAlias(true); }}>
+              (CAMBIAR)
+            </button>
+          </div>
+        )}
       </header>
 
       {!activeGame ? (
         /* ---------- Portada: lista vertical de juegos ---------- */
         <div className="game-list">
+          {user && needAlias && (
+            <form className="arcade-alias cover-alias" onSubmit={saveAlias}>
+              <p>
+                Elige tu nuevo <b>nombre secreto</b> para el ranking y comentarios:
+              </p>
+              <div className="arcade-alias-row">
+                <input
+                  type="text" maxLength="24" placeholder="Tu nombre secreto…"
+                  value={aliasDraft} onChange={e => setAliasDraft(e.target.value)}
+                />
+                <button type="submit" disabled={savingAlias || aliasDraft.trim().length < 3 || aliasDraft.trim() === alias}>
+                  {savingAlias ? 'Guardando…' : 'Guardar'}
+                </button>
+                <button type="button" className="arcade-alias-cancel" onClick={() => setNeedAlias(false)}>
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          )}
+
           {Object.entries(GAMES).map(([k, gm]) => (
             <button key={k} className="game-card" onClick={() => openGame(k)}>
               <span className="gc-icon">{gm.icon}</span>
@@ -207,17 +236,24 @@ export default function Arcade({ user, onClose }) {
             {needAlias && user && (
               <form className="arcade-alias" onSubmit={saveAlias}>
                 <p>
-                  Para entrar al ranking necesitas tu <b>nombre secreto</b> (el mismo que firma
-                  tus reseñas; se elige una sola vez y no se puede cambiar).
+                  {alias 
+                    ? <>Elige tu nuevo <b>nombre secreto</b> para firmar tus reseñas y puntajes en el ranking:</>
+                    : <>Para entrar al ranking necesitas tu <b>nombre secreto</b> (el mismo que firma tus reseñas):</>
+                  }
                 </p>
                 <div className="arcade-alias-row">
                   <input
                     type="text" maxLength="24" placeholder="Tu nombre secreto…"
                     value={aliasDraft} onChange={e => setAliasDraft(e.target.value)}
                   />
-                  <button type="submit" disabled={savingAlias || aliasDraft.trim().length < 3}>
+                  <button type="submit" disabled={savingAlias || aliasDraft.trim().length < 3 || aliasDraft.trim() === alias}>
                     {savingAlias ? 'Guardando…' : 'Guardar y competir'}
                   </button>
+                  {alias && (
+                    <button type="button" className="arcade-alias-cancel" onClick={() => setNeedAlias(false)}>
+                      Cancelar
+                    </button>
+                  )}
                 </div>
               </form>
             )}
@@ -247,7 +283,12 @@ export default function Arcade({ user, onClose }) {
               </ol>
             )}
             {user && alias && (
-              <p className="rank-foot mono">JUEGAS COMO: {alias}</p>
+              <div className="rank-foot mono">
+                <span>JUEGAS COMO: {alias}</span>
+                <button type="button" className="arcade-edit-alias" onClick={() => { setAliasDraft(alias); setNeedAlias(true); }}>
+                  (CAMBIAR)
+                </button>
+              </div>
             )}
           </aside>
         </div>

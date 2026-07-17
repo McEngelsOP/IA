@@ -602,6 +602,79 @@
   font-size: 10px;
   letter-spacing: 1.2px;
   color: #6b76a8;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.arcade-user-info {
+  font-size: 11.5px;
+  letter-spacing: 1.2px;
+  color: #8b96c9;
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.arcade-user-alias {
+  color: #ffd166;
+  font-weight: 700;
+}
+
+.arcade-change-alias-btn {
+  background: none;
+  border: none;
+  color: #2de2e6;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.15s;
+}
+
+.arcade-change-alias-btn:hover {
+  color: #59eef1;
+}
+
+.arcade-alias-cancel {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  color: #aeb8e0;
+  font: 700 12.5px 'Inter', sans-serif;
+  padding: 9px 16px;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.arcade-alias-cancel:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+
+.arcade-edit-alias {
+  background: none;
+  border: none;
+  color: #2de2e6;
+  font-family: inherit;
+  font-size: 9px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.15s;
+}
+
+.arcade-edit-alias:hover {
+  color: #59eef1;
+}
+
+.cover-alias {
+  margin-bottom: 16px;
 }
 
 /* ---------- Responsive ---------- */
