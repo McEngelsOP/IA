@@ -3,6 +3,8 @@ import { supabase } from '../lib/supabaseClient'
 import DinoGame from './DinoGame'
 import AstroDefensa from './AstroDefensa'
 import Galaxia from './Galaxia'
+import Frogger from './Frogger'
+import MemoryMatch from './MemoryMatch'
 import '../styles/Arcade.css'
 // Los tres juegos viajan DENTRO del chunk del arcade (que ya es lazy desde
 // la malla): un solo punto de carga diferida — el lazy anidado por juego
@@ -28,6 +30,16 @@ const GAMES = {
     name: 'ESCUADRÓN GALÁCTICO', icon: '🛸',
     rankNote: 'Todos los modos puntúan.',
     desc: 'Shooter vertical: esquiva el tiro cruzado y derriba drones, cazas y acorazados por oleadas. Enjambres, meteoritos y jefes en Caótico.'
+  },
+  frogger: {
+    name: 'FROGGER+', icon: '🐸',
+    rankNote: 'Puntúan Clásico, Difícil y Caótico; Fácil y Zen no.',
+    desc: 'Cruza la carretera y el río hasta llenar las 5 metas: autos, tren bala, cocodrilos y tortugas que se hunden. Biomas nuevos cada 5 niveles.'
+  },
+  memoria: {
+    name: 'MEMORY MATCH+', icon: '🧠',
+    rankNote: 'Puntúan Clásico, Difícil y Caótico; Fácil y Zen no.',
+    desc: 'Encuentra las parejas en tableros cada vez más grandes contra el reloj: rachas que regalan power-ups, comodines, bombas y cartas trampa.'
   }
 }
 
@@ -228,8 +240,12 @@ export default function Arcade({ user, onClose }) {
               <DinoGame onGameOver={submitScore} />
             ) : activeGame === 'astro' ? (
               <AstroDefensa onGameOver={submitScore} />
-            ) : (
+            ) : activeGame === 'galaxia' ? (
               <Galaxia onGameOver={submitScore} />
+            ) : activeGame === 'frogger' ? (
+              <Frogger onGameOver={submitScore} />
+            ) : (
+              <MemoryMatch onGameOver={submitScore} />
             )}
             {msg && <div className="arcade-msg">{msg}</div>}
 

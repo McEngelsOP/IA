@@ -1,0 +1,187 @@
+/* MEMORY MATCH+ · tablero de cartas (DOM + flip CSS); los overlays de
+   menú/pausa/game over son los ast-* compartidos del arcade */
+
+.mm-stage {
+  min-height: 480px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+  background: #0d1220;
+  padding: 12px;
+}
+
+.mm-wrap {
+  max-width: 470px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Caótico: inversión de colores momentánea */
+.mm-invert { filter: invert(1) hue-rotate(180deg); }
+
+.mm-shake { animation: mm-shake 0.35s ease; }
+@keyframes mm-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mm-shake { animation: none; }
+  .mm-inner { transition: none; }
+}
+
+/* ---------- HUD ---------- */
+.mm-hud {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 10px;
+  letter-spacing: 1.2px;
+  color: #8b96c9;
+}
+
+.mm-score { font-size: 15px; font-weight: 700; color: #dfe4f5; }
+
+.mm-racha { color: #6b76a8; }
+.mm-racha.hot { color: #ffd166; }
+
+.mm-lives { color: #dfe4f5; }
+.mm-lives.low { color: #ff6c9f; }
+
+.mm-timerbar {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.10);
+  overflow: hidden;
+}
+
+.mm-timerfill {
+  height: 100%;
+  border-radius: 999px;
+  background: #a8e05f;
+  transition: width 0.15s linear;
+}
+
+.mm-timerfill.low { background: #ff6c9f; }
+.mm-timerfill.frozen { background: #2de2e6; }
+
+/* ---------- Cartas ---------- */
+.mm-grid {
+  display: grid;
+  gap: 7px;
+}
+
+.mm-card {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  min-height: 46px;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  perspective: 500px;
+  transition: opacity 0.3s, transform 0.3s;
+}
+
+.mm-card.gone {
+  opacity: 0;
+  transform: scale(0.75);
+  pointer-events: none;
+}
+
+.mm-inner {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transition: transform 0.25s ease;
+}
+
+.mm-card.up .mm-inner { transform: rotateY(180deg); }
+
+.mm-back,
+.mm-face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.mm-back {
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: linear-gradient(145deg, #1a2138, #131a2e);
+  color: #4d5885;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.mm-card:hover .mm-back { border-color: #2de2e6; }
+
+.mm-face {
+  transform: rotateY(180deg);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: #202a47;
+  font-size: clamp(18px, 5.2vw, 26px);
+}
+
+/* cartas especiales volteadas */
+.mm-card.mm-hielo .mm-face { border-color: #2de2e6; background: #14344a; }
+.mm-card.mm-trampa .mm-face { border-color: #ff6c9f; background: #3a1626; }
+.mm-card.mm-bomba .mm-face { border-color: #ffd166; background: #3a2c14; }
+.mm-card.mm-comodin .mm-face { border-color: #c86bff; background: #2c1a42; }
+
+.mm-card.hint .mm-back {
+  border-color: #ffd166;
+  box-shadow: 0 0 12px rgba(255, 209, 102, 0.45);
+}
+
+.mm-bomb-t {
+  position: absolute;
+  right: 3px;
+  bottom: 2px;
+  font-style: normal;
+  font-size: 10px;
+  font-weight: 700;
+  color: #ffd166;
+}
+
+/* ---------- Power-ups ---------- */
+.mm-powers {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 34px;
+}
+
+.mm-powers-empty {
+  font-size: 9px;
+  letter-spacing: 1.2px;
+  color: #4d5885;
+}
+
+.mm-power {
+  width: 34px;
+  height: 34px;
+  font-size: 16px;
+  border-radius: 9px;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.06);
+  transition: transform 0.15s, border-color 0.15s;
+}
+
+.mm-power:hover { transform: translateY(-2px); border-color: #2de2e6; }
+
+.mm-banner {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: #2de2e6;
+}

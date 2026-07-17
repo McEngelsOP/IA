@@ -24,6 +24,16 @@
   margin: 0 auto;
 }
 
+/* Frogger+: lienzo casi cuadrado; touch-action none para que el
+   deslizamiento (saltar) no haga scroll en la página */
+.fg-canvas {
+  max-width: 460px;
+  max-height: 66vh;
+  margin: 0 auto;
+  touch-action: none;
+  cursor: pointer;
+}
+
 .ast-foot {
   display: flex;
   justify-content: center;
