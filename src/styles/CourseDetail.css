@@ -430,3 +430,15 @@
 
 [data-theme='dark'] .cd-review-foot button { background: #3a4a6b; }
 [data-theme='dark'] .cd-review-foot button:not(:disabled):hover { background: #4a5d85; }
+
+/* ---------- Móvil: la ficha ocupa toda la pantalla, aire más justo ---------- */
+@media (max-width: 480px) {
+  .cd-head { padding: 18px 16px 10px; }
+  .cd-head h2 { font-size: 19px; }
+  .cd-body { padding: 6px 16px 24px; }
+
+  /* 16px en campos de texto: evita el zoom automático de iOS al enfocar */
+  .cd-body input,
+  .cd-body select,
+  .cd-body textarea { font-size: 16px; }
+}

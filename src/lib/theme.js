@@ -10,6 +10,9 @@ export const getTheme = () =>
 
 export const applyTheme = t => {
   document.documentElement.dataset.theme = t
+  // la barra del navegador móvil acompaña el tema elegido
+  const meta = document.querySelector('meta[name="theme-color"]')
+  if (meta) meta.setAttribute('content', t === 'dark' ? '#0d1220' : '#ffffff')
 }
 
 export const saveTheme = t => {

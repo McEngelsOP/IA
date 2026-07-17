@@ -702,6 +702,75 @@ path.e.dim { opacity: 0.07; }
   .frame { margin: 0 18px 16px; }
 
   .malla-foot { padding: 0 18px 14px; }
+
+  /* toolbar: los modos se vuelven una fila deslizable con dedos */
+  .toolbar { gap: 10px; padding: 12px 18px 10px; }
+
+  .modes {
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .modes::-webkit-scrollbar { display: none; }
+
+  .modes button {
+    white-space: nowrap;
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+
+  .buscar-box { flex: 1 1 170px; min-width: 0; }
+
+  .buscar-box input {
+    flex: 1;
+    width: 60px;
+    min-width: 0;
+    font-size: 16px; /* evita el zoom automático de iOS al enfocar */
+  }
+
+  .arcade-btn { padding: 10px 16px; letter-spacing: 1.5px; }
+
+  /* el toast de logros no se sale de la pantalla ni pisa la barra de gestos */
+  .logro-toast {
+    left: 18px;
+    right: 18px;
+    max-width: none;
+    bottom: calc(18px + env(safe-area-inset-bottom));
+  }
+}
+
+/* Hint «desliza» de la primera visita en móvil (se pinta desde el JSX
+   solo en pantallas chicas; desaparece solo a los 5 segundos) */
+.swipe-hint {
+  position: fixed;
+  left: 50%;
+  bottom: calc(24px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 30;
+  background: rgba(21, 32, 46, 0.88);
+  color: #fff;
+  font: 500 12.5px 'Inter', sans-serif;
+  padding: 9px 16px;
+  border-radius: 999px;
+  pointer-events: none;
+  white-space: nowrap;
+  animation: swipeHintIn 0.4s ease-out, swipeHintOut 0.6s ease-in 4.4s forwards;
+}
+
+@keyframes swipeHintIn {
+  from { opacity: 0; transform: translate(-50%, 8px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+@keyframes swipeHintOut {
+  to { opacity: 0; }
+}
+
+[data-theme='dark'] .swipe-hint {
+  background: rgba(230, 234, 243, 0.92);
+  color: #10151f;
 }
 
 /* ============================================================

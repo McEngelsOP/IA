@@ -1007,3 +1007,17 @@
 }
 
 [data-theme='dark'] .sp-resumen-btn:hover { background: #1e3a2f; }
+
+/* ---------- Móvil: el panel ocupa toda la pantalla, aire más justo ---------- */
+@media (max-width: 480px) {
+  .sp-head { padding: 18px 16px 10px; }
+  .sp-head h2 { font-size: 20px; }
+  .sp-tabs { margin: 0 16px 4px; }
+  .sp-msg { margin: 10px 16px 0; }
+  .sp-body { padding: 12px 16px 24px; }
+
+  /* 16px en campos de texto: evita el zoom automático de iOS al enfocar */
+  .sp-body input,
+  .sp-body select,
+  .sp-body textarea { font-size: 16px; }
+}

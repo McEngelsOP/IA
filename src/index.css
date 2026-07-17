@@ -42,8 +42,8 @@ body {
 
 .theme-toggle {
   position: fixed;
-  left: 14px;
-  bottom: 14px;
+  left: calc(14px + env(safe-area-inset-left));
+  bottom: calc(14px + env(safe-area-inset-bottom));
   z-index: 35; /* bajo los drawers (40) y el arcade (50) */
   width: 42px;
   height: 42px;

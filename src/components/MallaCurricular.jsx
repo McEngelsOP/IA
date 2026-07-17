@@ -128,6 +128,21 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
   const [planModalOpen, setPlanModalOpen] = useState(false) // modal de detalles del plan
   const [calendarOpen, setCalendarOpen] = useState(false) // vista de calendario academico
 
+  // Hint «desliza» solo en pantallas chicas y solo la primera visita
+  const [swipeHint, setSwipeHint] = useState(() => {
+    try {
+      return !localStorage.getItem('malla-swipe-hint') && window.matchMedia('(max-width: 760px)').matches
+    } catch { return false }
+  })
+  useEffect(() => {
+    if (!swipeHint) return
+    const t = setTimeout(() => {
+      setSwipeHint(false)
+      try { localStorage.setItem('malla-swipe-hint', '1') } catch { /* sin almacenamiento */ }
+    }, 5000)
+    return () => clearTimeout(t)
+  }, [swipeHint])
+
   // Plan del próximo ciclo: se guarda solo en este dispositivo (localStorage)
   const planKey = `malla-plan-${carrera}-${user?.id || 'guest'}`
   const [plan, setPlan] = useState(() => {
@@ -848,6 +863,8 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
           <Arcade user={user} onClose={() => setArcadeOpen(false)} />
         </Suspense>
       )}
+
+      {swipeHint && <div className="swipe-hint">👉 Desliza para moverte por la malla</div>}
 
       {calendarOpen && (
         <Suspense fallback={<div className="arcade-loading mono">CARGANDO CALENDARIO…</div>}>
