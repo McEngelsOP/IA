@@ -1,10 +1,10 @@
 /* ASTRO-DEFENSA · overlays y lienzo (mismo lenguaje visual que Dino Run+) */
 
-.ad-wrap { width: 100%; }
+.ast-wrap { width: 100%; }
 
-.ad-stage { position: relative; }
+.ast-stage { position: relative; }
 
-.ad-canvas {
+.ast-canvas {
   display: block;
   width: 100%;
   height: auto;
@@ -24,7 +24,7 @@
   margin: 0 auto;
 }
 
-.ad-foot {
+.ast-foot {
   display: flex;
   justify-content: center;
   gap: 10px;
@@ -37,7 +37,7 @@
 }
 
 /* ---------- Overlays (menú, pausa, game over) ---------- */
-.ad-overlay {
+.ast-overlay {
   position: absolute;
   inset: 0;
   display: flex;
@@ -53,9 +53,9 @@
   animation: arcade-in 0.2s ease;
 }
 
-.ad-overlay.ad-dim { background: rgba(13, 18, 32, 0.92); }
+.ast-overlay.ast-dim { background: rgba(13, 18, 32, 0.92); }
 
-.ad-title {
+.ast-title {
   font-size: 26px;
   font-weight: 700;
   letter-spacing: 6px;
@@ -63,9 +63,9 @@
   text-shadow: 0 0 22px rgba(45, 226, 230, 0.4);
 }
 
-.ad-title.over { color: #ff6c9f; text-shadow: 0 0 22px rgba(255, 108, 159, 0.4); }
+.ast-title.over { color: #ff6c9f; text-shadow: 0 0 22px rgba(255, 108, 159, 0.4); }
 
-.ad-modes {
+.ast-modes {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -73,7 +73,7 @@
   max-width: 460px;
 }
 
-.ad-mode {
+.ast-mode {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -87,13 +87,13 @@
   transition: border-color 0.15s, background 0.15s, transform 0.15s;
 }
 
-.ad-mode:hover {
+.ast-mode:hover {
   border-color: #2de2e6;
   background: rgba(45, 226, 230, 0.1);
   transform: translateY(-1px);
 }
 
-.ad-mode-name {
+.ast-mode-name {
   font-size: 12.5px;
   font-weight: 700;
   letter-spacing: 1.5px;
@@ -104,7 +104,7 @@
   flex-wrap: wrap;
 }
 
-.ad-rank-tag {
+.ast-rank-tag {
   font-size: 9px;
   letter-spacing: 1px;
   color: #3d2f04;
@@ -113,28 +113,28 @@
   padding: 2px 8px;
 }
 
-.ad-mode-desc {
+.ast-mode-desc {
   font-size: 11px;
   line-height: 1.45;
   color: #8b96c9;
 }
 
-.ad-note {
+.ast-note {
   margin: 0;
   font-size: 9.5px;
   letter-spacing: 1.2px;
   color: #6b76a8;
 }
 
-.ad-score {
+.ast-score {
   font-size: 15px;
   letter-spacing: 1.5px;
   color: #dfe4f5;
 }
 
-.ad-score b { color: #ffd166; }
+.ast-score b { color: #ffd166; }
 
-.ad-stats {
+.ast-stats {
   display: flex;
   gap: 20px;
   flex-wrap: wrap;
@@ -144,9 +144,9 @@
   color: #8b96c9;
 }
 
-.ad-btns { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.ast-btns { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
 
-.ad-btn {
+.ast-btn {
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 1.5px;
@@ -159,12 +159,12 @@
   transition: transform 0.15s, background 0.15s;
 }
 
-.ad-btn:hover { transform: translateY(-1px); background: #59eef1; }
+.ast-btn:hover { transform: translateY(-1px); background: #59eef1; }
 
-.ad-btn.ghost {
+.ast-btn.ghost {
   background: rgba(255, 255, 255, 0.08);
   color: #aeb8e0;
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-.ad-btn.ghost:hover { background: rgba(255, 255, 255, 0.16); color: #fff; }
+.ast-btn.ghost:hover { background: rgba(255, 255, 255, 0.16); color: #fff; }

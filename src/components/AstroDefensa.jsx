@@ -607,13 +607,13 @@ export default function AstroDefensa({ onGameOver }) {
   }, [phase])
 
   return (
-    <div className="ad-wrap">
-      <div className="ad-stage">
+    <div className="ast-wrap">
+      <div className="ast-stage">
         <canvas
           ref={canvasRef}
           width={W}
           height={H}
-          className="ad-canvas"
+          className="ast-canvas"
           onPointerDown={e => {
             e.preventDefault()
             const p = phaseRef.current
@@ -623,54 +623,54 @@ export default function AstroDefensa({ onGameOver }) {
         />
 
         {phase === 'menu' && (
-          <div className="ad-overlay">
-            <div className="ad-title mono">ASTRO-DEFENSA</div>
-            <div className="ad-modes">
+          <div className="ast-overlay">
+            <div className="ast-title mono">ASTRO-DEFENSA</div>
+            <div className="ast-modes">
               {Object.values(MODES).map(m => (
-                <button key={m.key} className="ad-mode" onClick={() => start(m.key)}>
-                  <span className="ad-mode-name mono">
+                <button key={m.key} className="ast-mode" onClick={() => start(m.key)}>
+                  <span className="ast-mode-name mono">
                     {m.icon} {m.label}
                   </span>
-                  <span className="ad-mode-desc">{m.desc}</span>
+                  <span className="ast-mode-desc">{m.desc}</span>
                 </button>
               ))}
             </div>
-            <p className="ad-note mono">TODOS LOS MODOS PUNTÚAN EN EL RANKING GLOBAL</p>
+            <p className="ast-note mono">TODOS LOS MODOS PUNTÚAN EN EL RANKING GLOBAL</p>
           </div>
         )}
 
         {phase === 'pause' && (
-          <div className="ad-overlay ad-dim">
-            <div className="ad-title mono">PAUSA</div>
-            <div className="ad-btns">
-              <button className="ad-btn mono" onClick={() => setPh('run')}>REANUDAR (ESC)</button>
-              <button className="ad-btn ghost mono" onClick={() => setPh('menu')}>SALIR AL MENÚ</button>
+          <div className="ast-overlay ast-dim">
+            <div className="ast-title mono">PAUSA</div>
+            <div className="ast-btns">
+              <button className="ast-btn mono" onClick={() => setPh('run')}>REANUDAR (ESC)</button>
+              <button className="ast-btn ghost mono" onClick={() => setPh('menu')}>SALIR AL MENÚ</button>
             </div>
           </div>
         )}
 
         {phase === 'over' && result && (
-          <div className="ad-overlay ad-dim">
-            <div className="ad-title mono over">GAME OVER</div>
-            <div className="ad-score mono">
+          <div className="ast-overlay ast-dim">
+            <div className="ast-title mono over">GAME OVER</div>
+            <div className="ast-score mono">
               {result.mode.icon} {result.mode.label} · <b>{result.score}</b> PTS
             </div>
             {!result.mode.ranked && (
-              <p className="ad-note mono">ESTE MODO NO PUNTÚA EN EL RANKING</p>
+              <p className="ast-note mono">ESTE MODO NO PUNTÚA EN EL RANKING</p>
             )}
-            <div className="ad-stats mono">
+            <div className="ast-stats mono">
               <span>NIVEL {result.stats.nivel}</span>
               <span>ASTEROIDES {result.stats.rocas}</span>
               <span>OVNIS {result.stats.ovnis}</span>
             </div>
-            <div className="ad-btns">
-              <button className="ad-btn mono" onClick={() => start(result.mode.key)}>REINTENTAR (ESPACIO)</button>
-              <button className="ad-btn ghost mono" onClick={() => setPh('menu')}>CAMBIAR MODO</button>
+            <div className="ast-btns">
+              <button className="ast-btn mono" onClick={() => start(result.mode.key)}>REINTENTAR (ESPACIO)</button>
+              <button className="ast-btn ghost mono" onClick={() => setPh('menu')}>CAMBIAR MODO</button>
             </div>
           </div>
         )}
       </div>
-      <div className="ad-foot mono">
+      <div className="ast-foot mono">
         <span>← → / A D ROTAR · ↑ / W ACELERAR · ESPACIO O CLIC DISPARAR · SHIFT HIPER-SALTO · ESC PAUSA</span>
       </div>
     </div>
