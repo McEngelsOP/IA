@@ -703,3 +703,64 @@ path.e.dim { opacity: 0.07; }
 
   .malla-foot { padding: 0 18px 14px; }
 }
+
+/* ============================================================
+   MODO OSCURO · la paleta vive en variables, así que basta
+   redefinirlas + corregir los colores fijos que no contrastan.
+   El arcade no se toca: tiene su propio look siempre oscuro.
+   ============================================================ */
+[data-theme='dark'] .malla-page {
+  --bg: #10151f;
+  --grid: #161d2b;
+  --card: #1a2230;
+  --ink: #e6eaf3;
+  --ink-2: #a7b0c0;
+  --ink-3: #6f7a8c;
+  --line: #2a3345;
+  --node-border: #2e3850;
+  --green: #3fbf78;
+  --green-soft: rgba(27, 122, 70, 0.22);
+  --green-border: #2c7a4f;
+  --navy: #33415c;
+  --amber: #e3b65e;
+  --amber-soft: rgba(154, 107, 11, 0.2);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 14px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme='dark'] .logout-btn:hover { background: #24304a; }
+[data-theme='dark'] .panel-btn:hover { background: #202a3c; border-color: #3a4557; }
+[data-theme='dark'] .node:hover { border-color: #3f4c68; }
+
+[data-theme='dark'] .node.sel {
+  background: #0d4257;
+  border-color: #1b7d9e;
+}
+
+[data-theme='dark'] .node.open { background: rgba(27, 122, 70, 0.2); }
+[data-theme='dark'] .node.open .nm { color: #a9dfbe; }
+[data-theme='dark'] .node.req { background: rgba(154, 107, 11, 0.18); }
+[data-theme='dark'] .node.req .nm { color: #e8c987; }
+
+[data-theme='dark'] .node.done {
+  background: #1c2434;
+  border-color: #2b3549;
+}
+[data-theme='dark'] .node.done .nm {
+  color: #6f7a8c;
+  text-decoration-color: #4a5568;
+}
+[data-theme='dark'] .node.done .cr { color: #5d6879; }
+
+[data-theme='dark'] .node.free.free-todo { background: #1a2230; }
+[data-theme='dark'] .node.free.free-done { background: rgba(5, 158, 159, 0.16); }
+[data-theme='dark'] .node.free .nm { color: #7edfe0; }
+[data-theme='dark'] .node.free.free-done .nm { color: #a8e4e5; }
+
+[data-theme='dark'] .node.ficha.st-aprobado { background: rgba(27, 122, 70, 0.22); }
+[data-theme='dark'] .node.ficha.st-convalidado { background: rgba(47, 111, 181, 0.22); }
+[data-theme='dark'] .node.ficha.st-matriculado { background: rgba(208, 124, 44, 0.2); }
+[data-theme='dark'] .node.ficha.st-desaprobado { background: rgba(192, 57, 43, 0.2); }
+[data-theme='dark'] .node.ficha.ring { box-shadow: 0 0 0 3px rgba(45, 226, 230, 0.35); }
+
+[data-theme='dark'] .elec-group { background: #161d2b; }
+[data-theme='dark'] path.e { stroke: #3a4557; }

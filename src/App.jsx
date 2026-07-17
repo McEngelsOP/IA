@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './lib/supabaseClient'
+import { getTheme, applyTheme, saveTheme } from './lib/theme'
 import LoginPage from './components/LoginPage'
 import MallaCurricular from './components/MallaCurricular'
 import UpdatePassword from './components/UpdatePassword'
@@ -19,6 +20,27 @@ function App() {
   const [carrera, setCarrera] = useState(undefined)
   const [savingCarrera, setSavingCarrera] = useState(false)
   const [carreraError, setCarreraError] = useState('')
+  // tema claro/oscuro: la elección persiste y es el modo de inicio siempre
+  const [tema, setTema] = useState(getTheme)
+
+  useEffect(() => { applyTheme(tema) }, [])
+
+  const toggleTema = () => {
+    const t = tema === 'dark' ? 'light' : 'dark'
+    setTema(t)
+    saveTheme(t)
+  }
+
+  // botón flotante para alternar el tema (el arcade lo tapa: allí no aplica)
+  const themeBtn = (
+    <button
+      className="theme-toggle"
+      onClick={toggleTema}
+      title={tema === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+    >
+      {tema === 'dark' ? '☀️' : '🌙'}
+    </button>
+  )
 
   useEffect(() => {
     const checkSession = async () => {
@@ -114,7 +136,7 @@ function App() {
   }
 
   if (recovering) {
-    return <UpdatePassword onDone={() => setRecovering(false)} />
+    return <>{themeBtn}<UpdatePassword onDone={() => setRecovering(false)} /></>
   }
 
   if (user) {
@@ -122,38 +144,47 @@ function App() {
       return <div className="loading-container">Cargando...</div>
     }
     if (!carrera) {
-      return <CareerSelect onSelect={saveCarrera} saving={savingCarrera} error={carreraError} />
+      return <>{themeBtn}<CareerSelect onSelect={saveCarrera} saving={savingCarrera} error={carreraError} /></>
     }
     return (
-      <MallaCurricular
-        key={carrera}
-        user={user}
-        carrera={carrera}
-        onLogout={() => setUser(null)}
-      />
+      <>
+        {themeBtn}
+        <MallaCurricular
+          key={carrera}
+          user={user}
+          carrera={carrera}
+          onLogout={() => setUser(null)}
+        />
+      </>
     )
   }
 
   if (guest) {
     if (!guestCarrera) {
-      return <CareerSelect guest onSelect={setGuestCarrera} onBack={() => setGuest(false)} />
+      return <>{themeBtn}<CareerSelect guest onSelect={setGuestCarrera} onBack={() => setGuest(false)} /></>
     }
     return (
-      <MallaCurricular
-        key={guestCarrera}
-        user={null}
-        carrera={guestCarrera}
-        onSwitchCarrera={() => setGuestCarrera(null)}
-        onLogout={() => { setGuest(false); setGuestCarrera(null) }}
-      />
+      <>
+        {themeBtn}
+        <MallaCurricular
+          key={guestCarrera}
+          user={null}
+          carrera={guestCarrera}
+          onSwitchCarrera={() => setGuestCarrera(null)}
+          onLogout={() => { setGuest(false); setGuestCarrera(null) }}
+        />
+      </>
     )
   }
 
   return (
-    <LoginPage
-      onLogin={(userData) => setUser(userData)}
-      onGuest={() => setGuest(true)}
-    />
+    <>
+      {themeBtn}
+      <LoginPage
+        onLogin={(userData) => setUser(userData)}
+        onGuest={() => setGuest(true)}
+      />
+    </>
   )
 }
 

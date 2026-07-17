@@ -298,3 +298,102 @@
     width: 100%;
   }
 }
+
+/* ============================================================
+   MODO OSCURO · tarjeta de profesores
+   ============================================================ */
+[data-theme='dark'] .prof-card {
+  background: #1a2230;
+  border-color: #2a3345;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 14px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme='dark'] .prof-card.embedded { background: transparent; }
+[data-theme='dark'] .prof-title { color: #a7b0c0; }
+[data-theme='dark'] .prof-title strong { color: #e6eaf3; }
+[data-theme='dark'] .prof-sub,
+[data-theme='dark'] .prof-empty { color: #7d8798; }
+
+[data-theme='dark'] .prof-msg {
+  background: rgba(154, 107, 11, 0.18);
+  color: #e3b65e;
+}
+
+[data-theme='dark'] .prof-row {
+  border-color: #2a3345;
+  background: #131a26;
+}
+
+[data-theme='dark'] .prof-row.top {
+  border-color: #2c7a4f;
+  background: rgba(27, 122, 70, 0.12);
+}
+
+[data-theme='dark'] .prof-badge {
+  color: #43c07f;
+  background: rgba(27, 122, 70, 0.2);
+}
+
+[data-theme='dark'] .prof-name { color: #e6eaf3; }
+
+[data-theme='dark'] .vote-btn {
+  border-color: #2a3345;
+  background: #1a2230;
+}
+
+[data-theme='dark'] .vote-btn b { color: #a7b0c0; }
+[data-theme='dark'] .vote-btn:hover { border-color: #3f4c68; }
+[data-theme='dark'] .vote-btn.like { color: #7d8798; }
+[data-theme='dark'] .vote-btn.like:hover { border-color: #b23b3b; color: #e08585; }
+
+[data-theme='dark'] .vote-btn.like.on {
+  background: rgba(178, 59, 59, 0.18);
+  color: #e08585;
+}
+
+[data-theme='dark'] .vote-btn.like.on b { color: #e08585; }
+
+[data-theme='dark'] .vote-btn.dislike.on {
+  background: rgba(154, 107, 11, 0.18);
+  border-color: #9a6b0b;
+}
+
+[data-theme='dark'] .vote-btn.dislike.on b { color: #e3b65e; }
+
+[data-theme='dark'] .ptag {
+  color: #a7b0c0;
+  background: #131a26;
+  border-color: #2a3345;
+}
+
+[data-theme='dark'] .ptag b { color: #7d8798; }
+
+[data-theme='dark'] .ptag.mine {
+  background: rgba(27, 122, 70, 0.2);
+  border-color: #2c7a4f;
+  color: #43c07f;
+}
+
+[data-theme='dark'] .ptag.mine b { color: #43c07f; }
+
+[data-theme='dark'] .ptag-btn {
+  border-color: #3a4557;
+  color: #7d8798;
+}
+
+[data-theme='dark'] .ptag-btn:hover,
+[data-theme='dark'] .ptag-btn.on { border-color: #43c07f; color: #43c07f; }
+
+[data-theme='dark'] .tag-picker { background: #131a26; }
+[data-theme='dark'] .ptag.pick { background: #1a2230; }
+[data-theme='dark'] .ptag.pick:hover { border-color: #2c7a4f; color: #43c07f; }
+
+[data-theme='dark'] .prof-form input {
+  border-color: #2a3345;
+  background: #131a26;
+  color: #e6eaf3;
+}
+
+[data-theme='dark'] .prof-form input:focus { border-color: #43c07f; background: #1a2230; }
+[data-theme='dark'] .prof-form button { background: #3a4a6b; }
+[data-theme='dark'] .prof-form button:not(:disabled):hover { background: #4a5d85; }

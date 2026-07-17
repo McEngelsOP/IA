@@ -70,3 +70,27 @@
 .cfm-del:hover {
   background: #a93226;
 }
+
+/* ============================================================
+   MODO OSCURO · panel de confirmación
+   ============================================================ */
+[data-theme='dark'] .cfm-backdrop { background: rgba(0, 0, 0, 0.6); }
+
+[data-theme='dark'] .cfm-card {
+  background: #1e2735;
+  color: #e6eaf3;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+}
+
+[data-theme='dark'] .cfm-detail { color: #a7b0c0; }
+
+[data-theme='dark'] .cfm-cancel {
+  border-color: #2a3345;
+  background: #1a2230;
+  color: #a7b0c0;
+}
+
+[data-theme='dark'] .cfm-cancel:hover {
+  background: #232e42;
+  color: #e6eaf3;
+}

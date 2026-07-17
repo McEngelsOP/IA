@@ -1,0 +1,170 @@
+/* ASTRO-DEFENSA · overlays y lienzo (mismo lenguaje visual que Dino Run+) */
+
+.ad-wrap { width: 100%; }
+
+.ad-stage { position: relative; }
+
+.ad-canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 68vh;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+  background: #0d1220;
+  cursor: crosshair;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+/* Escuadrón Galáctico: lienzo vertical, no debe ocupar todo el ancho */
+.gx-canvas {
+  max-width: 400px;
+  max-height: 62vh;
+  margin: 0 auto;
+}
+
+.ad-foot {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  font-size: 10px;
+  letter-spacing: 1.2px;
+  color: #6b76a8;
+  text-align: center;
+}
+
+/* ---------- Overlays (menú, pausa, game over) ---------- */
+.ad-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 12px;
+  overflow-y: auto;
+  background: rgba(13, 18, 32, 0.85);
+  backdrop-filter: blur(2px);
+  animation: arcade-in 0.2s ease;
+}
+
+.ad-overlay.ad-dim { background: rgba(13, 18, 32, 0.92); }
+
+.ad-title {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: 6px;
+  color: #2de2e6;
+  text-shadow: 0 0 22px rgba(45, 226, 230, 0.4);
+}
+
+.ad-title.over { color: #ff6c9f; text-shadow: 0 0 22px rgba(255, 108, 159, 0.4); }
+
+.ad-modes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  max-width: 460px;
+}
+
+.ad-mode {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+  padding: 10px 13px;
+  border-radius: 10px;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.05);
+  color: #dfe4f5;
+  transition: border-color 0.15s, background 0.15s, transform 0.15s;
+}
+
+.ad-mode:hover {
+  border-color: #2de2e6;
+  background: rgba(45, 226, 230, 0.1);
+  transform: translateY(-1px);
+}
+
+.ad-mode-name {
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ad-rank-tag {
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: #3d2f04;
+  background: #ffd166;
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
+.ad-mode-desc {
+  font-size: 11px;
+  line-height: 1.45;
+  color: #8b96c9;
+}
+
+.ad-note {
+  margin: 0;
+  font-size: 9.5px;
+  letter-spacing: 1.2px;
+  color: #6b76a8;
+}
+
+.ad-score {
+  font-size: 15px;
+  letter-spacing: 1.5px;
+  color: #dfe4f5;
+}
+
+.ad-score b { color: #ffd166; }
+
+.ad-stats {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  justify-content: center;
+  font-size: 10.5px;
+  letter-spacing: 1px;
+  color: #8b96c9;
+}
+
+.ad-btns { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+
+.ad-btn {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  padding: 9px 18px;
+  border-radius: 999px;
+  cursor: pointer;
+  border: none;
+  background: #2de2e6;
+  color: #062a33;
+  transition: transform 0.15s, background 0.15s;
+}
+
+.ad-btn:hover { transform: translateY(-1px); background: #59eef1; }
+
+.ad-btn.ghost {
+  background: rgba(255, 255, 255, 0.08);
+  color: #aeb8e0;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.ad-btn.ghost:hover { background: rgba(255, 255, 255, 0.16); color: #fff; }

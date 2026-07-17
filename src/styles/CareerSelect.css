@@ -135,3 +135,41 @@
 .cs-back:hover {
   color: #0e5b3c;
 }
+
+/* ============================================================
+   MODO OSCURO · redefine la paleta beige/teal
+   ============================================================ */
+[data-theme='dark'] .cs-page {
+  --cs-bg: #10151f;
+  --cs-grid: rgba(255, 255, 255, 0.045);
+  --cs-block: rgba(26, 34, 48, 0.85);
+  --cs-ink: #e6eaf3;
+  --cs-teal: #31c7c7;
+  --cs-teal-mute: #3ab5b0;
+  --cs-green: #43c07f;
+  --cs-muted: #8a93a5;
+  --cs-white: #202a3c;
+}
+
+[data-theme='dark'] .cs-card {
+  background: rgba(26, 34, 48, 0.92);
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme='dark'] .cs-option {
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow: none;
+}
+
+[data-theme='dark'] .cs-option:hover:not(:disabled) {
+  background: #202a3c;
+  border-color: #2de2e6;
+  box-shadow: 0 0 0 3px rgba(45, 226, 230, 0.14);
+}
+
+[data-theme='dark'] .cs-error {
+  color: #e08585;
+  background: rgba(178, 59, 59, 0.16);
+  border-color: rgba(178, 59, 59, 0.4);
+}

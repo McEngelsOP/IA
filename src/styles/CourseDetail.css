@@ -350,3 +350,83 @@
 .cd-review-foot button:not(:disabled):hover {
   background: #0d1520;
 }
+
+/* ============================================================
+   MODO OSCURO · ficha del curso
+   ============================================================ */
+[data-theme='dark'] .cd-backdrop { background: rgba(0, 0, 0, 0.55); }
+
+[data-theme='dark'] .cd {
+  background: #171f2d;
+  border-left-color: #2a3345;
+  color: #e6eaf3;
+  box-shadow: -8px 0 30px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme='dark'] .cd-close {
+  border-color: #2a3345;
+  background: #1a2230;
+  color: #a7b0c0;
+}
+
+[data-theme='dark'] .cd-close:hover { background: #232e42; color: #e6eaf3; }
+
+[data-theme='dark'] .cd-msg {
+  background: rgba(154, 107, 11, 0.18);
+  color: #e3b65e;
+}
+
+[data-theme='dark'] .fact,
+[data-theme='dark'] .cd-field {
+  border-color: #2a3345;
+  background: #1a2230;
+}
+
+[data-theme='dark'] .fact-lbl { color: #7d8798; }
+[data-theme='dark'] .fact-val { color: #e6eaf3; }
+[data-theme='dark'] .cd-section h3 { color: #a7b0c0; }
+[data-theme='dark'] .cd-plain,
+[data-theme='dark'] .cd-note-txt { color: #7d8798; }
+
+[data-theme='dark'] .cd-empty {
+  color: #a7b0c0;
+  background: #131a26;
+  border-color: #35405a;
+}
+
+[data-theme='dark'] .cd-prereqs { color: #e6eaf3; }
+[data-theme='dark'] .cd-rc { color: #e3b65e; }
+
+[data-theme='dark'] .st-chip {
+  border-color: #2a3345;
+  background: #1a2230;
+  color: #a7b0c0;
+}
+
+[data-theme='dark'] .st-chip:hover:not(:disabled) { border-color: #3f4c68; }
+
+[data-theme='dark'] .cd-field { color: #e6eaf3; }
+[data-theme='dark'] .cd-saved { color: #43c07f; }
+
+[data-theme='dark'] .cd-field input:focus,
+[data-theme='dark'] .cd-field textarea:focus {
+  border-color: #43c07f;
+  background: #1a2230;
+}
+
+[data-theme='dark'] .cd-review-form textarea {
+  border-color: #2a3345;
+  background: #131a26;
+  color: #e6eaf3;
+}
+
+[data-theme='dark'] .cd-review-form textarea:focus {
+  border-color: #43c07f;
+  background: #1a2230;
+}
+
+[data-theme='dark'] .cd-words { color: #7d8798; }
+[data-theme='dark'] .cd-words.over { color: #e08585; }
+
+[data-theme='dark'] .cd-review-foot button { background: #3a4a6b; }
+[data-theme='dark'] .cd-review-foot button:not(:disabled):hover { background: #4a5d85; }

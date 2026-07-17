@@ -8,18 +8,190 @@ import { useRef, useEffect, useState } from 'react'
 
 const W = 720, H = 240, GROUND = 198, DINO_X = 48
 
-// Paletas día/noche (se alternan cada 700 puntos)
+// Estilo clásico del dino de Chrome: monocromo, empieza de día (fondo claro,
+// siluetas oscuras) y cada 700 puntos se invierte a noche (con luna y estrellas)
 const PAL = {
-  noche: {
-    bg: '#121830', ground: '#3a4568', text: '#8b96c9', dino: '#2de2e6',
-    dinoDuck: '#25bfc2', cactus: '#ff6c9f', bird: '#ffd166', rock: '#c9a37e',
-    meteor: '#ff9f43', star: 'rgba(233,238,255,0.5)'
-  },
   dia: {
-    bg: '#26335e', ground: '#5a68a3', text: '#b7c0e8', dino: '#2de2e6',
-    dinoDuck: '#25bfc2', cactus: '#ff6c9f', bird: '#ffd166', rock: '#c9a37e',
-    meteor: '#ff9f43', star: 'transparent'
+    bg: '#f7f7f7', ink: '#535353', text: '#535353',
+    cloud: 'rgba(83,83,83,0.30)', star: 'transparent'
+  },
+  noche: {
+    bg: '#121830', ink: '#e8ecfb', text: '#9aa6d4',
+    cloud: 'rgba(232,236,251,0.28)', star: 'rgba(233,238,255,0.6)'
   }
+}
+
+// ---------- Sprites pixel art ('X' = píxel encendido) ----------
+const DINO_BODY = [
+  '..........XXXXXXXXXX..',
+  '.........XXX.XXXXXXX..',
+  '.........XXXXXXXXXXX..',
+  '.........XXXXXXXXXXX..',
+  '.........XXXXXXXXXXX..',
+  '.........XXXXXX.......',
+  '.........XXXXXXXXX....',
+  'X........XXXXXX.......',
+  'X.......XXXXXXX.......',
+  'XX.....XXXXXXXXXX.....',
+  'XXX...XXXXXXXXXX.X....',
+  'XXXXXXXXXXXXXXXX.X....',
+  'XXXXXXXXXXXXXXXXXX....',
+  'XXXXXXXXXXXXXXXXX.....',
+  '.XXXXXXXXXXXXXXX......',
+  '..XXXXXXXXXXXXX.......',
+  '...XXXXXXXXXXX........',
+  '....XXXXXXXXX.........',
+  '.....XXXXXXX..........'
+]
+const DINO_A = [...DINO_BODY, // pata trasera apoyada
+  '......XX.....XX.......',
+  '......XX..............',
+  '......XXX.............'
+]
+const DINO_B = [...DINO_BODY, // pata delantera apoyada
+  '......XX.....XX.......',
+  '.............XX.......',
+  '.............XXX......'
+]
+const DINO_JUMP = [...DINO_BODY, // ambas patas recogidas
+  '......XX.....XX.......',
+  '......XX.....XX.......',
+  '......XXX....XXX......'
+]
+const DUCK_BODY = [
+  '.....................XXXXXXXX.',
+  '....................XXX.XXXXX.',
+  '....................XXXXXXXXX.',
+  'X...................XXXXXXXXX.',
+  'XX.......XXXXXXX....XXXXXX....',
+  'XXX.XXXXXXXXXXXXXXXXXXXXXXXX..',
+  'XXXXXXXXXXXXXXXXXXXXXXXX.X....',
+  '.XXXXXXXXXXXXXXXXXXXXXXX.X....',
+  '..XXXXXXXXXXXXXXXXXXXXXX......',
+  '...XXXXXXXXXXXXXXXXXXX........'
+]
+const DUCK_A = [...DUCK_BODY,
+  '......XX........XX............',
+  '......XX......................',
+  '......XXX.....................'
+]
+const DUCK_B = [...DUCK_BODY,
+  '......XX........XX............',
+  '................XX............',
+  '................XXX...........'
+]
+const BIRD_UP = [
+  '..........XXX.........',
+  '..........XXXX........',
+  '..........XXXXX.......',
+  '..........XXXXXX......',
+  '.XX.......XXXXXXX.....',
+  'XXXXX..XXXXXXXXXXXXXX.',
+  'XXXXXXXXXXXXXXXXXXXXXX',
+  '...XXXXXXXXXXXXXXXX...'
+]
+const BIRD_DOWN = [
+  '.XX...................',
+  'XXXXX..XXXXXXXXXXXXXX.',
+  'XXXXXXXXXXXXXXXXXXXXXX',
+  '...XXXXXXXXXXXXXXXX...',
+  '..........XXXXXX......',
+  '..........XXXXX.......',
+  '..........XXXX........',
+  '..........XXX.........'
+]
+const CACTUS_S = [
+  '....XX....',
+  '....XX....',
+  '.X..XX..X.',
+  '.X..XX..X.',
+  '.X..XX..X.',
+  '.X..XX..X.',
+  '.XX.XX.XX.',
+  '..XXXXXX..',
+  '....XX....',
+  '....XX....',
+  '....XX....',
+  '....XX....',
+  '....XX....',
+  '....XX....',
+  '....XX....',
+  '....XX....',
+  '....XX....',
+  '....XX....',
+  '....XX....',
+  '....XX....'
+]
+const CACTUS_L = [
+  '......XX......',
+  '......XX......',
+  '.XX...XX...XX.',
+  '.XX...XX...XX.',
+  '.XX...XX...XX.',
+  '.XX...XX...XX.',
+  '.XX...XX...XX.',
+  '.XX...XX...XX.',
+  '.XXX..XX..XXX.',
+  '..XXXXXXXXXX..',
+  '......XX......',
+  '......XX......',
+  '......XX......',
+  '......XX......',
+  '......XX......',
+  '......XX......',
+  '......XX......',
+  '......XX......',
+  '......XX......',
+  '......XX......',
+  '......XX......',
+  '......XX......',
+  '......XX......',
+  '......XX......',
+  '......XX......',
+  '......XX......',
+  '......XX......',
+  '......XX......'
+]
+const ROCK = [
+  '...XXXX...',
+  '..XXXXXX..',
+  '.XXXXXXXX.',
+  'XXXXXXXXXX',
+  'XXXXXXXXXX',
+  'XXXXXXXXXX'
+]
+const CLOUD = [
+  '.......XXXXX..........',
+  '.....XXXXXXXXX........',
+  '..XXXXXXXXXXXXXX......',
+  '.XXXXXXXXXXXXXXXXXXX..',
+  'XXXXXXXXXXXXXXXXXXXXXX'
+]
+
+// Cada sprite se pinta una vez por color en un canvas pequeño y luego se
+// escala con drawImage (sin suavizado): pixel art nítido y sin costo por frame
+const sprCache = {}
+const sprCv = (name, rows, color) => {
+  const key = name + color
+  let cv = sprCache[key]
+  if (!cv) {
+    cv = document.createElement('canvas')
+    cv.width = rows[0].length
+    cv.height = rows.length
+    const c = cv.getContext('2d')
+    c.fillStyle = color
+    for (let r = 0; r < rows.length; r++) {
+      for (let q = 0; q < rows[r].length; q++) {
+        if (rows[r][q] === 'X') c.fillRect(q, r, 1, 1)
+      }
+    }
+    sprCache[key] = cv
+  }
+  return cv
+}
+const drawSpr = (ctx, name, rows, x, y, w, h, color) => {
+  ctx.imageSmoothingEnabled = false
+  ctx.drawImage(sprCv(name, rows, color), x | 0, y | 0, w, h)
 }
 
 const BASE = {
@@ -34,13 +206,13 @@ export const MODES = {
     desc: 'El original: cactus, pájaros y día/noche. El único modo que puntúa en el ranking.'
   },
   facil: {
-    ...BASE, key: 'facil', label: 'FÁCIL', icon: '🌵', ranked: false, powers: true,
-    speed0: 5, maxSpeed: 9.5, accel: 3400, jumpV: -13.2, grav: 0.55, pad: 8,
+    ...BASE, key: 'facil', label: 'FÁCIL', icon: '🌵', ranked: true, powers: true,
+    speed0: 5, maxSpeed: 9.5, accel: 3400, jumpV: -11.4, grav: 0.68, pad: 8,
     spawnMin: 340, spawnRng: 430, birdFrom: 5200,
-    desc: 'Más lento, saltos más largos y menos obstáculos. Con power-ups.'
+    desc: 'Más lento, saltos cortos y controlables, menos obstáculos. Con power-ups.'
   },
   dificil: {
-    ...BASE, key: 'dificil', label: 'DIFÍCIL', icon: '🔥', ranked: false, powers: true,
+    ...BASE, key: 'dificil', label: 'DIFÍCIL', icon: '🔥', ranked: true, powers: true,
     speed0: 7, maxSpeed: 14.5, accel: 2200, pad: 3, spawnMin: 200, spawnRng: 250,
     birdFrom: 600, tall: true, rocks: true, triple: true,
     desc: 'Cactus altos, dobles y triples, rocas bajas y pájaros desde el inicio.'
@@ -65,7 +237,6 @@ const EVENTS = {
 
 const POWERS = {
   escudo: { icon: '⭐', label: 'ESCUDO' },
-  turbo: { icon: '⚡', label: 'TURBO', dur: 330 },
   lento: { icon: '🕒', label: 'TIEMPO LENTO', dur: 330 },
   x2: { icon: '💰', label: 'PUNTOS ×2', dur: 480 },
   pluma: { icon: '🪶', label: 'SALTO ALTO', dur: 390 }
@@ -96,9 +267,10 @@ export default function DinoGame({ onGameOver }) {
     nextIn: 420,
     nextItem: cfg.powers ? 1100 + Math.random() * 900 : Infinity,
     shield: false, invT: 0,
-    timers: { turbo: 0, lento: 0, x2: 0, pluma: 0 },
+    timers: { lento: 0, x2: 0, pluma: 0 },
     event: null, eventT: 0, eventCool: 500 + Math.random() * 400, wind: 0,
     airDodges: 0, particles: [], floats: [], shakeT: 0,
+    clouds: [{ x: 130, y: 42 }, { x: 400, y: 74 }, { x: 640, y: 30 }],
     stats: { jumps: 0, ducks: 0, fastFalls: 0, birds: 0, maxSpeed: 0 }
   })
 
@@ -141,7 +313,8 @@ export default function DinoGame({ onGameOver }) {
         if (!s || p !== 'run') return
         s.ducking = true
         if (!e.repeat) {
-          if (s.y < GROUND) { s.vy += 12.0; s.stats.fastFalls++ } // Fast Fall
+          // Fast Fall: corta el salto en seco (mata la subida) y se desploma
+          if (s.y < GROUND) { s.vy = Math.max(s.vy, 0) + 7; s.stats.fastFalls++ }
           else s.stats.ducks++
         }
       }
@@ -158,30 +331,37 @@ export default function DinoGame({ onGameOver }) {
   }, [])
 
   // ---------- Generación de obstáculos ----------
+  // Devuelve el ancho de lo colocado y si es "duro" (exige salto preciso):
+  // el bucle usa eso para dejar un hueco justo antes del siguiente obstáculo.
   const spawn = s => {
     const c = s.cfg
     const roll = Math.random()
     if (c.birds && s.dist > c.birdFrom && roll < 0.26) {
       const ys = [GROUND - 22, GROUND - 52, GROUND - 86]
       s.obstacles.push({ kind: 'bird', x: W + 40, y: ys[(Math.random() * 3) | 0], w: 34, h: 18 })
-    } else if (c.rocks && roll < 0.42) {
+      return { w: 34, hard: false }
+    }
+    if (c.rocks && roll < 0.42) {
       // roca baja: salto corto y rápido
       s.obstacles.push({ kind: 'rock', x: W + 40, y: GROUND - 16, w: 22, h: 16 })
-    } else if (c.tall && roll < 0.58) {
+      return { w: 22, hard: false }
+    }
+    if (c.tall && roll < 0.58) {
       // cactus alto: exige salto preciso
       const h = 56 + ((Math.random() * 10) | 0)
       s.obstacles.push({ kind: 'cactus', x: W + 40, y: GROUND - h, w: 16, h })
-    } else {
-      // grupo de cactus (triples solo en difícil/caótico)
-      const max = c.triple ? 3 : 2
-      const n = 1 + ((Math.random() * max) | 0)
-      let x = W + 40
-      for (let i = 0; i < n; i++) {
-        const h = 28 + ((Math.random() * 20) | 0)
-        s.obstacles.push({ kind: 'cactus', x, y: GROUND - h, w: 14, h })
-        x += 16
-      }
+      return { w: 16, hard: true }
     }
+    // grupo de cactus (triples solo en difícil/caótico)
+    const max = c.triple ? 3 : 2
+    const n = 1 + ((Math.random() * max) | 0)
+    let x = W + 40
+    for (let i = 0; i < n; i++) {
+      const h = 28 + ((Math.random() * 20) | 0)
+      s.obstacles.push({ kind: 'cactus', x, y: GROUND - h, w: 14, h })
+      x += 16
+    }
+    return { w: n * 16, hard: n === 3 }
   }
 
   const spawnItem = s => {
@@ -212,35 +392,59 @@ export default function DinoGame({ onGameOver }) {
     a.y < o.y + o.h - pad && a.y + a.h > o.y + pad
 
   // ---------- Dibujo ----------
+  // Patineta: tabla con kicks y ruedas. En el suelo el dino va montado
+  // (ruedas "girando"); al subir en el salto la tabla hace un flip completo
+  // y al caer vuelve bajo sus patas para aterrizar.
+  const drawSkate = (ctx, pal, x, y, angle, frame) => {
+    ctx.save()
+    ctx.translate(x, y)
+    ctx.rotate(angle)
+    ctx.fillStyle = pal.ink
+    ctx.fillRect(-15, -3, 30, 3)   // tabla
+    ctx.fillRect(-18, -5, 4, 3)    // nose
+    ctx.fillRect(14, -5, 4, 3)     // tail
+    ctx.fillRect(-11, 0, 5, 5)     // ruedas
+    ctx.fillRect(6, 0, 5, 5)
+    // centro de las ruedas alternando = sensación de giro
+    ctx.fillStyle = pal.bg
+    const w = ((frame / 3) | 0) % 2
+    ctx.fillRect(-9 + w, 1 + w, 1.6, 1.6)
+    ctx.fillRect(8 - w, 1 + w, 1.6, 1.6)
+    ctx.restore()
+  }
+
   const drawDino = (ctx, s, pal, dead) => {
-    const f = ((s.frame / 6) | 0) % 2
     const blink = s.invT > 0 && ((s.frame / 4) | 0) % 2 === 0
     if (blink) return
-    ctx.fillStyle = s.ducking && s.y >= GROUND ? pal.dinoDuck : pal.dino
-    if (s.ducking && s.y >= GROUND) {
-      ctx.fillRect(DINO_X, GROUND - 24, 40, 16)
-      ctx.fillRect(DINO_X + 36, GROUND - 30, 16, 12)
-      ctx.fillRect(DINO_X - 8, GROUND - 20, 10, 6)
-      ctx.fillRect(DINO_X + 6 + (f ? 14 : 0), GROUND - 8, 8, 8)
+    const f = ((s.frame / 6) | 0) % 2
+    const grounded = s.y >= GROUND
+    const LIFT = 6 // el dino va parado sobre la tabla
+
+    if (s.ducking && grounded) {
+      drawSkate(ctx, pal, DINO_X + 18, GROUND - 3, 0, s.frame)
+      drawSpr(ctx, 'k' + f, f ? DUCK_B : DUCK_A, DINO_X - 10, GROUND - 26 - LIFT, 60, 26, pal.ink)
     } else {
       const y = s.y
-      ctx.fillRect(DINO_X + 4, y - 40, 22, 22)
-      ctx.fillRect(DINO_X + 16, y - 52, 18, 16)
-      ctx.fillRect(DINO_X - 6, y - 34, 12, 8)
-      ctx.fillRect(DINO_X + 18, y - 32, 12, 5)
-      if (y >= GROUND) {
-        ctx.fillRect(DINO_X + 6 + (f ? 0 : 12), y - 18, 8, 18)
-        ctx.fillRect(DINO_X + 6 + (f ? 12 : 0), y - 18, 8, 12)
+      const air = y < GROUND
+      // la tabla: montada en el suelo; en el aire, flip al subir y de vuelta
+      // bajo las patas al caer
+      if (air) {
+        if (s.vy < 0) s.boardA = (s.boardA || 0) + 0.38 // maniobra: flip girando
+        else s.boardA = s.boardA ? s.boardA * 0.72 : 0  // cayendo: se endereza
+        drawSkate(ctx, pal, DINO_X + 14, y + 4, s.boardA, s.frame)
       } else {
-        ctx.fillRect(DINO_X + 8, y - 18, 8, 14)
-        ctx.fillRect(DINO_X + 18, y - 18, 8, 14)
+        s.boardA = 0
+        drawSkate(ctx, pal, DINO_X + 14, GROUND - 3, 0, s.frame)
       }
-      ctx.fillStyle = '#0d1220'
+      drawSpr(ctx, air ? 'dj' : 'd' + f, air ? DINO_JUMP : (f ? DINO_B : DINO_A),
+        DINO_X - 8, y - 44 - (air ? 0 : LIFT), 44, 44, pal.ink)
       if (dead) {
-        ctx.fillRect(DINO_X + 24, y - 48, 2, 6)
-        ctx.fillRect(DINO_X + 22, y - 46, 6, 2)
-      } else {
-        ctx.fillRect(DINO_X + 25, y - 47, 3, 3)
+        // el ojo se vuelve una ✖ (píxeles del color del fondo sobre la cabeza)
+        ctx.fillStyle = pal.bg
+        const ex = DINO_X + 12, ey = y - 43 - (air ? 0 : LIFT)
+        ctx.fillRect(ex, ey, 3, 3); ctx.fillRect(ex + 6, ey, 3, 3)
+        ctx.fillRect(ex + 3, ey + 3, 3, 3)
+        ctx.fillRect(ex, ey + 6, 3, 3); ctx.fillRect(ex + 6, ey + 6, 3, 3)
       }
     }
     // escudo activo: anillo alrededor
@@ -256,7 +460,8 @@ export default function DinoGame({ onGameOver }) {
   const draw = ctx => {
     const s = g.current
     const sc = Math.floor(s.pts)
-    const pal = ((sc / 700) | 0) % 2 === 1 ? PAL.dia : PAL.noche
+    // empieza de día, como el original; cada 700 puntos se invierte
+    const pal = ((sc / 700) | 0) % 2 === 1 ? PAL.noche : PAL.dia
 
     ctx.save()
     // terremoto: la cámara tiembla
@@ -272,20 +477,26 @@ export default function DinoGame({ onGameOver }) {
       for (let i = 0; i < 14; i++) {
         ctx.fillRect(((i * 97 + 31) % W), ((i * 53) % 90) + 12, 2, 2)
       }
-      ctx.fillStyle = '#dfe4f5'
+      // luna creciente
+      ctx.fillStyle = pal.ink
       ctx.beginPath(); ctx.arc(W - 90, 44, 12, 0, Math.PI * 2); ctx.fill()
       ctx.fillStyle = pal.bg
-      ctx.beginPath(); ctx.arc(W - 96, 40, 10, 0, Math.PI * 2); ctx.fill()
-    } else {
-      ctx.fillStyle = '#ffd166'
-      ctx.beginPath(); ctx.arc(W - 90, 44, 13, 0, Math.PI * 2); ctx.fill()
+      ctx.beginPath(); ctx.arc(W - 97, 40, 10, 0, Math.PI * 2); ctx.fill()
     }
+    // nubes de píxeles con parallax
+    s.clouds.forEach(c => drawSpr(ctx, 'cl', CLOUD, c.x, c.y, 44, 10, pal.cloud))
 
-    // suelo
-    ctx.fillStyle = pal.ground
-    ctx.fillRect(0, GROUND + 2, W, 2)
-    const off = -(s.dist % 28)
-    for (let x = off; x < W; x += 28) ctx.fillRect(x, GROUND + 8, 12, 2)
+    // suelo clásico: línea con montículos y piedritas (hash por tramo)
+    ctx.fillStyle = pal.ink
+    ctx.fillRect(0, GROUND + 3, W, 2)
+    const k0 = Math.floor(s.dist / 8)
+    for (let i = 0; i < W / 8 + 2; i++) {
+      const k = k0 + i
+      const h = (k * 2654435761) >>> 0
+      const sx = k * 8 - s.dist
+      if (h % 19 === 0) ctx.fillRect(sx, GROUND + 1, 6, 2)            // montículo
+      if (h % 23 === 0) ctx.fillRect(sx, GROUND + 9 + (h % 6), 2, 2)  // piedrita
+    }
 
     // partículas
     s.particles.forEach(p => {
@@ -303,38 +514,37 @@ export default function DinoGame({ onGameOver }) {
       ctx.fillText(POWERS[it.p].icon, it.x + 13, it.y + 20 + bob)
     })
 
-    // obstáculos
+    // obstáculos (sprites monocromos, como el original)
     s.obstacles.forEach(o => {
       if (o.kind === 'bird') {
-        ctx.fillStyle = pal.bird
         const flap = ((s.frame / 8) | 0) % 2
-        ctx.fillRect(o.x, o.y + 6, o.w, 6)
-        ctx.fillRect(o.x + 22, o.y + 2, 10, 6)
-        ctx.fillRect(o.x + 8, o.y + (flap ? -4 : 10), 12, 6)
+        drawSpr(ctx, 'b' + flap, flap ? BIRD_DOWN : BIRD_UP,
+          o.x + o.w / 2 - 22, o.y, 44, 16, pal.ink)
       } else if (o.kind === 'rock') {
-        ctx.fillStyle = pal.rock
-        ctx.fillRect(o.x + 2, o.y + 4, o.w - 4, o.h - 4)
-        ctx.fillRect(o.x + 6, o.y, o.w - 12, 4)
+        drawSpr(ctx, 'rk', ROCK, o.x, o.y, o.w, o.h, pal.ink)
       } else if (o.kind === 'meteor') {
-        ctx.fillStyle = pal.meteor
+        // el meteorito conserva su color de alerta
+        ctx.fillStyle = '#ff9f43'
         ctx.fillRect(o.x, o.y, o.w, o.h)
         ctx.fillStyle = 'rgba(255,159,67,0.4)'
         ctx.fillRect(o.x + 4, o.y - 10, o.w - 8, 10)
         if (o.y < 40) { // aviso de dónde caerá
-          ctx.fillStyle = pal.meteor
+          ctx.fillStyle = '#ff9f43'
           ctx.font = '700 14px "JetBrains Mono", monospace'
+          ctx.textAlign = 'center'
           ctx.fillText('!', o.x + o.w / 2, 16)
           ctx.font = '20px serif'
         }
       } else {
-        ctx.fillStyle = pal.cactus
-        ctx.fillRect(o.x + 4, o.y, o.w - 8, o.h)
-        ctx.fillRect(o.x, o.y + 8, 4, 6)
-        ctx.fillRect(o.x + o.w - 4, o.y + 12, 4, 6)
+        // saguaro chico o alto según la altura del obstáculo
+        const tall = o.h >= 52
+        const vw = o.h / 2
+        drawSpr(ctx, tall ? 'cL' : 'cS', tall ? CACTUS_L : CACTUS_S,
+          o.x + o.w / 2 - vw / 2, o.y, vw, o.h, pal.ink)
       }
     })
 
-    drawDino(ctx, s, pal, false)
+    drawDino(ctx, s, pal, !!s.dead)
 
     // textos flotantes (combos, power-ups)
     ctx.font = '700 12px "JetBrains Mono", monospace'
@@ -347,9 +557,12 @@ export default function DinoGame({ onGameOver }) {
 
     // eventos con overlay de pantalla completa
     if (s.event === 'oscuridad') {
-      const grd = ctx.createRadialGradient(DINO_X + 14, s.y - 26, 55, DINO_X + 14, s.y - 26, 200)
+      // Ajustes de la oscuridad: el 3er número (90) es el radio totalmente
+      // iluminado alrededor del dino, el 6to (320) hasta dónde se desvanece,
+      // y el 0.82 la opacidad máxima en los bordes (1 = negro total).
+      const grd = ctx.createRadialGradient(DINO_X + 14, s.y - 26, 90, DINO_X + 14, s.y - 26, 320)
       grd.addColorStop(0, 'rgba(5,8,18,0)')
-      grd.addColorStop(1, 'rgba(5,8,18,0.98)')
+      grd.addColorStop(1, 'rgba(5,8,18,0.82)')
       ctx.fillStyle = grd
       ctx.fillRect(-8, -8, W + 16, H + 16)
     } else if (s.event === 'tormenta') {
@@ -372,13 +585,15 @@ export default function DinoGame({ onGameOver }) {
     // banner del evento activo
     if (s.event) {
       ctx.textAlign = 'center'
-      ctx.fillStyle = '#ffd166'
+      ctx.fillStyle = '#d18f00'
       ctx.fillText(EVENTS[s.event].label, W / 2, 28)
     }
     if (s.cfg.zen) {
       ctx.textAlign = 'center'
-      ctx.fillStyle = 'rgba(139,150,201,0.6)'
+      ctx.globalAlpha = 0.55
+      ctx.fillStyle = pal.text
       ctx.fillText('MODO ZEN', W / 2, H - 14)
+      ctx.globalAlpha = 1
     }
 
     ctx.restore()
@@ -400,11 +615,10 @@ export default function DinoGame({ onGameOver }) {
       const s = g.current
       s.frame++
       const ts = s.timers.lento > 0 ? 0.6 : 1 // tiempo lento
-      const turbo = s.timers.turbo > 0 ? 1.4 : 1
-      const speed = Math.min(s.cfg.maxSpeed, s.cfg.speed0 + s.dist / s.cfg.accel) * turbo
+      const speed = Math.min(s.cfg.maxSpeed, s.cfg.speed0 + s.dist / s.cfg.accel)
       const eff = speed * ts
       s.dist += eff
-      s.pts += (eff / 10) * (s.timers.x2 > 0 ? 2 : 1) * (turbo > 1 ? 1.3 : 1)
+      s.pts += (eff / 10) * (s.timers.x2 > 0 ? 2 : 1)
       s.stats.maxSpeed = Math.max(s.stats.maxSpeed, speed)
 
       // temporizadores
@@ -440,7 +654,7 @@ export default function DinoGame({ onGameOver }) {
           s.particles.push({
             x: Math.random() * W, y: Math.random() * (GROUND - 10),
             vx: (s.event === 'tormenta' ? -7 : s.wind * 6), vy: 0.4,
-            life: 22, color: s.event === 'tormenta' ? '#d6b26e' : 'rgba(255,255,255,0.5)',
+            life: 22, color: s.event === 'tormenta' ? '#d6b26e' : 'rgba(128,128,128,0.55)',
             size: s.event === 'tormenta' ? 2 : 1.5
           })
         }
@@ -448,27 +662,34 @@ export default function DinoGame({ onGameOver }) {
 
       // física del salto (el viento empuja un poco en el aire)
       if (s.y < GROUND || s.vy < 0) {
-        s.vy += s.cfg.grav * ts
+        // manteniendo ↓ en el aire la gravedad se triplica: caída rápida,
+        // nada de salto largo flotante
+        s.vy += s.cfg.grav * ts * (s.ducking && s.y < GROUND ? 3 : 1)
         if (s.wind && s.y < GROUND) s.vy += s.wind * 0.02
         s.y = Math.min(GROUND, s.y + s.vy * ts)
         if (s.y >= GROUND) {
           s.vy = 0
-          burst(s, DINO_X + 10, GROUND, 'rgba(139,150,201,0.7)', 4)
+          burst(s, DINO_X + 10, GROUND, 'rgba(128,128,128,0.6)', 4)
           // combo: obstáculos esquivados sin tocar el suelo
           if (s.airDodges >= 2) {
             const bonus = s.airDodges * 15
             s.pts += bonus
-            float(s, DINO_X + 40, s.y - 70, `COMBO x${s.airDodges} +${bonus}`, '#ffd166')
+            float(s, DINO_X + 40, s.y - 70, `COMBO x${s.airDodges} +${bonus}`, '#d18f00')
           }
           s.airDodges = 0
         }
       }
 
-      // obstáculos: aparecer, mover, marcar esquivados
+      // obstáculos: aparecer, mover, marcar esquivados.
+      // El hueco al siguiente: base del modo + ancho de lo recién puesto
+      // + colchón que crece con la velocidad (a más rápido, más espacio para
+      // aterrizar y volver a saltar) + 50% extra tras un obstáculo duro.
       s.nextIn -= eff
       if (s.nextIn <= 0) {
-        spawn(s)
-        s.nextIn = s.cfg.spawnMin + Math.random() * s.cfg.spawnRng
+        const puesto = spawn(s)
+        s.nextIn = s.cfg.spawnMin + puesto.w
+          + speed * 16 * (puesto.hard ? 1.5 : 1)
+          + Math.random() * s.cfg.spawnRng
       }
       s.obstacles.forEach(o => {
         if (o.kind === 'meteor') {
@@ -476,12 +697,14 @@ export default function DinoGame({ onGameOver }) {
           o.y += o.vy * ts
           if (o.y + o.h >= GROUND + 2) {
             o.dead = true
-            burst(s, o.x + 8, GROUND, PAL.noche.meteor, 12)
+            burst(s, o.x + 8, GROUND, '#ff9f43', 12)
             s.shakeT = Math.max(s.shakeT, 6)
           }
         } else {
-          // el viento acerca (>0) o aleja (<0) los obstáculos
-          o.x -= (eff * (o.kind === 'bird' ? 1.15 : 1)) + s.wind * ts
+          // Todos a la misma velocidad (el viento acerca >0 o aleja <0):
+          // si los pájaros fueran más rápidos alcanzarían al cactus de
+          // adelante y llegarían apilados — combinación imposible de esquivar
+          o.x -= eff + s.wind * ts
         }
         if (!o.passed && o.x + o.w < DINO_X) {
           o.passed = true
@@ -505,12 +728,18 @@ export default function DinoGame({ onGameOver }) {
         if (overlap(hb, it, 0)) {
           it.dead = true
           burst(s, it.x + 13, it.y + 13, '#ffd166', 12)
-          float(s, it.x, it.y, POWERS[it.p].label, '#2de2e6')
+          float(s, it.x, it.y, POWERS[it.p].label, '#0b8a8c')
           if (it.p === 'escudo') s.shield = true
           else s.timers[it.p] = POWERS[it.p].dur
         }
       })
       s.items = s.items.filter(it => !it.dead && it.x > -40)
+
+      // nubes con parallax
+      s.clouds.forEach(c => {
+        c.x -= eff * 0.25
+        if (c.x < -50) { c.x = W + 30 + Math.random() * 80; c.y = 20 + Math.random() * 70 }
+      })
 
       // partículas y textos flotantes
       s.particles.forEach(p => { p.x += p.vx; p.y += p.vy; p.vy += 0.12; p.life-- })
@@ -531,7 +760,8 @@ export default function DinoGame({ onGameOver }) {
             s.obstacles = s.obstacles.filter(o => !o.dead)
           } else {
             const sc = Math.floor(s.pts)
-            burst(s, DINO_X + 14, s.y - 26, PAL.noche.dino, 22)
+            burst(s, DINO_X + 14, s.y - 26, '#9aa0a6', 22)
+            s.dead = true
             draw(ctx)
             setResult({
               score: sc, mode: s.cfg,
@@ -571,13 +801,13 @@ export default function DinoGame({ onGameOver }) {
                 <button key={m.key} className="dg-mode" onClick={() => start(m.key)}>
                   <span className="dg-mode-name mono">
                     {m.icon} {m.label}
-                    {m.ranked && <span className="dg-rank-tag mono">🏆 RANKING</span>}
+                    {!m.ranked && <span className="dg-rank-tag off mono">SIN RANKING</span>}
                   </span>
                   <span className="dg-mode-desc">{m.desc}</span>
                 </button>
               ))}
             </div>
-            <p className="dg-note mono">SOLO EL MODO CLÁSICO ENVÍA TU PUNTAJE AL RANKING GLOBAL</p>
+            <p className="dg-note mono">TODOS LOS MODOS PUNTÚAN EN EL RANKING GLOBAL · MENOS ZEN</p>
           </div>
         )}
 

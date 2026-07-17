@@ -500,3 +500,65 @@
 
 /* El panel derecho (arte de la malla) conserva su estilo original:
    fondo navy y nodos llevados en verde — no se pisa nada aquí. */
+
+/* ============================================================
+   MODO OSCURO · redefine la paleta beige/teal del login
+   ============================================================ */
+[data-theme='dark'] .login-page {
+  --lp-bg: #10151f;
+  --lp-grid: rgba(255, 255, 255, 0.05);
+  --lp-block: rgba(26, 34, 48, 0.85);
+  --lp-ink: #e6eaf3;
+  --lp-teal: #31c7c7;
+  --lp-teal-2: #2de2e6;
+  --lp-green: #43c07f;
+  --lp-muted: #8a93a5;
+  --lp-white: #131a26;
+}
+
+[data-theme='dark'] .login-brand,
+[data-theme='dark'] .login-foot {
+  color: #c98484;
+}
+
+[data-theme='dark'] .login-sub { color: #31c7c7; }
+[data-theme='dark'] .field label { color: #3ab5b0; }
+
+[data-theme='dark'] .field input,
+[data-theme='dark'] .field select {
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow: none;
+}
+
+[data-theme='dark'] .field input::placeholder,
+[data-theme='dark'] .field select:invalid {
+  color: rgba(230, 234, 243, 0.35);
+}
+
+[data-theme='dark'] .login-error {
+  background: rgba(154, 107, 11, 0.16);
+  border-color: #6b5527;
+  color: #e3b65e;
+}
+
+[data-theme='dark'] .login-notice {
+  background: rgba(27, 122, 70, 0.16);
+  border-color: rgba(67, 192, 127, 0.4);
+  color: #43c07f;
+}
+
+/* botón principal: claro sobre fondo oscuro para mantener jerarquía */
+[data-theme='dark'] .login-btn {
+  background: #e6eaf3;
+  color: #10151f;
+}
+
+[data-theme='dark'] .login-btn:hover:not(:disabled) { background: #ffffff; }
+
+[data-theme='dark'] .guest-btn {
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+[data-theme='dark'] .guest-btn:hover { background: #1a2230; }
+[data-theme='dark'] .link-btn:hover { color: #5fdba0; }
+[data-theme='dark'] .cs-back:hover { color: #5fdba0; }
