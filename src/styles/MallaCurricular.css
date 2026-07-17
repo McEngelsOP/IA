@@ -699,7 +699,19 @@ path.e.dim { opacity: 0.07; }
 
   .elec-panel { margin: 0 18px 12px; }
 
-  .frame { margin: 0 18px 16px; }
+  /* En móvil la página escrolea de corrido y la malla recibe un bloque
+     alto propio (casi toda la pantalla), en vez del sobrante del flex */
+  .malla-page {
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+
+  .frame {
+    flex: none;
+    height: 76dvh;
+    margin: 0 12px 16px;
+  }
 
   .malla-foot { padding: 0 18px 14px; }
 
