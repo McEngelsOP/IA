@@ -358,7 +358,7 @@ export default function LoginPage({ onLogin, onGuest }) {
                 {codeTaken && (
                   <>
                     {' '}Si no fuiste tú, escribe a{' '}
-                    <a href="mailto:hernandengels@gmail.com">hernandengels@gmail.com</a> para resolverlo.
+                    <a href="mailto:solopcional16@gmail.com">solopcional16@gmail.com</a> para resolverlo.
                   </>
                 )}
               </div>
@@ -397,7 +397,7 @@ export default function LoginPage({ onLogin, onGuest }) {
           {mode !== 'forgot' && (
             <p className="login-note">
               ¿Escribiste mal tu correo? Avisa a{' '}
-              <a href="mailto:hernandengels@gmail.com">hernandengels@gmail.com</a>{' '}
+              <a href="mailto:solopcional16@gmail.com">solopcional16@gmail.com</a>{' '}
               para liberarlo y volver a registrarte.
             </p>
           )}
