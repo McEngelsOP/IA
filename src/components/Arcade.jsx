@@ -1,10 +1,12 @@
-import { useState, useEffect, useCallback, lazy, Suspense } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import DinoGame from './DinoGame'
+import AstroDefensa from './AstroDefensa'
+import Galaxia from './Galaxia'
 import '../styles/Arcade.css'
-
-const AstroDefensa = lazy(() => import('./AstroDefensa'))
-const Galaxia = lazy(() => import('./Galaxia'))
+// Los tres juegos viajan DENTRO del chunk del arcade (que ya es lazy desde
+// la malla): un solo punto de carga diferida — el lazy anidado por juego
+// dejaba la tarjeta vacía cuando el sub-chunk fallaba en redes lentas.
 
 // Figuritas que flotan en el fondo (posición/tiempos vía CSS)
 const DECO = ['👾', '🎮', '🕹️', '⭐', '🚀', '💾', '👻', '🍄']
@@ -93,13 +95,17 @@ export default function Arcade({ user, onClose }) {
     }
     const { data, error } = await supabase.rpc('submit_game_score', { g: activeGame, s: sc })
     if (error) {
-      if ((error.message || '').includes('ALIAS_REQUIRED')) {
+      const m = error.message || ''
+      if (m.includes('ALIAS_REQUIRED')) {
         setPendingScore(p => Math.max(p || 0, sc))
         setNeedAlias(true)
-      } else {
-        console.error('[arcade:submit]', error)
-        setMsg('No se pudo guardar tu puntaje. Revisa tu conexión.')
+        return
       }
+      console.error('[arcade:submit]', error)
+      // mensajes específicos: culpar a la conexión escondía la causa real
+      if (m.includes('BAD_GAME')) setMsg('Este juego aún no está habilitado en la base de datos (falta correr la query del arcade).')
+      else if (m.includes('NO_AUTH')) setMsg('Tu sesión expiró: cierra sesión y vuelve a entrar para guardar puntajes.')
+      else setMsg(`No se pudo guardar tu puntaje${m ? ` (${m})` : '. Revisa tu conexión.'}`)
       return
     }
     setMsg(null)
@@ -191,12 +197,10 @@ export default function Arcade({ user, onClose }) {
             </div>
             {activeGame === 'dino' ? (
               <DinoGame onGameOver={submitScore} />
+            ) : activeGame === 'astro' ? (
+              <AstroDefensa onGameOver={submitScore} />
             ) : (
-              <Suspense fallback={<div className="arcade-loading mono">CARGANDO JUEGO…</div>}>
-                {activeGame === 'astro'
-                  ? <AstroDefensa onGameOver={submitScore} />
-                  : <Galaxia onGameOver={submitScore} />}
-              </Suspense>
+              <Galaxia onGameOver={submitScore} />
             )}
             {msg && <div className="arcade-msg">{msg}</div>}
 

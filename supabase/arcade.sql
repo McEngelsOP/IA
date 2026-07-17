@@ -62,7 +62,7 @@ begin
     raise exception 'ALIAS_REQUIRED';
   end if;
   insert into public.game_scores (student_id, game, alias, score)
-  values (auth.uid(), g, s)
+  values (auth.uid(), g, a, s)
   on conflict (student_id, game) do update
     set score      = greatest(public.game_scores.score, excluded.score),
         alias      = excluded.alias,
