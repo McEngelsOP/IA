@@ -10,6 +10,7 @@ import '../styles/MallaCurricular.css'
 // El arcade se descarga solo cuando alguien pulsa el botón (code-splitting):
 // así el juego no engorda la carga inicial de la malla.
 const Arcade = lazy(() => import('./Arcade'))
+const AcademicCalendar = lazy(() => import('./AcademicCalendar'))
 
 // Para el buscador: sin tildes ni mayúsculas ("Calculo" encuentra "Cálculo")
 const norm = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
@@ -124,6 +125,8 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
   const [busca, setBusca] = useState('') // buscador de cursos
   const [matchIdx, setMatchIdx] = useState(0) // Enter salta al siguiente resultado
   const [courseStats, setCourseStats] = useState(null) // agregados por curso (query 28) · null = sin pedir
+  const [planModalOpen, setPlanModalOpen] = useState(false) // modal de detalles del plan
+  const [calendarOpen, setCalendarOpen] = useState(false) // vista de calendario academico
 
   // Plan del próximo ciclo: se guarda solo en este dispositivo (localStorage)
   const planKey = `malla-plan-${carrera}-${user?.id || 'guest'}`
@@ -564,6 +567,7 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
           <>&nbsp;· <span className="pill r">⚠ {temidos.length} {temidos.length === 1 ? 'curso exigente' : 'cursos exigentes'}</span>
           &nbsp;(menos de la mitad lo aprueba a la primera)</>
         )}
+        <button className="plan-view" onClick={ev => { ev.stopPropagation(); setPlanModalOpen(true) }}>Ver detalles</button>
         <button className="plan-clear" onClick={ev => { ev.stopPropagation(); setPlan(new Set()) }}>Vaciar plan</button>
       </>
     )
@@ -661,6 +665,9 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
               ⇄ Cambiar de carrera
             </button>
           )}
+          <button className="panel-btn" onClick={() => setCalendarOpen(true)}>
+            📅 Calendario
+          </button>
           {!isGuest && (
             <button className="panel-btn" onClick={() => setPanelOpen(true)}>
               ☰ Mi panel
@@ -842,6 +849,12 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
         </Suspense>
       )}
 
+      {calendarOpen && (
+        <Suspense fallback={<div className="arcade-loading mono">CARGANDO CALENDARIO…</div>}>
+          <AcademicCalendar user={user} uni={M.uni} onClose={() => setCalendarOpen(false)} />
+        </Suspense>
+      )}
+
       {!isGuest && (
         <CourseDetail
           user={user}
@@ -853,6 +866,39 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
           onSaveStatus={saveStatus}
           onClose={() => setSelected(null)}
         />
+      )}
+
+      {planModalOpen && (
+        <div className="plan-modal-backdrop" onClick={() => setPlanModalOpen(false)}>
+          <div className="plan-modal" onClick={e => e.stopPropagation()}>
+            <header className="plan-modal-head">
+              <h3>Tu plan de ciclo</h3>
+              <button className="plan-modal-close" onClick={() => setPlanModalOpen(false)} aria-label="Cerrar">×</button>
+            </header>
+            <div className="plan-modal-body">
+              {M.cursos.filter(c => plan.has(c.id)).sort((a, b) => a.c - b.c).map(c => (
+                <div key={c.id} className="plan-item">
+                  <span className="plan-item-cycle">Ciclo {c.c}</span>
+                  <div className="plan-item-info">
+                    <span className="plan-item-name">{c.n}</span>
+                    {esExigente(c.id) && <span className="pill r micro">Exigente</span>}
+                  </div>
+                  <span className="plan-item-cred">{c.cr} créd</span>
+                  <button className="plan-item-remove" onClick={() => togglePlan(c.id)} title="Quitar del plan">×</button>
+                </div>
+              ))}
+              {plan.size === 0 && (
+                <div className="plan-modal-empty">Tu plan está vacío.</div>
+              )}
+            </div>
+            {plan.size > 0 && (
+              <footer className="plan-modal-foot">
+                <span>Total:</span>
+                <b>{M.cursos.filter(c => plan.has(c.id)).reduce((a, c) => a + c.cr, 0)} créditos</b>
+              </footer>
+            )}
+          </div>
+        </div>
       )}
     </div>
   )

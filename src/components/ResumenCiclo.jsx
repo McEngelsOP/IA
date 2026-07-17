@@ -78,8 +78,12 @@ export default function ResumenCiclo({ open, onClose, user, cursos, ciclos, done
     const d = datos
 
     const render = () => {
-      // fondo
-      x.fillStyle = '#0d1220'
+      // fondo con degradado vertical (más profundidad que el plano)
+      const bg = x.createLinearGradient(0, 0, 0, H)
+      bg.addColorStop(0, '#0a0e1c')
+      bg.addColorStop(0.55, '#0d1220')
+      bg.addColorStop(1, '#131b32')
+      x.fillStyle = bg
       x.fillRect(0, 0, W, H)
       // manchas de color muy suaves (decoración)
       const blob = (cx, cy, r, color) => {
@@ -89,9 +93,10 @@ export default function ResumenCiclo({ open, onClose, user, cursos, ciclos, done
         x.fillStyle = g
         x.fillRect(cx - r, cy - r, r * 2, r * 2)
       }
-      blob(140, 180, 340, 'rgba(45, 226, 230, 0.10)')
-      blob(950, 480, 380, 'rgba(200, 107, 255, 0.09)')
-      blob(220, 1180, 400, 'rgba(168, 224, 95, 0.09)')
+      blob(140, 180, 340, 'rgba(45, 226, 230, 0.12)')
+      blob(950, 480, 380, 'rgba(200, 107, 255, 0.10)')
+      blob(220, 1180, 400, 'rgba(168, 224, 95, 0.10)')
+      blob(920, 1100, 320, 'rgba(255, 209, 102, 0.07)')
       // marco
       x.strokeStyle = 'rgba(255,255,255,0.16)'
       x.lineWidth = 3
@@ -120,19 +125,23 @@ export default function ResumenCiclo({ open, onClose, user, cursos, ciclos, done
       const heroLbl = d.pond !== null
         ? `PONDERADO${d.pond >= PASS ? ' · APROBANDO ✓' : ''}`
         : 'CRÉDITOS LLEVADOS'
-      x.fillStyle = '#2de2e6'
+      // número héroe con degradado turquesa → violeta
+      const heroGrad = x.createLinearGradient(W / 2 - 320, 0, W / 2 + 320, 0)
+      heroGrad.addColorStop(0, '#2de2e6')
+      heroGrad.addColorStop(1, '#c86bff')
+      x.fillStyle = heroGrad
       x.font = '700 190px "JetBrains Mono", monospace'
       x.fillText(heroVal, W / 2, 620)
       x.fillStyle = '#8b96c9'
       x.font = '600 30px "JetBrains Mono", monospace'
       x.fillText(heroLbl, W / 2, 678)
 
-      // tarjetas 2×2
+      // tarjetas 2×2, cada una con su color de acento
       const cards = [
-        { v: String(d.llevados), l: 'CURSOS LLEVADOS' },
-        { v: String(d.cred), l: 'CRÉDITOS' },
-        { v: `${d.pct}%`, l: 'DE LA CARRERA' },
-        { v: String(logrosCount), l: 'LOGROS' }
+        { v: String(d.llevados), l: 'CURSOS LLEVADOS', a: '#2de2e6' },
+        { v: String(d.cred), l: 'CRÉDITOS', a: '#a8e05f' },
+        { v: `${d.pct}%`, l: 'DE LA CARRERA', a: '#c86bff', bar: d.pct },
+        { v: String(logrosCount), l: 'LOGROS', a: '#ffd166' }
       ]
       const cw = 440, ch = 170, gap = 40
       const x0 = (W - cw * 2 - gap) / 2
@@ -147,12 +156,36 @@ export default function ResumenCiclo({ open, onClose, user, cursos, ciclos, done
         x.roundRect(cx, cy, cw, ch, 24)
         x.fill()
         x.stroke()
-        x.fillStyle = '#ffffff'
+        // filo superior con el color de acento de la tarjeta
+        x.save()
+        x.beginPath()
+        x.roundRect(cx, cy, cw, ch, 24)
+        x.clip()
+        x.fillStyle = c.a
+        x.globalAlpha = 0.85
+        x.fillRect(cx, cy, cw, 6)
+        x.restore()
+        x.globalAlpha = 1
+        x.fillStyle = c.a
         x.font = '700 72px "JetBrains Mono", monospace'
-        x.fillText(c.v, cx + cw / 2, cy + 92)
+        x.fillText(c.v, cx + cw / 2, cy + 88)
         x.fillStyle = '#8b96c9'
         x.font = '600 24px "JetBrains Mono", monospace'
-        x.fillText(c.l, cx + cw / 2, cy + 138)
+        x.fillText(c.l, cx + cw / 2, cy + 130)
+        // mini barra de progreso de la carrera
+        if (c.bar !== undefined) {
+          const bx = cx + 60, bw = cw - 120, by = cy + 146
+          x.fillStyle = 'rgba(255,255,255,0.12)'
+          x.beginPath()
+          x.roundRect(bx, by, bw, 8, 4)
+          x.fill()
+          if (c.bar > 0) {
+            x.fillStyle = c.a
+            x.beginPath()
+            x.roundRect(bx, by, Math.max(bw * c.bar / 100, 8), 8, 4)
+            x.fill()
+          }
+        }
       })
 
       // arcade (si hay puntaje esta temporada)

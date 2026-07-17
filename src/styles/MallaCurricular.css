@@ -879,7 +879,7 @@ path.e.dim { opacity: 0.07; }
   color: #c0392b;
 }
 
-.plan-clear {
+.plan-view, .plan-clear {
   margin-left: 10px;
   padding: 3px 10px;
   border-radius: 999px;
@@ -890,7 +890,134 @@ path.e.dim { opacity: 0.07; }
   cursor: pointer;
 }
 
+.plan-view:hover { color: #6b4fc0; border-color: #6b4fc0; }
 .plan-clear:hover { color: #c0392b; border-color: #c0392b; }
+
+/* ---------- Modal de Plan de Ciclo ---------- */
+.plan-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(21, 32, 46, 0.4);
+}
+
+.plan-modal {
+  width: min(380px, 94vw);
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid #e3e6e2;
+  border-radius: 16px;
+  box-shadow: 0 12px 40px rgba(21, 32, 46, 0.2);
+}
+
+.plan-modal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e3e6e2;
+}
+
+.plan-modal-head h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #15202e;
+}
+
+.plan-modal-close {
+  border: none;
+  background: transparent;
+  font-size: 20px;
+  color: #5c6672;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.plan-modal-body {
+  padding: 12px 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.plan-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: #f5f6f4;
+  border-radius: 10px;
+  border: 1px solid #e3e6e2;
+}
+
+.plan-item-cycle {
+  font: 500 11px 'Inter', sans-serif;
+  color: #5c6672;
+  background: #e3e6e2;
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+.plan-item-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.plan-item-name {
+  font: 600 13px 'Inter', sans-serif;
+  color: #15202e;
+  line-height: 1.2;
+}
+
+.pill.micro {
+  font-size: 10px;
+  padding: 1px 5px;
+  align-self: flex-start;
+}
+
+.plan-item-cred {
+  font: 500 13px 'Inter', sans-serif;
+  color: #5c6672;
+}
+
+.plan-item-remove {
+  border: none;
+  background: transparent;
+  color: #8c96a2;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.plan-item-remove:hover { color: #c0392b; }
+
+.plan-modal-empty {
+  padding: 30px 0;
+  text-align: center;
+  color: #5c6672;
+  font-size: 14px;
+}
+
+.plan-modal-foot {
+  padding: 14px 20px;
+  background: #efe8fb;
+  border-top: 1px solid #dcd1f4;
+  border-radius: 0 0 16px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #4c3a80;
+  font-size: 14px;
+}
 
 /* ---------- Modo oscuro: buscador y planificador ---------- */
 [data-theme='dark'] .buscar-box {
@@ -922,8 +1049,43 @@ path.e.dim { opacity: 0.07; }
   color: #ff8a80;
 }
 
+[data-theme='dark'] .plan-view,
 [data-theme='dark'] .plan-clear {
   background: #161d2b;
   border-color: #3a4557;
   color: #a7b0c0;
+}
+
+[data-theme='dark'] .plan-modal-backdrop { background: rgba(0, 0, 0, 0.6); }
+
+[data-theme='dark'] .plan-modal {
+  background: #141c2b;
+  border-color: #2e3a52;
+}
+
+[data-theme='dark'] .plan-modal-head { border-color: #2e3a52; }
+[data-theme='dark'] .plan-modal-head h3 { color: #e6eaf3; }
+[data-theme='dark'] .plan-modal-close { color: #a7b0c0; }
+
+[data-theme='dark'] .plan-item {
+  background: #1c2739;
+  border-color: #2e3a52;
+}
+
+[data-theme='dark'] .plan-item-cycle {
+  background: #2e3a52;
+  color: #a7b0c0;
+}
+
+[data-theme='dark'] .plan-item-name { color: #e6eaf3; }
+[data-theme='dark'] .plan-item-cred { color: #a7b0c0; }
+[data-theme='dark'] .plan-item-remove { color: #5c6672; }
+[data-theme='dark'] .plan-item-remove:hover { color: #ff8a80; }
+
+[data-theme='dark'] .plan-modal-empty { color: #a7b0c0; }
+
+[data-theme='dark'] .plan-modal-foot {
+  background: rgba(123, 92, 198, 0.15);
+  border-color: #3a4557;
+  color: #cbb8f5;
 }
