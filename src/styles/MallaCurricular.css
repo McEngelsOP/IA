@@ -30,6 +30,22 @@
   font-family: 'Inter', system-ui, sans-serif;
 }
 
+/* Apilamiento del fondo de iconos (MallaFX): la capa .mfx-layer va en
+   z-index 0 (sobre el fondo beige de .malla-page) y los bloques de contenido
+   suben a z-index 1 para taparla; así los iconos solo asoman en los márgenes
+   y detrás del texto suelto. NO se toca el apilamiento de .malla-page para no
+   afectar al botón de tema (35), los drawers (40) ni el arcade (50). */
+.malla-top,
+.toolbar,
+.area-legend,
+.status,
+.elec-panel,
+.frame,
+.malla-foot {
+  position: relative;
+  z-index: 1;
+}
+
 .malla-page .mono {
   font-family: 'JetBrains Mono', monospace;
 }

@@ -1,0 +1,47 @@
+/* Iconos de fondo de la malla (ver MallaFX.jsx). Capa a pantalla completa en
+   z-index 0: queda sobre el fondo beige de .malla-page pero por debajo de los
+   bloques de contenido (que suben a z-index 1 en MallaCurricular.css), así los
+   iconos solo asoman en los márgenes y por detrás del texto suelto (título,
+   leyenda, pie). pointer-events: none = nunca capturan clics. */
+
+.mfx-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.mfx-icon {
+  position: absolute;
+  line-height: 1;
+  opacity: 0.10;
+  filter: saturate(0.7);
+  transform: translate(0, 0);
+  animation-name: mfx-drift;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+  will-change: transform;
+}
+
+/* Deriva acotada pero con movimiento notorio: recorrido amplio, giro y un
+   leve pulso de escala. Nunca se van de pantalla (van y vuelven con alternate). */
+@keyframes mfx-drift {
+  0%   { transform: translate(0, 0) rotate(-9deg) scale(1); }
+  25%  { transform: translate(26px, -20px) rotate(5deg) scale(1.08); }
+  50%  { transform: translate(48px, 12px) rotate(13deg) scale(1); }
+  75%  { transform: translate(18px, 34px) rotate(3deg) scale(0.94); }
+  100% { transform: translate(-30px, 20px) rotate(-7deg) scale(1.04); }
+}
+
+/* En oscuro la tarjeta es oscura: bajamos un pelín y quitamos brillo */
+[data-theme='dark'] .mfx-icon {
+  opacity: 0.09;
+  filter: saturate(0.6) brightness(0.95);
+}
+
+/* Accesibilidad: sin animación si el usuario la reduce (siguen visibles fijos) */
+@media (prefers-reduced-motion: reduce) {
+  .mfx-icon { animation: none; }
+}

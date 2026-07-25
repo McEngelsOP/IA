@@ -4,6 +4,7 @@ import { CARRERAS } from '../data/carreras'
 import { AREAS } from '../data/areas'
 import SidePanel from './SidePanel'
 import CourseDetail, { STATUS_META } from './CourseDetail'
+import MallaFX from './MallaFX'
 import { LOGROS } from '../lib/logros'
 import useMediaQuery from '../lib/useMediaQuery'
 import '../styles/MallaCurricular.css'
@@ -714,6 +715,7 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
 
   return (
     <div className={'malla-page' + (mode === 'done' ? ' marking' : '')}>
+      {!isMobile && <MallaFX carrera={carrera} />}
       <header className="malla-top">
         <div>
           <div className="eyebrow mono">{M.uni} · {M.nombre}</div>
@@ -726,7 +728,7 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
           <div className="hint">
             {isGuest
               ? 'Modo visitante: puedes explorar y marcar cursos, pero nada se guarda al salir. Crea una cuenta para conservar tu avance.'
-              : 'Si encuentras errores en la malla curricular, manda un correo a solopcional16@gmail.com con el asunto «Error en la malla» y describe el problema. Gracias por tu ayuda.'}
+              : 'Si encuentras errores en la malla curricular, manda un correo a solopcional16@gmail.com con el asunto «Error en la malla» y describe el problema. Asi mismo, cualquier sugerencia es bienvenida. Gracias por tu ayuda ^^. '}
           </div>
         </div>
         <div className="user-box">
