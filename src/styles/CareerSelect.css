@@ -27,36 +27,6 @@
   background-size: 28px 28px;
 }
 
-/* ---- Iconos flotantes temáticos de las carreras (decorativos) ---- */
-.cs-fx {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-.cs-fx-icon {
-  position: absolute;
-  bottom: -12vh;
-  line-height: 1;
-  opacity: 0;
-  color: var(--cs-teal-mute);
-  filter: saturate(0.85);
-  animation-name: cs-rise;
-  animation-timing-function: linear;
-  animation-iteration-count: infinite;
-  will-change: transform, opacity;
-}
-
-@keyframes cs-rise {
-  0%   { transform: translateY(0) translateX(0) rotate(0deg); opacity: 0; }
-  12%  { opacity: 0.26; }
-  50%  { transform: translateY(-62vh) translateX(18px) rotate(8deg); }
-  88%  { opacity: 0.26; }
-  100% { transform: translateY(-125vh) translateX(-14px) rotate(-6deg); opacity: 0; }
-}
-
 .cs-card {
   position: relative;
   z-index: 1;
@@ -206,26 +176,4 @@
   color: #e08585;
   background: rgba(178, 59, 59, 0.16);
   border-color: rgba(178, 59, 59, 0.4);
-}
-
-/* En oscuro los iconos brillan un poco menos para no distraer */
-[data-theme='dark'] .cs-fx-icon {
-  filter: saturate(0.7) brightness(0.95);
-}
-
-[data-theme='dark'] .cs-fx-icon {
-  animation-name: cs-rise-dark;
-}
-
-@keyframes cs-rise-dark {
-  0%   { transform: translateY(0) translateX(0) rotate(0deg); opacity: 0; }
-  12%  { opacity: 0.2; }
-  50%  { transform: translateY(-62vh) translateX(18px) rotate(8deg); }
-  88%  { opacity: 0.2; }
-  100% { transform: translateY(-125vh) translateX(-14px) rotate(-6deg); opacity: 0; }
-}
-
-/* Accesibilidad: sin animación si el usuario la reduce */
-@media (prefers-reduced-motion: reduce) {
-  .cs-fx { display: none; }
 }

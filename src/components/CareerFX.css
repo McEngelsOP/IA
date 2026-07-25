@@ -1,0 +1,57 @@
+/* Iconos flotantes decorativos (ver CareerFX.jsx). El contenedor padre
+   debe tener position: relative y overflow: hidden. */
+
+.fx-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.fx-icon {
+  position: absolute;
+  bottom: -12vh;
+  line-height: 1;
+  opacity: 0;
+  filter: saturate(0.85);
+  animation-name: fx-rise;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform, opacity;
+}
+
+@keyframes fx-rise {
+  0%   { transform: translateY(0) translateX(0) rotate(0deg); opacity: 0; }
+  12%  { opacity: 0.26; }
+  50%  { transform: translateY(-62vh) translateX(18px) rotate(8deg); }
+  88%  { opacity: 0.26; }
+  100% { transform: translateY(-125vh) translateX(-14px) rotate(-6deg); opacity: 0; }
+}
+
+/* En modo oscuro (p. ej. CareerSelect en tema oscuro) brillan un poco menos */
+[data-theme='dark'] .fx-icon {
+  filter: saturate(0.7) brightness(0.95);
+  animation-name: fx-rise-dim;
+}
+
+@keyframes fx-rise-dim {
+  0%   { transform: translateY(0) translateX(0) rotate(0deg); opacity: 0; }
+  12%  { opacity: 0.2; }
+  50%  { transform: translateY(-62vh) translateX(18px) rotate(8deg); }
+  88%  { opacity: 0.2; }
+  100% { transform: translateY(-125vh) translateX(-14px) rotate(-6deg); opacity: 0; }
+}
+
+/* Fondo siempre oscuro (panel navy del login), independiente del tema:
+   iconos algo más brillantes y con buena presencia. Va después de la regla
+   [data-theme='dark'] para ganarle por orden a igual especificidad. */
+.fx-on-dark .fx-icon {
+  filter: saturate(0.85) brightness(1.15);
+  animation-name: fx-rise;
+}
+
+/* Accesibilidad: sin animación si el usuario la reduce */
+@media (prefers-reduced-motion: reduce) {
+  .fx-layer { display: none; }
+}

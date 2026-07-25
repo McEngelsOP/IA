@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { CARRERAS, CARRERA_KEYS } from '../data/carreras'
+import CareerFX from './CareerFX'
 import '../styles/LoginPage.css'
 
 // Resuelve el código de alumno en el servidor (Edge Function auth-by-code).
@@ -475,6 +476,8 @@ export default function LoginPage({ onLogin, onGuest }) {
             </g>
           </g>
         </svg>
+
+        <CareerFX onDark />
 
         <div className="right-caption">
           <p className="mono">TOCA UN CURSO PARA VER SU CADENA</p>

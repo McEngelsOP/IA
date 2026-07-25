@@ -1,8 +1,11 @@
-// Fondo decorativo de la pantalla de elección de carrera: iconos que
-// flotan suavemente hacia arriba, en el mismo espíritu lúdico del arcade
-// pero temáticos de las cuatro carreras (IA, industrial, marketing y
-// mecatrónica) más matemáticas/datos que comparten. Es puramente
-// decorativo — no captura clics (pointer-events: none en CSS).
+import './CareerFX.css'
+
+// Fondo decorativo con iconos que flotan suavemente hacia arriba, en el
+// mismo espíritu lúdico del arcade pero temáticos de las cuatro carreras
+// (IA, industrial, marketing y mecatrónica) más matemáticas/datos que
+// comparten. Puramente decorativo — no captura clics (pointer-events: none).
+// Se monta dentro de un contenedor con position: relative + overflow: hidden.
+// Prop `onDark`: iconos más brillantes para fondos oscuros (panel del login).
 
 // Config fija (no aleatoria en cada render, así los iconos no saltan):
 // e = emoji · x = posición horizontal % · s = tamaño rem
@@ -30,13 +33,13 @@ const ICONOS = [
   { e: '📐', x: 38, s: 1.9, d: 21, t: 28 }
 ]
 
-export default function CareerFX() {
+export default function CareerFX({ onDark = false }) {
   return (
-    <div className="cs-fx" aria-hidden="true">
+    <div className={`fx-layer${onDark ? ' fx-on-dark' : ''}`} aria-hidden="true">
       {ICONOS.map((it, i) => (
         <span
           key={i}
-          className="cs-fx-icon"
+          className="fx-icon"
           style={{
             left: `${it.x}%`,
             fontSize: `${it.s}rem`,
