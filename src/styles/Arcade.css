@@ -48,6 +48,10 @@
 .deco-5 { top: 8%; left: 46%; font-size: 24px; animation-duration: 21s; animation-delay: -15s; }
 .deco-6 { top: 60%; left: 40%; font-size: 34px; animation-duration: 25s; animation-delay: -18s; }
 .deco-7 { top: 34%; left: 22%; font-size: 22px; animation-duration: 23s; animation-delay: -10s; }
+.deco-8 { top: 18%; left: 64%; font-size: 28px; animation-duration: 27s; animation-delay: -5s; }
+.deco-9 { top: 88%; left: 60%; font-size: 22px; animation-duration: 20s; animation-delay: -14s; }
+.deco-10 { top: 52%; left: 16%; font-size: 24px; animation-duration: 24s; animation-delay: -7s; }
+.deco-11 { top: 4%; left: 82%; font-size: 26px; animation-duration: 22s; animation-delay: -16s; }
 
 @keyframes drift {
   0%   { transform: translate(0, 0) rotate(-8deg); }

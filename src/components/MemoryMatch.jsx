@@ -160,6 +160,13 @@ export default function MemoryMatch({ onGameOver }) {
   }
 
   const checkCleared = s => {
+    // El comodín es una carta suelta (tablero impar): si el jugador limpió
+    // todas las parejas sin usarlo, queda solo y no puede emparejarse.
+    // Se retira para que el tablero cierre en cero y el nivel avance.
+    const left = s.cards.filter(cd => cd.state !== 'gone')
+    if (left.length > 0 && left.every(cd => cd.kind === 'comodin')) {
+      left.forEach(cd => { cd.state = 'gone' })
+    }
     if (!s.cards.some(cd => cd.state !== 'gone')) {
       const bonus = 300 + s.nivel * 100 + (s.cfg.time ? Math.round(s.timeLeft / 10) * 5 : 0)
       addScore(s, bonus)

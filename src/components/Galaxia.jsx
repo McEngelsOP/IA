@@ -251,7 +251,7 @@ export default function Galaxia({ onGameOver }) {
     burst(s, s.ship.x, s.ship.y, '#2de2e6', 24)
     if (s.ship.hp <= 0) {
       const acc = s.stats.disparos
-        ? Math.round((s.stats.derribos / s.stats.disparos) * 100) : 0
+        ? Math.min(100, Math.round((s.stats.derribos / s.stats.disparos) * 100)) : 0
       setResult({
         score: s.score, mode: s.cfg,
         stats: { derribos: s.stats.derribos, oleada: s.wave, precision: acc + '%', jefes: s.stats.jefes }

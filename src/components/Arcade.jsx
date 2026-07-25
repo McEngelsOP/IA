@@ -11,8 +11,9 @@ import '../styles/Arcade.css'
 // la malla): un solo punto de carga diferida — el lazy anidado por juego
 // dejaba la tarjeta vacía cuando el sub-chunk fallaba en redes lentas.
 
-// Figuritas que flotan en el fondo (posición/tiempos vía CSS)
-const DECO = ['👾', '🎮', '🕹️', '⭐', '🚀', '💾', '👻', '🍄']
+// Figuritas que flotan en el fondo (posición/tiempos vía CSS).
+// Mezcla las mascotas de los cinco juegos con clásicos retro.
+const DECO = ['🦖', '🚀', '🛸', '🐸', '🧠', '🕹️', '👾', '⭐', '🎮', '💾', '👻', '🍄']
 
 // Temporada actual del ranking (2026-I, 2026-II…); las pasadas quedan
 // como salón de la fama, solo lectura
