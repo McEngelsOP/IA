@@ -869,9 +869,13 @@ path.e.dim { opacity: 0.07; }
   border-color: #1b7d9e;
 }
 
-[data-theme='dark'] .node.open { background: rgba(27, 122, 70, 0.2); }
+/* Fondos de nodo SIEMPRE opacos (color rgba pre-compuesto sobre la tarjeta
+   #1a2230): con rgba translúcido, las líneas del grafo que pasan por detrás
+   (p. ej. la cadena de talleres, que salta ciclos por encima de otros nodos)
+   se veían A TRAVÉS del curso. */
+[data-theme='dark'] .node.open { background: #1a3434; }
 [data-theme='dark'] .node.open .nm { color: #a9dfbe; }
-[data-theme='dark'] .node.req { background: rgba(154, 107, 11, 0.18); }
+[data-theme='dark'] .node.req { background: #312f29; }
 [data-theme='dark'] .node.req .nm { color: #e8c987; }
 
 [data-theme='dark'] .node.done {
@@ -885,14 +889,14 @@ path.e.dim { opacity: 0.07; }
 [data-theme='dark'] .node.done .cr { color: #5d6879; }
 
 [data-theme='dark'] .node.free.free-todo { background: #1a2230; }
-[data-theme='dark'] .node.free.free-done { background: rgba(5, 158, 159, 0.16); }
+[data-theme='dark'] .node.free.free-done { background: #173642; }
 [data-theme='dark'] .node.free .nm { color: #7edfe0; }
 [data-theme='dark'] .node.free.free-done .nm { color: #a8e4e5; }
 
-[data-theme='dark'] .node.ficha.st-aprobado { background: rgba(27, 122, 70, 0.22); }
-[data-theme='dark'] .node.ficha.st-convalidado { background: rgba(47, 111, 181, 0.22); }
-[data-theme='dark'] .node.ficha.st-matriculado { background: rgba(208, 124, 44, 0.2); }
-[data-theme='dark'] .node.ficha.st-desaprobado { background: rgba(192, 57, 43, 0.2); }
+[data-theme='dark'] .node.ficha.st-aprobado { background: #1a3535; }
+[data-theme='dark'] .node.ficha.st-convalidado { background: #1f334d; }
+[data-theme='dark'] .node.ficha.st-matriculado { background: #3e342f; }
+[data-theme='dark'] .node.ficha.st-desaprobado { background: #3b272f; }
 [data-theme='dark'] .node.ficha.ring { box-shadow: 0 0 0 3px rgba(45, 226, 230, 0.35); }
 
 [data-theme='dark'] .elec-group { background: #161d2b; }
@@ -1165,7 +1169,7 @@ path.e.dim { opacity: 0.07; }
 [data-theme='dark'] .node.hit { outline-color: #ffd166; }
 
 [data-theme='dark'] .node.plan-sel {
-  background: rgba(123, 92, 198, 0.22);
+  background: #2f2f51;
   border-color: #a488e0;
   box-shadow: 0 0 0 3px rgba(123, 92, 198, 0.25);
 }
