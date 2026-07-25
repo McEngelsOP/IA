@@ -68,7 +68,7 @@ begin
 
   -- total de cursos de la malla (duplicado de src/data/* a propósito)
   total_malla := case car
-    when 'ia'               then 72
+    when 'ia'               then 69
     when 'industrial'       then 77
     when 'marketing'        then 75
     when 'pucp-mecatronica' then 64

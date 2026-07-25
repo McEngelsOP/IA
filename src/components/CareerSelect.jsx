@@ -1,4 +1,5 @@
 import { CARRERAS, CARRERA_KEYS } from '../data/carreras'
+import CareerFX from './CareerFX'
 import '../styles/CareerSelect.css'
 
 // Pantalla de elección de carrera. Dos usos:
@@ -7,6 +8,7 @@ import '../styles/CareerSelect.css'
 export default function CareerSelect({ onSelect, saving, error, guest, onBack }) {
   return (
     <div className="cs-page">
+      <CareerFX />
       <div className="cs-card">
         <p className="cs-eyebrow mono">MALLA CURRICULAR INTERACTIVA</p>
         <h1 className="cs-title">¿Cuál es tu carrera?</h1>
