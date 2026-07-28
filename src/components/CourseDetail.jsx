@@ -63,7 +63,44 @@ export default function CourseDetail({ user, course, ciclos, byId, statusRow, is
     setComments(data || [])
   }
 
-  // Al abrir la ficha de un curso: recargar su nota y sus reseñas
+  // Dificultad del curso
+  const [difficultyStats, setDifficultyStats] = useState({ avg_rating: 0, total_votes: 0, user_rating: null })
+  const [savingDifficulty, setSavingDifficulty] = useState(false)
+
+  const loadDifficulty = async courseId => {
+    const { data, error } = await supabase.rpc('get_course_difficulty_stats', { cid: courseId })
+    if (error) {
+      const { data: votes } = await supabase
+        .from('course_difficulty_votes')
+        .select('rating, student_id')
+        .eq('course_id', courseId)
+      if (votes) {
+        const userVote = votes.find(v => v.student_id === user.id)?.rating || null
+        const total = votes.length
+        const avg = total > 0 ? (votes.reduce((a, b) => a + b.rating, 0) / total).toFixed(1) : 0
+        setDifficultyStats({ avg_rating: Number(avg), total_votes: total, user_rating: userVote })
+      }
+      return
+    }
+    setDifficultyStats(data || { avg_rating: 0, total_votes: 0, user_rating: null })
+  }
+
+  const saveDifficulty = async rating => {
+    if (savingDifficulty) return
+    setSavingDifficulty(true)
+    const { error } = await supabase
+      .from('course_difficulty_votes')
+      .upsert({ course_id: course.id, student_id: user.id, rating, updated_at: new Date().toISOString() })
+    setSavingDifficulty(false)
+    if (error) {
+      console.error('[difficulty:save]', error)
+      setMsg('No se pudo guardar la calificación de dificultad.')
+      return
+    }
+    loadDifficulty(course.id)
+  }
+
+  // Al abrir la ficha de un curso: recargar su nota, reseñas y dificultad
   useEffect(() => {
     if (!course) return
     setMsg(null)
@@ -73,6 +110,7 @@ export default function CourseDetail({ user, course, ciclos, byId, statusRow, is
     setNoteDraft(null)
     setComments(null)
     setCommentDraft('')
+    setDifficultyStats({ avg_rating: 0, total_votes: 0, user_rating: null })
     let cancelled = false
     supabase
       .from('grades')
@@ -85,6 +123,7 @@ export default function CourseDetail({ user, course, ciclos, byId, statusRow, is
         setGrade(data ? Number(data.grade) : null)
       })
     loadComments(course.id)
+    loadDifficulty(course.id)
     return () => { cancelled = true }
   }, [course?.id, user.id])
 
@@ -270,6 +309,53 @@ export default function CourseDetail({ user, course, ciclos, byId, statusRow, is
                 {course.rc && <li className="cd-rc"><b>{course.rc} créditos aprobados</b></li>}
               </ul>
             )}
+          </section>
+
+          <section className="cd-section">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3>Dificultad del curso</h3>
+              <span className="mono" style={{ fontSize: '0.85rem', fontWeight: 600, color: '#f59e0b' }}>
+                {difficultyStats.avg_rating > 0 ? `⭐ ${difficultyStats.avg_rating} / 5` : 'Sin votos'}
+                <span style={{ fontSize: '0.75rem', opacity: 0.7, marginLeft: 4 }}>({difficultyStats.total_votes})</span>
+              </span>
+            </div>
+            <p className="cd-note-txt" style={{ marginBottom: 8 }}>
+              ¿Qué tan difícil te pareció este curso? Tu voto ayuda a la comunidad.
+            </p>
+            <div className="cd-difficulty-selector" style={{ display: 'flex', gap: 4 }}>
+              {[
+                { r: 1, label: '1 · Muy fácil', color: '#10b981' },
+                { r: 2, label: '2 · Fácil', color: '#3b82f6' },
+                { r: 3, label: '3 · Medio', color: '#f59e0b' },
+                { r: 4, label: '4 · Difícil', color: '#f97316' },
+                { r: 5, label: '5 · Pesadilla', color: '#ef4444' }
+              ].map(item => {
+                const active = difficultyStats.user_rating === item.r
+                return (
+                  <button
+                    key={item.r}
+                    type="button"
+                    disabled={savingDifficulty}
+                    onClick={() => saveDifficulty(item.r)}
+                    style={{
+                      flex: 1,
+                      padding: '6px 4px',
+                      borderRadius: 6,
+                      fontSize: '0.75rem',
+                      fontWeight: 600,
+                      border: `1px solid ${active ? item.color : '#e5e7eb'}`,
+                      background: active ? item.color : '#ffffff',
+                      color: active ? '#ffffff' : '#4b5563',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
+                    }}
+                    title={item.label}
+                  >
+                    {item.r}★
+                  </button>
+                )
+              })}
+            </div>
           </section>
 
           <section className="cd-section">

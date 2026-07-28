@@ -4,6 +4,7 @@ import { CARRERAS } from '../data/carreras'
 import { AREAS } from '../data/areas'
 import SidePanel from './SidePanel'
 import CourseDetail, { STATUS_META } from './CourseDetail'
+import AdminPanel from './AdminPanel'
 import MallaFX from './MallaFX'
 import { LOGROS } from '../lib/logros'
 import useMediaQuery from '../lib/useMediaQuery'
@@ -129,6 +130,25 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
   const [courseStats, setCourseStats] = useState(null) // agregados por curso (query 28) · null = sin pedir
   const [planModalOpen, setPlanModalOpen] = useState(false) // modal de detalles del plan
   const [calendarOpen, setCalendarOpen] = useState(false) // vista de calendario academico
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [adminOpen, setAdminOpen] = useState(false)
+
+  // Comprobar si el usuario actual es administrador
+  useEffect(() => {
+    if (!user) { setIsAdmin(false); return }
+    let cancelled = false
+    supabase
+      .from('profiles')
+      .select('is_admin')
+      .eq('id', user.id)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (cancelled) return
+        if (error) { console.error('[profile:is_admin]', error); return }
+        setIsAdmin(!!data?.is_admin)
+      })
+    return () => { cancelled = true }
+  }, [user?.id])
 
   // Pantalla chica = interfaz móvil: sin arcade (no está optimizado para
   // táctil) y con zoom de pellizco sobre la malla. Reacciona al girar.
@@ -747,6 +767,11 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
               ☰ Mi panel
             </button>
           )}
+          {isAdmin && (
+            <button className="panel-btn" style={{ borderColor: '#3b82f6', color: '#3b82f6', fontWeight: 600 }} onClick={() => setAdminOpen(true)}>
+              ⚙️ Admin
+            </button>
+          )}
           <button className="logout-btn" onClick={handleLogout}>
             {isGuest ? 'Crear cuenta / Entrar' : 'Cerrar sesión'}
           </button>
@@ -989,6 +1014,8 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
           </div>
         </div>
       )}
+
+      {adminOpen && <AdminPanel onClose={() => setAdminOpen(false)} />}
     </div>
   )
 }
