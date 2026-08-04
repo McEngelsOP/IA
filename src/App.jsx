@@ -42,11 +42,48 @@ function App() {
     </button>
   )
 
+  // Tiempo límite de inactividad/cierre (15 minutos)
+  const INACTIVITY_LIMIT_MS = 15 * 60 * 1000
+
   useEffect(() => {
+    let idleTimer = null
+
+    const updateLastActive = () => {
+      const now = Date.now()
+      localStorage.setItem('app_last_active', now.toString())
+    }
+
+    const resetIdleTimer = () => {
+      updateLastActive()
+      if (idleTimer) clearTimeout(idleTimer)
+      idleTimer = setTimeout(async () => {
+        console.log('[auth] Sesión cerrada automáticamente por inactividad.')
+        await supabase.auth.signOut()
+        localStorage.removeItem('app_last_active')
+        setUser(null)
+      }, INACTIVITY_LIMIT_MS)
+    }
+
     const checkSession = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession()
-        setUser(session?.user || null)
+        if (session?.user) {
+          const lastActiveStr = localStorage.getItem('app_last_active')
+          const lastActive = lastActiveStr ? Number(lastActiveStr) : null
+          const now = Date.now()
+
+          if (lastActive && (now - lastActive > INACTIVITY_LIMIT_MS)) {
+            console.log('[auth] Sesión cerrada: transcurrieron más de 15 min sin uso/cerrado.')
+            await supabase.auth.signOut()
+            localStorage.removeItem('app_last_active')
+            setUser(null)
+          } else {
+            setUser(session.user)
+            resetIdleTimer()
+          }
+        } else {
+          setUser(null)
+        }
       } catch (error) {
         console.error('Error checking session:', error)
       } finally {
@@ -56,16 +93,52 @@ function App() {
 
     checkSession()
 
+    // Escuchar eventos de interacción del usuario para mantener la sesión viva mientras trabaja
+    const activityEvents = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart']
+    const handleUserActivity = () => {
+      const lastActiveStr = localStorage.getItem('app_last_active')
+      const now = Date.now()
+      // Throttle de actualización a localStorage (máximo una vez cada 15 segundos)
+      if (!lastActiveStr || now - Number(lastActiveStr) > 15000) {
+        resetIdleTimer()
+      }
+    }
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        updateLastActive()
+      } else if (document.visibilityState === 'visible') {
+        // Al regresar a la pestaña, verificar si venció el tiempo
+        checkSession()
+      }
+    }
+
+    activityEvents.forEach(evt => window.addEventListener(evt, handleUserActivity, { passive: true }))
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (event === 'PASSWORD_RECOVERY') {
           setRecovering(true)
         }
+        if (event === 'SIGNED_IN') {
+          updateLastActive()
+          resetIdleTimer()
+        }
+        if (event === 'SIGNED_OUT') {
+          localStorage.removeItem('app_last_active')
+          if (idleTimer) clearTimeout(idleTimer)
+        }
         setUser(session?.user || null)
       }
     )
 
-    return () => subscription?.unsubscribe()
+    return () => {
+      subscription?.unsubscribe()
+      if (idleTimer) clearTimeout(idleTimer)
+      activityEvents.forEach(evt => window.removeEventListener(evt, handleUserActivity))
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
   }, [])
 
   // Con sesión iniciada, la carrera vive en el perfil (no en los metadatos:
