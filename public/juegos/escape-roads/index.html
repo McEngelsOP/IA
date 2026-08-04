@@ -34,11 +34,14 @@
 
 <body class="dark">
 
-  <div id="unity-container" class="unity-desktop">
+  <script>
+    window.open = function() { return null; };
+  </script>
+  <div id="unity-container" class="unity-desktop" style="position: relative; overflow: hidden;">
     <p style="opacity: 0;position: absolute;">_</p>
 
     <canvas id="unity-canvas" style="cursor: default;" width="455" height="614"></canvas>
-
+    <div id="more-games-blocker" onclick="event.stopPropagation(); event.preventDefault();" style="position: absolute; bottom: 0; right: 0; width: 140px; height: 75px; background: #559b43; z-index: 9999; pointer-events: auto; cursor: default; border-top-left-radius: 6px;"></div>
   </div>
 
   <div id="loading-cover" style="background: black; display: none;">
