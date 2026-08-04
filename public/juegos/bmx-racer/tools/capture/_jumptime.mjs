@@ -1,0 +1,11 @@
+import { chromium } from 'playwright';
+const b = await chromium.launch({ args: ['--use-angle=default','--enable-gpu','--ignore-gpu-blocklist','--enable-unsafe-swiftshader'] });
+const p = await (await b.newContext({ viewport: { width: 900, height: 500 } })).newPage();
+p.on('console', (m) => { const t = m.text(); if (/\[terrain\]|\[track\]|ms/.test(t)) console.log('  ' + t); });
+const t0 = Date.now();
+await p.goto('http://127.0.0.1:5173/?capture=1&pr=1', { waitUntil: 'load' });
+await p.waitForFunction(() => window.__DESCENT__?.game?.capture, null, { timeout: 300000 });
+console.log(`total boot to game handle: ${((Date.now() - t0) / 1000).toFixed(1)}s`);
+const sz = await p.evaluate(() => window.__DESCENT__.game.terrain.size);
+console.log('heightmap size', sz);
+await b.close();

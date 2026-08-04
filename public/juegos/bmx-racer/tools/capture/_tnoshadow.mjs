@@ -1,0 +1,17 @@
+import { chromium } from 'playwright';
+const b = await chromium.launch({args:['--use-angle=default','--enable-gpu','--ignore-gpu-blocklist','--force-color-profile=srgb']});
+const c = await b.newContext({viewport:{width:1600,height:900},deviceScaleFactor:2});
+const p = await c.newPage();
+await p.goto('http://127.0.0.1:5174/?capture=1&pr=2',{waitUntil:'domcontentloaded',timeout:60000});
+await p.waitForFunction(()=>!!window.__DESCENT__?.game?.capture,null,{timeout:180000});
+await p.evaluate(()=>window.__DESCENT__.game.capture.takeControl());
+await p.evaluate((x)=>window.__DESCENT__.game.capture.setPose(x), process.argv[2]||'treeline-silhouette');
+await p.evaluate(()=>{for(let i=0;i<12;i++)window.__DESCENT__.game.capture.step(1/60);});
+await p.evaluate(()=>{ window.__DESCENT__.NPR ? window.__DESCENT__.NPR.uShadowStrength.value = 0 : null; });
+await p.evaluate(()=>{ const g=window.__DESCENT__.game; const seen=new Set();
+  g.engine.scene.traverse(o=>{ const m=o.material; if(m&&m.uniforms&&m.uniforms.uShadowStrength&&!seen.has(m)){seen.add(m); m.uniforms.uShadowStrength.value=0;} }); });
+await p.evaluate(()=>{for(let i=0;i<2;i++)window.__DESCENT__.game.capture.step(1/60);});
+await p.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>r())));
+await p.screenshot({path:'/tmp/noshadow.png',animations:'disabled'});
+console.log('ok');
+await c.close(); await b.close();

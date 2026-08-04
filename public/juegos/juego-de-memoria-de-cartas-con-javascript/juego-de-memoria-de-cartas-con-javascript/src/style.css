@@ -1,0 +1,239 @@
+{
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+	font-family: 'Roboto',sans-serif;
+}
+
+body{
+	background: #B3E5FC;
+	min-height: 100vh;
+}
+
+.presentacion{
+	width: 100%;
+	margin: auto;
+	height: 100vh;
+	overflow: hidden;
+	position: relative;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	position: absolute;
+}
+
+.presentacion .card{
+	width: 70%;
+	background: #FF4081;
+	height: 55vh;
+	box-shadow: 0px 10px 24px -4px rgba(0,0,0,0.58);
+	border-radius: 2px;
+	display: flex;
+	padding: 5%;
+	color: white;
+}
+
+.presentacion .card .parte1,.parte2{
+	width: 50%;
+	height: auto;
+	overflow: hidden;
+	position: relative;
+}
+
+.presentacion .card h4{
+	font-family: 'Roboto Mono',monospace;
+	font-size: 30px;
+	font-weight: bold;
+	letter-spacing: 2px;
+  display: block;
+  height: 10px;
+}
+
+.presentacion .card .parte1 span{
+	display: block;
+	width: 100%;
+	font-family: 'Lato', sans-serif;
+	letter-spacing: 4px;
+	font-size: 25px;
+	margin-bottom: 20px;
+}
+
+.presentacion .card .parte1 p{
+	font-family: 'Roboto',sans-serif;
+	font-size: 16px;
+	display: block;
+	width: 100%;
+	margin-bottom: 15px;
+}
+
+.presentacion .card .parte1 div{
+	width: 100px;
+	border-radius: 2px;
+	border: solid 2px white;
+	font-family: 'Roboto Mono',monospace;
+	font-size: 22px;
+	padding: 10px;
+	text-align: center;
+	cursor: pointer;
+}
+.presentacion .card .parte2 img{
+	display: block;
+	width: 50%;
+	margin: auto;
+	border-radius: 3px;
+	box-shadow: 0px 10px 24px -4px rgba(0,0,0,0.58);
+	margin-top: 30px;
+
+}
+.gridJuego{
+	position: absolute;
+	top: 60%;
+	left: 50%;
+	transform: translateX(-50%) translateY(-50%);
+	width: 700px;
+	height: auto;
+	overflow: hidden;
+	flex-wrap: wrap;
+	justify-content: center;
+	transition: all 0.3s;
+	display: none;
+	opacity: 0;
+	transition: 0.3s all;
+}
+
+.caja{
+	position: relative;
+	display: flex;
+	width: 16%;
+	height: 150px;
+	margin-left: 10px;
+	margin-bottom: 10px;
+}
+
+.caja div.a{
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	transform-style: preserve-3d;
+	transition: all 0.3s cubic-bezier(.25,.8,.25,1);
+	box-shadow: 0px 10px 24px -4px rgba(0,0,0,0.58);
+  background: white;
+}
+
+.cF,.cA{
+	position: absolute;
+	backface-visibility: hidden;
+	width: 100%;
+	height: 100%;
+	border-radius: 3px;
+}
+.cF{
+	background: url(https://i.imgur.com/G8nWCzb.png);
+	background-size: 70%;
+	background-position: center center;
+	background-repeat: no-repeat;
+}
+
+.cA{
+	transform: rotateY(180deg);
+}
+
+.c0{
+	background: url(https://i.imgur.com/5St6uf6.png);
+	background-size: 70%;
+	background-position: center center;
+	background-repeat: no-repeat;
+}
+.c1{
+	background: url(https://i.imgur.com/SWASqKJ.png);
+	background-size: 70%;
+	background-position: center center;
+	background-repeat: no-repeat;
+}
+.c2{
+	background: url(https://i.imgur.com/J7Ybtqb.png);
+	background-size: 70%;
+	background-position: center center;
+	background-repeat: no-repeat;
+}
+.c3{
+	background: url(https://i.imgur.com/mEfuqTr.png);
+	background-size: 70%;
+	background-position: center center;
+	background-repeat: no-repeat;
+}
+.c4{
+	background: url(https://i.imgur.com/4QkHmlg.png);
+	background-size: 70%;
+	background-position: center center;
+	background-repeat: no-repeat;
+}
+.c5{
+	background: url(https://i.imgur.com/I20udlN.png);
+	background-size: 70%;
+	background-position: center center;
+	background-repeat: no-repeat;
+}
+.c6{
+	background: url(https://i.imgur.com/ryKQPnR.png);
+	background-size: 70%;
+	background-position: center center;
+	background-repeat: no-repeat;
+}
+.c7{
+	background: url(https://i.imgur.com/WaaEUld.png);
+	background-size: 70%;
+	background-position: center center;
+	background-repeat: no-repeat;
+}
+.c8{
+	background: url(https://i.imgur.com/uGcJUuG.png);
+	background-size: 70%;
+	background-position: center center;
+	background-repeat: no-repeat;
+}
+.c9{
+	background: url(https://i.imgur.com/1Th2YEW.png);
+	background-size: 70%;
+	background-position: center center;
+	background-repeat: no-repeat;
+}
+
+.rotar{
+	transform: rotateY(180deg);
+}
+.finJuego{
+	position: absolute;
+	top: 60%;
+	left: 50%;
+	transform: translateX(-50%) translateY(-50%);
+	width: 60%;
+	height: auto;
+	opacity: 0;
+	display: none;
+}
+.finJuego h1{
+	display: block;
+	width: 100%;
+	text-align: center;
+	text-shadow: 0px 2px 2px rgba(150, 150, 150, 1);
+	color: white;
+	margin-bottom: 20px;
+  font-family: 'Roboto', sans-serif;
+}
+.boton{
+	width: 150px;
+	height: 30px;
+	border-radius: 2px;
+	padding: 10px;
+	background: #FF4081;
+	color: white;
+	display: block;
+	text-align: center;
+	box-shadow: 0px 10px 24px -4px rgba(0,0,0,0.58);
+	cursor: pointer;
+	margin: auto;
+  font-family: 'Roboto',sans-serif;
+}

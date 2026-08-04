@@ -1,0 +1,15 @@
+import { chromium } from 'playwright';
+const SEQ = process.argv[2] ?? 'scree-speed';
+const N = Number(process.argv[3] ?? 60);
+const TAG = process.argv[4] ?? 'zoom';
+const CLIP = (process.argv[5] ?? '380,280,340,220').split(',').map(Number);
+const b = await chromium.launch({ headless: true, args: ['--use-angle=default','--enable-gpu','--ignore-gpu-blocklist','--enable-unsafe-swiftshader'] });
+const p = await b.newPage({ viewport: { width: 1000, height: 560 } });
+p.on('pageerror', e => console.log('PAGEERR', e.message.slice(0,300)));
+await p.goto('http://127.0.0.1:5173/?capture=1&pr=2', { waitUntil: 'domcontentloaded' });
+await p.waitForFunction(() => !!window.__DESCENT__?.game?.effects, null, { timeout: 240000 });
+await p.evaluate(([seq,n]) => { const g=window.__DESCENT__.game; g.capture.takeControl(); g.capture.setSequence(seq); for(let i=0;i<n;i++) g.capture.step(1/60); }, [SEQ,N]);
+await p.evaluate(() => new Promise(r => requestAnimationFrame(() => r())));
+await p.screenshot({ path: `captures/_z_${TAG}.png`, clip: { x: CLIP[0], y: CLIP[1], width: CLIP[2], height: CLIP[3] } });
+console.log('ok');
+await b.close();

@@ -731,3 +731,22 @@
   .deco-shape,
   .arcade-title .blink { animation: none; }
 }
+
+/* Iframe mode overrides */
+.arcade-grid.iframe-mode { grid-template-columns: minmax(0, 1100px); }
+.arcade-grid.iframe-mode .arcade-game { padding: 12px; display: flex; flex-direction: column; }
+.arcade-grid.iframe-mode .iframe-game-view { flex: 1; width: 100%; aspect-ratio: 16/9; min-height: 500px; border: none; border-radius: 6px; background: #000; }
+
+
+/* UI Enhancements for Controls and Tags */
+.gc-tag { font-size: 9px; padding: 2px 6px; border-radius: 4px; font-weight: 700; letter-spacing: 1px; }
+.gc-tag-ranked { background: rgba(255, 209, 102, 0.15); color: #ffd166; border: 1px solid rgba(255, 209, 102, 0.4); }
+.gc-tag-local { background: rgba(45, 226, 230, 0.15); color: #2de2e6; border: 1px solid rgba(45, 226, 230, 0.4); }
+.ag-controls-badge { font-size: 11px; background: rgba(255, 255, 255, 0.08); color: #aeb8e0; border: 1px solid rgba(255, 255, 255, 0.15); padding: 4px 10px; border-radius: 999px; letter-spacing: 0.5px; }
+.arcade-fullscreen-btn { font-size: 10px; font-weight: 700; color: #ffd166; background: rgba(255, 209, 102, 0.12); border: 1px solid rgba(255, 209, 102, 0.3); border-radius: 6px; padding: 4px 10px; cursor: pointer; transition: background 0.15s, transform 0.15s; }
+.arcade-fullscreen-btn:hover { background: rgba(255, 209, 102, 0.25); transform: translateY(-1px); }
+
+
+.arcade-notice { position: absolute; right: 40px; top: 28px; font-size: 10px; font-weight: 700; letter-spacing: 1px; color: #ffd166; background: rgba(255, 209, 102, 0.08); border: 1px solid rgba(255, 209, 102, 0.25); border-radius: 999px; padding: 8px 16px; backdrop-filter: blur(4px); pointer-events: none; }
+@media (max-width: 900px) { .arcade-notice { position: static; display: inline-block; margin-top: 10px; } }
+

@@ -47,6 +47,71 @@ const GAMES = {
     name: 'MEMORY MATCH+', icon: '🧠',
     rankNote: 'Puntúan Clásico, Difícil y Caótico; Fácil y Zen no.',
     desc: 'Encuentra las parejas en tableros cada vez más grandes contra el reloj: rachas que regalan power-ups, comodines, bombas y cartas trampa.'
+  },
+  bmx: {
+    name: 'BMX RACER', icon: '🚴',
+    rankNote: 'Juego externo (no guarda ranking global).',
+    desc: 'Juego WebGL 3D local. Desciende por la montaña esquivando obstáculos.',
+    controls: 'W/▲ Acelerar · A/D Girar · Espacio Saltar',
+    isIframe: true,
+    url: '/juegos/bmx-racer/dist/index.html'
+  },
+  escaperoads: {
+    name: 'ESCAPE ROADS', icon: '🚗',
+    rankNote: 'Juego externo (no guarda ranking global).',
+    desc: 'Esquiva el tráfico y sobrevive el mayor tiempo posible.',
+    controls: 'A/D o ◄/► Manejar el vehículo',
+    isIframe: true,
+    url: '/juegos/escape-roads/index.html'
+  },
+  csslighthouse: {
+    name: 'LIGHTHOUSE', icon: '🗼',
+    rankNote: 'Juego externo (no guarda ranking global).',
+    desc: 'Juego Pure CSS. Tienes que construir un faro.',
+    controls: 'Ratón: Clic en las opciones de construcción',
+    isIframe: true,
+    url: '/juegos/a-pure-css-gameyou-must-build-a-lighthouse/a-pure-css-gameyou-must-build-a-lighthouse/dist/index.html'
+  },
+  backrooms: {
+    name: 'BACKROOMS', icon: '🚪',
+    rankNote: 'Juego externo (no guarda ranking global).',
+    desc: 'Juego de laberinto y terror en Pure CSS.',
+    controls: 'WASD o Flechas para moverte por el laberinto',
+    isIframe: true,
+    url: '/juegos/backroomsfull-3d-css-game/backroomsfull-3d-css-game/dist/index.html'
+  },
+  externmemoria: {
+    name: 'MEMORIA CSS', icon: '🃏',
+    rankNote: 'Juego externo (no guarda ranking global).',
+    desc: 'Versión alternativa de memoria de cartas en JS/CSS.',
+    controls: 'Ratón: Clic en las cartas para formar parejas',
+    isIframe: true,
+    iframeStyle: { height: '80vh', minHeight: '800px', aspectRatio: 'auto' },
+    url: '/juegos/juego-de-memoria-de-cartas-con-javascript/juego-de-memoria-de-cartas-con-javascript/dist/index.html'
+  },
+  blockninja: {
+    name: 'BLOCK NINJA', icon: '🥷',
+    rankNote: 'Juego externo (no guarda ranking global).',
+    desc: 'Corta bloques en el aire deslizando el cursor al estilo Fruit Ninja.',
+    controls: 'Ratón / Touch: Arrastra el cursor para cortar',
+    isIframe: true,
+    url: '/juegos/block-ninja/block-ninja/dist/index.html'
+  },
+  ghostwriter: {
+    name: 'GHOST WRITER', icon: '✍️',
+    rankNote: 'Juego externo (no guarda ranking global).',
+    desc: 'Juego de mecanografía y disparo. Escribe rápido para eliminar fantasmas.',
+    controls: 'Teclado: Escribe las palabras para disparar',
+    isIframe: true,
+    url: '/juegos/the-ghost-writer/the-ghost-writer/dist/index.html'
+  },
+  themine: {
+    name: 'THE MINE', icon: '⛏️',
+    rankNote: 'Juego externo (no guarda ranking global).',
+    desc: 'Aventura gráfica tipo Point & Click en Pure CSS. Explora y escapa de la mina.',
+    controls: 'Ratón: Clic en objetos y diálogos de la mina',
+    isIframe: true,
+    url: '/juegos/the-mine-no-js-css-only-adventure-game/the-mine-no-js-css-only-adventure-game/dist/index.html'
   }
 }
 
@@ -180,6 +245,9 @@ export default function Arcade({ user, onClose }) {
         <button className="arcade-back mono" onClick={activeGame ? backToList : onClose}>
           {activeGame ? '← TODOS LOS JUEGOS' : '← VOLVER A LA MALLA'}
         </button>
+        <div className="arcade-notice mono">
+          ⚠️ LOS JUEGOS EN MODO LOCAL ESTÁN EN PRUEBAS
+        </div>
         <h1 className="mono arcade-title">
           <span className="blink">▮</span> ARCADE <span className="arcade-title-deco">🕹️</span>
         </h1>
@@ -225,7 +293,13 @@ export default function Arcade({ user, onClose }) {
             <button key={k} className="game-card" onClick={() => openGame(k)}>
               <span className="gc-icon">{gm.icon}</span>
               <span className="gc-info">
-                <span className="gc-name mono">{gm.name}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span className="gc-name mono">{gm.name}</span>
+                  {gm.isIframe 
+                    ? <span className="gc-tag gc-tag-local mono">LOCAL</span> 
+                    : <span className="gc-tag gc-tag-ranked mono">RANKED 🏆</span>
+                  }
+                </div>
                 <span className="gc-desc">{gm.desc}</span>
               </span>
               <span className="gc-side mono">
@@ -244,15 +318,36 @@ export default function Arcade({ user, onClose }) {
         </div>
       ) : (
         /* ---------- Vista centrada en el juego elegido ---------- */
-        <div className="arcade-grid">
+        <div className={`arcade-grid ${GAMES[activeGame]?.isIframe ? 'iframe-mode' : ''}`}>
           <section className="arcade-game">
             <div className="ag-head mono">
               <span className="ag-name">{G.icon} {G.name}</span>
-              <span className="ag-best">
-                {user
-                  ? <>TU MEJOR: {bests[activeGame] ?? '—'}</>
-                  : <>MEJOR (esta sesión): {guestBest[activeGame] || '—'}</>}
-              </span>
+              {G.controls && <span className="ag-controls-badge">🎮 {G.controls}</span>}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                {G.isIframe && (
+                  <button 
+                    type="button" 
+                    className="arcade-fullscreen-btn"
+                    onClick={() => {
+                      const el = document.querySelector('.iframe-wrapper') || document.querySelector('.iframe-game-view');
+                      if (el) {
+                        if (document.fullscreenElement) {
+                          document.exitFullscreen();
+                        } else {
+                          el.requestFullscreen().catch(() => {});
+                        }
+                      }
+                    }}
+                  >
+                    ⛶ PANTALLA COMPLETA
+                  </button>
+                )}
+                <span className="ag-best">
+                  {user
+                    ? <>TU MEJOR: {bests[activeGame] ?? '—'}</>
+                    : <>MEJOR (esta sesión): {guestBest[activeGame] || '—'}</>}
+                </span>
+              </div>
             </div>
             {activeGame === 'dino' ? (
               <DinoGame onGameOver={submitScore} />
@@ -262,9 +357,29 @@ export default function Arcade({ user, onClose }) {
               <Galaxia onGameOver={submitScore} />
             ) : activeGame === 'frogger' ? (
               <Frogger onGameOver={submitScore} />
-            ) : (
+            ) : activeGame === 'memoria' ? (
               <MemoryMatch onGameOver={submitScore} />
-            )}
+            ) : GAMES[activeGame]?.isIframe ? (
+              <div 
+                className="iframe-wrapper" 
+                style={{ flex: 1, display: 'flex', flexDirection: 'column' }}
+                onClick={(e) => {
+                  const iframe = e.currentTarget.querySelector('iframe');
+                  if (iframe) iframe.focus();
+                }}
+              >
+                <div className="mono" style={{ padding: '0 0 10px', fontSize: '10px', color: '#8b96c9', textAlign: 'center', cursor: 'pointer' }}>
+                  HAZ CLIC AQUÍ PARA ASEGURAR QUE LOS CONTROLES DE TECLADO FUNCIONEN
+                </div>
+                <iframe 
+                  src={GAMES[activeGame].url} 
+                  className="iframe-game-view"
+                  title={GAMES[activeGame].name}
+                  style={GAMES[activeGame].iframeStyle || {}}
+                  onLoad={(e) => e.target.focus()}
+                />
+              </div>
+            ) : null}
             {msg && <div className="arcade-msg">{msg}</div>}
 
             {needAlias && user && (
@@ -293,11 +408,12 @@ export default function Arcade({ user, onClose }) {
             )}
           </section>
 
-          <aside className="arcade-rank">
-            <h2 className="mono">🏆 RANKING GLOBAL</h2>
-            {TEMPORADAS.length > 1 ? (
-              <div className="rank-season mono">
-                <label htmlFor="rank-season-sel">TEMPORADA</label>
+          {!GAMES[activeGame]?.isIframe && (
+            <aside className="arcade-rank">
+              <h2 className="mono">🏆 RANKING GLOBAL</h2>
+              {TEMPORADAS.length > 1 ? (
+                <div className="rank-season mono">
+                  <label htmlFor="rank-season-sel">TEMPORADA</label>
                 <select id="rank-season-sel" value={season} onChange={e => changeSeason(e.target.value)}>
                   {TEMPORADAS.map(t => (
                     <option key={t} value={t}>{t}{t === TEMPORADA ? ' · actual' : ''}</option>
@@ -337,13 +453,12 @@ export default function Arcade({ user, onClose }) {
             )}
             {user && alias && (
               <div className="rank-foot mono">
-                <span>JUEGAS COMO: {alias}</span>
-                <button type="button" className="arcade-edit-alias" onClick={() => { setAliasDraft(alias); setNeedAlias(true); }}>
-                  (CAMBIAR)
-                </button>
-              </div>
-            )}
-          </aside>
+                  JUEGAS COMO: <span className="arcade-user-alias">{alias}</span>
+                  <button type="button" className="arcade-edit-alias" onClick={() => { setAliasDraft(alias); setNeedAlias(true); }}>[CAMBIAR]</button>
+                </div>
+              )}
+            </aside>
+          )}
         </div>
       )}
     </div>

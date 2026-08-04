@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>DESCENT</title>
+    <style>
+      /* The only CSS in the project. Everything else is drawn in WebGL or generated canvas. */
+      :root { color-scheme: dark; }
+      html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #0d0a14; }
+      #app { position: fixed; inset: 0; }
+      canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+      /* Boot splash — replaced by the in-engine title screen once the first frame lands. */
+      #boot {
+        position: fixed; inset: 0; display: grid; place-items: center;
+        background: #0d0a14; color: #f2d69b; z-index: 10;
+        font: 600 13px/1.6 ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: 0.28em;
+        transition: opacity 420ms ease; text-transform: uppercase;
+      }
+      #boot.done { opacity: 0; pointer-events: none; }
+      #boot .bar { width: 190px; height: 2px; background: #2a2136; margin-top: 14px; overflow: hidden; }
+      #boot .bar i { display: block; height: 100%; width: 0%; background: #f2d69b; transition: width 200ms ease; }
+      #boot .col { display: flex; flex-direction: column; align-items: center; }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <div id="boot"><div class="col"><span id="boot-label">Carving the mountain</span><span class="bar"><i id="boot-bar"></i></span></div></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
