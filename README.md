@@ -6,16 +6,21 @@ Aplicación web de la malla de **Ingeniería en IA (ESAN)**: cada alumno inicia 
 
 ## Características
 
-- 🔐 Login con **código de alumno** y contraseña
-- ✉️ Registro con correo real: confirmación de cuenta y recuperación de contraseña ("Olvidé mi contraseña")
-- 🗺️ Malla interactiva: 68 cursos, 10 ciclos + pre-formación
-- 🔗 Modos **"Qué abre"** / **"Qué requiere"**: cadenas de dependencias iluminadas
-- ✅ Modo **"Marcar llevados"**: los requisitos previos se marcan en automático y el avance (`X llevados · Y / 200 créd`) se guarda por alumno
+- 🔐 Login con **código de alumno** (ESAN / PUCP) y contraseña
+- ✉️ Registro con correo real: confirmación de cuenta y recuperación de contraseña
+- 🗺️ Malla interactiva con cálculo heurístico de cruces mínimos y **filtro por áreas formativas**
+- 🔗 Modos **"Qué abre"** / **"Qué requiere"** y **"Qué puedo llevar"**
+- ✅ Modo **"Marcar llevados"**: requisitos previos en cascada y persistencia en Supabase
+- 📅 **Planificador de ciclo y Calendario Académico** (eventos oficiales + personales sincronizados en la nube)
+- 📝 **Ficha del curso**: notas, veces llevado, comentarios personales y reseñas anónimas
+- 👨‍🏫 **Directorio de profesores**: likes/dislikes y etiquetas comunitarias
+- 📊 **Mi Panel**: estadísticas, histogramas y línea de tiempo con logros desbloqueables
+- 🕹️ **Arcade Retro**: 5 juegos nativos con ranking por temporada + juegos locales
 
 ## Stack
 
-- **React + Vite** (frontend)
-- **Supabase** (autenticación + base de datos con RLS)
+- **React + Vite** (frontend SPA con PWA y chunks lazy)
+- **Supabase** (autenticación Edge Function, base de datos PostgreSQL con RLS y Storage)
 - **Brevo** (SMTP para correos de confirmación/recuperación)
 
 ## Instalación
@@ -26,7 +31,7 @@ cd IA
 npm install
 ```
 
-Crea `.env.local` (puedes copiar `.env.example`) con tus credenciales de Supabase (Settings → API):
+Crea `.env.local` con tus credenciales de Supabase:
 
 ```
 VITE_SUPABASE_URL=https://tuproyecto.supabase.co
@@ -41,36 +46,11 @@ npm run dev
 
 ## Configuración de Supabase
 
-1. Ejecuta en el **SQL Editor** los scripts de la carpeta [`supabase/`](supabase/), en orden:
-   - [`setup.sql`](supabase/setup.sql) — tabla `profiles`, trigger de registro y función `email_for_student_code`
-   - [`progress.sql`](supabase/progress.sql) — tabla `progress` (cursos llevados por alumno)
-2. En **Authentication → URL Configuration**: pon la URL de la app como *Site URL* y agrégala a *Redirect URLs*.
-3. En **Authentication → Emails → SMTP Settings**: configura un SMTP propio (ej. Brevo) para que los correos de confirmación y recuperación no se queden cortos con el límite gratuito.
-4. En **Authentication → Rate Limits**: sube el límite de correos por hora (ej. 30).
-
-## Cómo funciona el login
-
-- Al **registrarse**, el alumno da su código + correo real + contraseña. El correo es la cuenta de Supabase; el código queda vinculado en `profiles` (vía trigger).
-- Al **iniciar sesión**, solo escribe su código: la app busca el correo asociado con la función `email_for_student_code` y autentica con Supabase.
-- **"Olvidé mi contraseña"** envía el enlace de recuperación al correo registrado (mostrado enmascarado).
-
-## Estructura
-
-```
-src/
-├── components/
-│   ├── LoginPage.jsx       # Login, registro y recuperación
-│   ├── UpdatePassword.jsx  # Nueva contraseña (desde el enlace del correo)
-│   └── MallaCurricular.jsx # Malla interactiva con progreso
-├── data/
-│   └── cursos.js           # Cursos, ciclos y prerequisitos
-├── lib/
-│   └── supabaseClient.js
-└── styles/
-supabase/
-├── setup.sql               # profiles + trigger + función de login
-└── progress.sql            # progreso por alumno (RLS)
-```
+Ejecuta en el **SQL Editor** los scripts de la carpeta [`supabase/`](supabase/), según corresponda:
+- `setup.sql` — perfiles y triggers de autenticación
+- `progress.sql` — avance de malla
+- `sync_features.sql` — soporte para sincronización de plan y calendario académico
+- `course_detail.sql`, `temporadas.sql`, `logros.sql` — ficha de curso, rankings de arcade y sistema de logros
 
 ## Scripts
 
@@ -78,8 +58,3 @@ supabase/
 - `npm run build` — build de producción
 - `npm run preview` — previsualizar el build
 
-## Pendientes
-
-- [ ] Desplegar en Vercel/Netlify para uso de los compañeros
-- [ ] Dashboard de progreso académico
-- [ ] Exportar la malla en PDF
