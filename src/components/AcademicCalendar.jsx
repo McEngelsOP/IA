@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
+import { supabase } from '../lib/supabaseClient'
 import { CALENDARIO_POR_UNI, TIPOS_EVENTO, COLORES_PERSONAL } from '../data/calendario'
 import useMediaQuery from '../lib/useMediaQuery'
 import '../styles/AcademicCalendar.css'
@@ -50,7 +51,7 @@ export default function AcademicCalendar({ user, uni, onClose }) {
   const [modalConfig, setModalConfig] = useState(null)
   const [formColor, setFormColor] = useState('gris') // color elegido para el evento personal
 
-  // Eventos personales: por usuario y solo en este dispositivo (localStorage)
+  // Eventos personales: sincronizados en Supabase para usuarios autenticados + localStorage como fallback
   const storageKey = `malla-cal-${user?.id || 'guest'}`
   const [customEvents, setCustomEvents] = useState(() => {
     try {
@@ -58,6 +59,38 @@ export default function AcademicCalendar({ user, uni, onClose }) {
       return stored ? JSON.parse(stored) : []
     } catch { return [] }
   })
+
+  // Cargar eventos personales desde Supabase si hay sesión
+  useEffect(() => {
+    if (!user) return
+    let cancelled = false
+    supabase
+      .from('calendar_events')
+      .select('id, title, description, date, start_date, end_date, color')
+      .eq('student_id', user.id)
+      .then(({ data, error }) => {
+        if (cancelled) return
+        if (error) {
+          // Si la tabla no existe aún, se apoya en localStorage sin romper la UI
+          console.warn('[calendar:load_events]', error.message)
+          return
+        }
+        if (data && data.length > 0) {
+          const loaded = data.map(r => ({
+            id: r.id,
+            title: r.title,
+            desc: r.description || '',
+            date: r.date,
+            start: r.start_date,
+            end: r.end_date,
+            type: 'custom',
+            color: r.color || 'gris'
+          }))
+          setCustomEvents(loaded)
+        }
+      })
+    return () => { cancelled = true }
+  }, [user?.id])
 
   useEffect(() => {
     try {
@@ -131,7 +164,7 @@ export default function AcademicCalendar({ user, uni, onClose }) {
     }
   }
 
-  const handleSaveCustom = e => {
+  const handleSaveCustom = async e => {
     e.preventDefault()
     const form = new FormData(e.target)
     const title = form.get('title').trim()
@@ -139,25 +172,65 @@ export default function AcademicCalendar({ user, uni, onClose }) {
     if (!title) return
 
     if (modalConfig.mode === 'create') {
-      setCustomEvents([...customEvents, {
+      const newEv = {
         id: `custom-${Date.now()}`,
         title,
         desc,
         date: modalConfig.date,
         type: 'custom',
         color: formColor
-      }])
+      }
+      setCustomEvents(prev => [...prev, newEv])
+      if (user) {
+        supabase
+          .from('calendar_events')
+          .insert({
+            id: newEv.id,
+            student_id: user.id,
+            title: newEv.title,
+            description: newEv.desc,
+            date: newEv.date,
+            color: newEv.color
+          })
+          .then(({ error }) => {
+            if (error) console.warn('[calendar:save_event]', error.message)
+          })
+      }
     } else if (modalConfig.mode === 'edit') {
-      setCustomEvents(customEvents.map(ev =>
-        ev.id === modalConfig.event.id ? { ...ev, title, desc, color: formColor } : ev
-      ))
+      const updatedEv = { ...modalConfig.event, title, desc, color: formColor }
+      setCustomEvents(prev => prev.map(ev => (ev.id === updatedEv.id ? updatedEv : ev)))
+      if (user) {
+        supabase
+          .from('calendar_events')
+          .update({
+            title: updatedEv.title,
+            description: updatedEv.desc,
+            color: updatedEv.color
+          })
+          .eq('id', updatedEv.id)
+          .eq('student_id', user.id)
+          .then(({ error }) => {
+            if (error) console.warn('[calendar:update_event]', error.message)
+          })
+      }
     }
     setModalConfig(null)
   }
 
   const handleDeleteCustom = () => {
     if (modalConfig?.mode !== 'edit') return
-    setCustomEvents(customEvents.filter(ev => ev.id !== modalConfig.event.id))
+    const idToDelete = modalConfig.event.id
+    setCustomEvents(prev => prev.filter(ev => ev.id !== idToDelete))
+    if (user) {
+      supabase
+        .from('calendar_events')
+        .delete()
+        .eq('id', idToDelete)
+        .eq('student_id', user.id)
+        .then(({ error }) => {
+          if (error) console.warn('[calendar:delete_event]', error.message)
+        })
+    }
     setModalConfig(null)
   }
 

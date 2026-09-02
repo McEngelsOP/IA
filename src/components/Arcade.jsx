@@ -48,14 +48,6 @@ const GAMES = {
     rankNote: 'Puntúan Clásico, Difícil y Caótico; Fácil y Zen no.',
     desc: 'Encuentra las parejas en tableros cada vez más grandes contra el reloj: rachas que regalan power-ups, comodines, bombas y cartas trampa.'
   },
-  bmx: {
-    name: 'BMX RACER', icon: '🚴',
-    rankNote: 'Juego externo (no guarda ranking global).',
-    desc: 'Juego WebGL 3D local. Desciende por la montaña esquivando obstáculos.',
-    controls: 'W/▲ Acelerar · A/D Girar · Espacio Saltar',
-    isIframe: true,
-    url: '/juegos/bmx-racer/dist/index.html'
-  },
   escaperoads: {
     name: 'ESCAPE ROADS', icon: '🚗',
     rankNote: 'Juego externo (no guarda ranking global).',
@@ -72,23 +64,6 @@ const GAMES = {
     isIframe: true,
     url: '/juegos/a-pure-css-gameyou-must-build-a-lighthouse/a-pure-css-gameyou-must-build-a-lighthouse/dist/index.html'
   },
-  backrooms: {
-    name: 'BACKROOMS', icon: '🚪',
-    rankNote: 'Juego externo (no guarda ranking global).',
-    desc: 'Juego de laberinto y terror en Pure CSS.',
-    controls: 'WASD o Flechas para moverte por el laberinto',
-    isIframe: true,
-    url: '/juegos/backroomsfull-3d-css-game/backroomsfull-3d-css-game/dist/index.html'
-  },
-  externmemoria: {
-    name: 'MEMORIA CSS', icon: '🃏',
-    rankNote: 'Juego externo (no guarda ranking global).',
-    desc: 'Versión alternativa de memoria de cartas en JS/CSS.',
-    controls: 'Ratón: Clic en las cartas para formar parejas',
-    isIframe: true,
-    iframeStyle: { height: '80vh', minHeight: '800px', aspectRatio: 'auto' },
-    url: '/juegos/juego-de-memoria-de-cartas-con-javascript/juego-de-memoria-de-cartas-con-javascript/dist/index.html'
-  },
   blockninja: {
     name: 'BLOCK NINJA', icon: '🥷',
     rankNote: 'Juego externo (no guarda ranking global).',
@@ -96,22 +71,6 @@ const GAMES = {
     controls: 'Ratón / Touch: Arrastra el cursor para cortar',
     isIframe: true,
     url: '/juegos/block-ninja/block-ninja/dist/index.html'
-  },
-  ghostwriter: {
-    name: 'GHOST WRITER', icon: '✍️',
-    rankNote: 'Juego externo (no guarda ranking global).',
-    desc: 'Juego de mecanografía y disparo. Escribe rápido para eliminar fantasmas.',
-    controls: 'Teclado: Escribe las palabras para disparar',
-    isIframe: true,
-    url: '/juegos/the-ghost-writer/the-ghost-writer/dist/index.html'
-  },
-  themine: {
-    name: 'THE MINE', icon: '⛏️',
-    rankNote: 'Juego externo (no guarda ranking global).',
-    desc: 'Aventura gráfica tipo Point & Click en Pure CSS. Explora y escapa de la mina.',
-    controls: 'Ratón: Clic en objetos y diálogos de la mina',
-    isIframe: true,
-    url: '/juegos/the-mine-no-js-css-only-adventure-game/the-mine-no-js-css-only-adventure-game/dist/index.html'
   }
 }
 

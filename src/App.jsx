@@ -42,8 +42,8 @@ function App() {
     </button>
   )
 
-  // Tiempo límite de inactividad/cierre (10 minutos)
-  const INACTIVITY_LIMIT_MS = 10 * 60 * 1000
+  // Tiempo límite de inactividad/cierre (2 horas para permitir sesiones de estudio/matrícula)
+  const INACTIVITY_LIMIT_MS = 2 * 60 * 60 * 1000
 
   useEffect(() => {
     let idleTimer = null
@@ -57,7 +57,7 @@ function App() {
       updateLastActive()
       if (idleTimer) clearTimeout(idleTimer)
       idleTimer = setTimeout(async () => {
-        console.log('[auth] Sesión cerrada automáticamente por inactividad.')
+        console.log('[auth] Sesión cerrada automáticamente por inactividad (2 horas).')
         await supabase.auth.signOut()
         localStorage.removeItem('app_last_active')
         setUser(null)
@@ -73,7 +73,7 @@ function App() {
           const now = Date.now()
 
           if (lastActive && (now - lastActive > INACTIVITY_LIMIT_MS)) {
-            console.log('[auth] Sesión cerrada: transcurrieron más de 10 min sin uso/cerrado.')
+            console.log('[auth] Sesión cerrada: transcurrieron más de 2 horas sin uso.')
             await supabase.auth.signOut()
             localStorage.removeItem('app_last_active')
             setUser(null)

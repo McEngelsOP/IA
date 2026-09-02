@@ -127,6 +127,7 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
   const [logroToast, setLogroToast] = useState(null) // logros recién desbloqueados
   const [busca, setBusca] = useState('') // buscador de cursos
   const [matchIdx, setMatchIdx] = useState(0) // Enter salta al siguiente resultado
+  const [selectedArea, setSelectedArea] = useState(null) // filtro por área formativa (null = todas)
   const [courseStats, setCourseStats] = useState(null) // agregados por curso (query 28) · null = sin pedir
   const [planModalOpen, setPlanModalOpen] = useState(false) // modal de detalles del plan
   const [calendarOpen, setCalendarOpen] = useState(false) // vista de calendario academico
@@ -176,7 +177,7 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
     return () => clearTimeout(t)
   }, [swipeHint])
 
-  // Plan del próximo ciclo: se guarda solo en este dispositivo (localStorage)
+  // Plan del próximo ciclo: sincronizado con Supabase para alumnos registrados + localStorage
   const planKey = `malla-plan-${carrera}-${user?.id || 'guest'}`
   const [plan, setPlan] = useState(() => {
     try { return new Set(JSON.parse(localStorage.getItem(planKey) || '[]')) } catch { return new Set() }
@@ -184,9 +185,6 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
   useEffect(() => {
     try { setPlan(new Set(JSON.parse(localStorage.getItem(planKey) || '[]'))) } catch { setPlan(new Set()) }
   }, [planKey])
-  useEffect(() => {
-    try { localStorage.setItem(planKey, JSON.stringify([...plan])) } catch { /* almacenamiento lleno o bloqueado */ }
-  }, [plan, planKey])
 
   // Reclamar logros: el servidor valida las condiciones y devuelve SOLO
   // los nuevos. Corre al entrar y al abrir/cerrar el arcade (los puntajes
@@ -213,7 +211,7 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
     ? 'VISITANTE'
     : user.user_metadata?.student_code || user.email
 
-  // Cargar progreso desde Supabase (el visitante siempre parte de cero)
+  // Cargar progreso y plan desde Supabase (el visitante siempre parte de cero)
   useEffect(() => {
     if (isGuest) {
       localStorage.removeItem('malla-visitante') // limpia restos de versiones previas
@@ -223,13 +221,16 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
     let cancelled = false
     supabase
       .from('progress')
-      .select('done')
+      .select('done, plan')
       .eq('student_id', user.id)
       .maybeSingle()
       .then(({ data, error }) => {
         if (cancelled) return
         if (error) console.error('[progress:load]', error)
         if (data?.done) setDone(new Set(data.done))
+        if (data?.plan && Array.isArray(data.plan) && data.plan.length > 0) {
+          setPlan(new Set(data.plan))
+        }
         setLoaded(true)
       })
     return () => { cancelled = true }
@@ -253,19 +254,47 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
     return () => { cancelled = true }
   }, [isGuest, user?.id])
 
-  // Guardar progreso (el visitante no persiste nada: solo dura la sesión abierta)
-  const persist = useCallback(async (set) => {
+  // Guardar progreso y plan (el visitante no persiste nada: solo dura la sesión abierta)
+  const persist = useCallback(async (nextDone, nextPlan) => {
+    const curDone = nextDone !== undefined ? nextDone : done
+    const curPlan = nextPlan !== undefined ? nextPlan : plan
+
+    // Respaldo en localStorage inmediato
+    try {
+      localStorage.setItem(planKey, JSON.stringify([...curPlan]))
+    } catch { /* almacenamiento lleno */ }
+
     if (isGuest) return
+
+    // Intentar guardar done y plan juntos
     const { error } = await supabase
       .from('progress')
-      .upsert({ student_id: user.id, done: [...set], updated_at: new Date().toISOString() })
+      .upsert({
+        student_id: user.id,
+        done: [...curDone],
+        plan: [...curPlan],
+        updated_at: new Date().toISOString()
+      })
+
     if (error) {
-      console.error('[progress:save]', error)
-      setSyncError(true)
+      // Fallback si la columna 'plan' no existe todavía en Supabase
+      const { error: errDone } = await supabase
+        .from('progress')
+        .upsert({
+          student_id: user.id,
+          done: [...curDone],
+          updated_at: new Date().toISOString()
+        })
+      if (errDone) {
+        console.error('[progress:save]', errDone)
+        setSyncError(true)
+      } else {
+        setSyncError(false)
+      }
     } else {
       setSyncError(false)
     }
-  }, [isGuest, user?.id])
+  }, [isGuest, user?.id, done, plan, planKey])
 
   const handleLogout = async () => {
     if (!isGuest) await supabase.auth.signOut()
@@ -377,7 +406,7 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
     reconcileStatuses(done, next)
     setDone(next)
     setLastAction(action)
-    persist(next)
+    persist(next, plan)
   }
 
   // Guardar el estado académico desde la ficha (row = null → pendiente).
@@ -399,7 +428,7 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
     if (next !== done) {
       await reconcileStatuses(done, next)
       setDone(next)
-      persist(next)
+      persist(next, plan)
     }
     if (row === null) {
       const { error } = await supabase
@@ -535,9 +564,14 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
   useEffect(() => {
     setPlan(p => {
       const n = [...p].filter(id => byId[id] && !done.has(id))
-      return n.length === p.size ? p : new Set(n)
+      if (n.length !== p.size) {
+        const nextPlan = new Set(n)
+        persist(done, nextPlan)
+        return nextPlan
+      }
+      return p
     })
-  }, [done, byId])
+  }, [done, byId, persist])
 
   const togglePlan = id => {
     const c = byId[id]
@@ -546,6 +580,7 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
       n.delete(id)
       setPlan(n)
       setLastAction(null)
+      persist(done, n)
     } else if (done.has(id)) {
       setLastAction({ planInfo: `${c.n} ya está marcado como llevado: no necesita entrar al plan.` })
     } else if (!disponible(c)) {
@@ -555,9 +590,17 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
           : `${c.n} todavía tiene requisitos pendientes: no podrías llevarlo el próximo ciclo.`
       })
     } else {
-      setPlan(new Set(plan).add(id))
+      const n = new Set(plan).add(id)
+      setPlan(n)
       setLastAction(null)
+      persist(done, n)
     }
+  }
+
+  const clearPlan = () => {
+    const emptyPlan = new Set()
+    setPlan(emptyPlan)
+    persist(done, emptyPlan)
   }
 
   // Estadísticas anónimas agregadas (query 28) para señalar cursos exigentes.
@@ -597,37 +640,49 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
   }, [matches, matchIdx])
 
   const nodeClass = c => {
+    let base = ''
     if (mode === 'ficha') {
       const st = fichaStatus(c)
-      return 'node ficha' + (st ? ' st-' + st : '') + (c.id === selected ? ' ring' : '')
+      base = 'node ficha' + (st ? ' st-' + st : '') + (c.id === selected ? ' ring' : '')
+    } else if (mode === 'noreq') {
+      if (done.has(c.id)) base = 'node free free-done' // ya llevado
+      else if (disponible(c)) base = 'node free free-todo' // puedes llevarlo ya
+      else base = 'node faded' // aún le faltan requisitos
+    } else if (mode === 'plan') {
+      if (plan.has(c.id)) base = 'node plan-sel' + (esExigente(c.id) ? ' plan-warn' : '')
+      else if (done.has(c.id)) base = 'node free free-done'
+      else if (disponible(c)) base = 'node free free-todo'
+      else base = 'node faded'
+    } else if (mode === 'done' || !selected) {
+      base = 'node' + (done.has(c.id) ? ' done' : '')
+    } else if (c.id === selected) {
+      base = 'node sel'
+    } else if (chain.has(c.id)) {
+      base = 'node ' + (done.has(c.id) ? 'done' : mode === 'open' ? 'open' : 'req')
+    } else {
+      base = 'node dim' + (done.has(c.id) ? ' done' : '')
     }
-    if (mode === 'noreq') {
-      if (done.has(c.id)) return 'node free free-done' // ya llevado
-      if (disponible(c)) return 'node free free-todo' // puedes llevarlo ya
-      return 'node faded' // aún le faltan requisitos
+    if (selectedArea && c.a !== selectedArea) {
+      base += ' dimmed-area'
     }
-    if (mode === 'plan') {
-      if (plan.has(c.id)) return 'node plan-sel' + (esExigente(c.id) ? ' plan-warn' : '')
-      if (done.has(c.id)) return 'node free free-done'
-      if (disponible(c)) return 'node free free-todo'
-      return 'node faded'
-    }
-    if (mode === 'done' || !selected) {
-      return 'node' + (done.has(c.id) ? ' done' : '')
-    }
-    if (c.id === selected) return 'node sel'
-    if (chain.has(c.id)) return 'node ' + (done.has(c.id) ? 'done' : mode === 'open' ? 'open' : 'req')
-    return 'node dim' + (done.has(c.id) ? ' done' : '')
+    return base
   }
 
   const edgeClass = e => {
-    if (mode === 'noreq' || mode === 'plan') return 'e dim'
-    if (!selected || mode === 'done' || mode === 'ficha') return 'e'
-    const isOpen = mode === 'open'
-    const inChain = isOpen
-      ? chain.has(e.to) && (e.from === selected || chain.has(e.from))
-      : chain.has(e.from) && (e.to === selected || chain.has(e.to))
-    return 'e ' + (inChain ? (isOpen ? 'hl-open' : 'hl-req') : 'dim')
+    let base = ''
+    if (mode === 'noreq' || mode === 'plan') base = 'e dim'
+    else if (!selected || mode === 'done' || mode === 'ficha') base = 'e'
+    else {
+      const isOpen = mode === 'open'
+      const inChain = isOpen
+        ? chain.has(e.to) && (e.from === selected || chain.has(e.from))
+        : chain.has(e.from) && (e.to === selected || chain.has(e.to))
+      base = 'e ' + (inChain ? (isOpen ? 'hl-open' : 'hl-req') : 'dim')
+    }
+    if (selectedArea && byId[e.to]?.a !== selectedArea) {
+      base += ' dimmed-edge'
+    }
+    return base
   }
 
   // ---------- Barra de estado ----------
@@ -649,19 +704,19 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
     ).length
     const temidos = sel.filter(c => esExigente(c.id))
     status = sel.length === 0 ? (
-      <>Arma tu <b>próximo ciclo</b>: toca los cursos disponibles para sumarlos al plan (se guarda en este dispositivo). {pill}</>
+      <>Arma tu <b>próximo ciclo</b>: toca los cursos disponibles para sumarlos al plan {isGuest ? '(se guarda en este dispositivo)' : '(sincronizado en tu cuenta)'}. {pill}</>
     ) : (
       <>
         Tu plan:&nbsp;
         <span className="pill v">{sel.length} {sel.length === 1 ? 'curso' : 'cursos'} · {cred} créd</span>
-        {cred > 22 && <>&nbsp;<span className="pill r">⚠ carga alta (más de 22 créd)</span></>}
+        {cred > 22 && <>&nbsp;<span className="pill r">⚠ carga alta (más de 22 créd: excede el límite recomendado)</span></>}
         {desbloquea > 0 && <>&nbsp;· al aprobarlo desbloquearías <b>{desbloquea}</b> {desbloquea === 1 ? 'curso' : 'cursos'} más</>}
         {temidos.length > 0 && (
           <>&nbsp;· <span className="pill r">⚠ {temidos.length} {temidos.length === 1 ? 'curso exigente' : 'cursos exigentes'}</span>
           &nbsp;(menos de la mitad lo aprueba a la primera)</>
         )}
         <button className="plan-view" onClick={ev => { ev.stopPropagation(); setPlanModalOpen(true) }}>Ver detalles</button>
-        <button className="plan-clear" onClick={ev => { ev.stopPropagation(); setPlan(new Set()) }}>Vaciar plan</button>
+        <button className="plan-clear" onClick={ev => { ev.stopPropagation(); clearPlan() }}>Vaciar plan</button>
       </>
     )
   } else if (lastAction?.blocked) {
@@ -854,9 +909,25 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
       </div>
 
       <div className="area-legend">
-        <span className="area-title mono">LÍNEAS ·</span>
+        <span className="area-title mono">FILTRAR ÁREAS ·</span>
+        <button
+          className={`area-pill ${!selectedArea ? 'active' : ''}`}
+          onClick={ev => { ev.stopPropagation(); setSelectedArea(null) }}
+        >
+          Todas
+        </button>
         {Object.keys(AREAS).filter(k => M.cursos.some(c => c.a === k)).map(k => (
-          <span key={k}><span className="sw" style={{ background: AREAS[k].color }} />{AREAS[k].label}</span>
+          <button
+            key={k}
+            className={`area-pill ${selectedArea === k ? 'active' : ''}`}
+            onClick={ev => { ev.stopPropagation(); setSelectedArea(prev => prev === k ? null : k) }}
+            style={{
+              '--area-col': AREAS[k].color
+            }}
+          >
+            <span className="sw" style={{ background: AREAS[k].color }} />
+            {AREAS[k].label}
+          </button>
         ))}
       </div>
 
