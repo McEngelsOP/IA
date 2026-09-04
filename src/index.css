@@ -1,3 +1,5 @@
+@import './styles/design-tokens.css';
+
 * {
   margin: 0;
   padding: 0;
@@ -9,9 +11,9 @@ html, body {
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family: var(--aa-font-sans);
+  background-color: var(--aa-bg);
+  color: var(--aa-ink);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -27,17 +29,19 @@ body {
   justify-content: center;
   height: 100vh;
   font-size: 18px;
-  color: #666;
+  color: var(--aa-ink-muted);
+  background: var(--aa-bg);
 }
 
 /* ---------- Tema oscuro: base global y botón flotante ---------- */
 [data-theme='dark'] body {
-  background: #10151f;
+  background: var(--aa-bg);
+  color: var(--aa-ink);
 }
 
 [data-theme='dark'] .loading-container {
-  background: #10151f;
-  color: #a7b0c0;
+  background: var(--aa-bg);
+  color: var(--aa-ink-muted);
 }
 
 .theme-toggle {
