@@ -3,10 +3,10 @@
    archivo se carga aparte, solo al abrir el arcade — code-splitting.) */
 
 /* ---------- Pantalla completa ---------- */
-.arcade {
+div.arcade {
   position: fixed;
   inset: 0;
-  z-index: 50; /* sobre los drawers (40/41), bajo ConfirmDialog (60) */
+  z-index: 1100; /* sobre los drawers (1000/1001), bajo ConfirmDialog (1300) */
   overflow-y: auto;
   background:
     radial-gradient(1000px 500px at 85% -10%, rgba(123, 92, 214, 0.25), transparent 60%),

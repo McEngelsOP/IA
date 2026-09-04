@@ -71,6 +71,14 @@ const GAMES = {
     controls: 'Ratón / Touch: Arrastra el cursor para cortar',
     isIframe: true,
     url: '/juegos/block-ninja/block-ninja/dist/index.html'
+  },
+  voidrunner: {
+    name: 'VOID RUNNER 3D', icon: '🚀',
+    rankNote: 'Three.js 3D (1J / 2J Co-op local).',
+    desc: 'Shooter espacial 3D endless cooperativo con vista compartida o pantalla dividida.',
+    controls: 'J1: WASD + Espacio + Shift | J2: Flechas + Enter + Ctrl',
+    isIframe: true,
+    url: '/juegos/void-runner/index.html'
   }
 }
 

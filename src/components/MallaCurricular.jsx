@@ -827,7 +827,7 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
               📅 Calendario
             </button>
             {!isMobile && (
-              <button className="aa-tab-btn arcade" onClick={() => setArcadeOpen(true)}>
+              <button className="aa-tab-btn aa-tab-arcade" onClick={() => setArcadeOpen(true)}>
                 🕹 Arcade
               </button>
             )}
