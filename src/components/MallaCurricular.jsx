@@ -6,6 +6,7 @@ import SidePanel from './SidePanel'
 import CourseDetail, { STATUS_META } from './CourseDetail'
 import AdminPanel from './AdminPanel'
 import MallaFX from './MallaFX'
+import MallaSidebar from './MallaSidebar'
 import { LOGROS } from '../lib/logros'
 import useMediaQuery from '../lib/useMediaQuery'
 import '../styles/MallaCurricular.css'
@@ -133,6 +134,21 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
   const [calendarOpen, setCalendarOpen] = useState(false) // vista de calendario academico
   const [isAdmin, setIsAdmin] = useState(false)
   const [adminOpen, setAdminOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const buscarInputRef = useRef(null)
+
+  // Atajo global Cmd+K / Ctrl+K para enfocar el buscador
+  useEffect(() => {
+    const handleKeyDown = e => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        buscarInputRef.current?.focus()
+        buscarInputRef.current?.select()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
 
   // Comprobar si el usuario actual es administrador
   useEffect(() => {
@@ -791,175 +807,168 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
   return (
     <div className={'malla-page' + (mode === 'done' ? ' marking' : '')}>
       {!isMobile && <MallaFX carrera={carrera} />}
+      
+      {/* Header estilo Artificial Analysis */}
       <header className="malla-top">
-        <div>
-          <div className="eyebrow mono">{M.uni} · {M.nombre}</div>
-          <h1>Malla curricular interactiva</h1>
-          <div className="meta">
-            Plan de estudios <b>presencial</b><span className="sep">·</span>
-            Total <b>{M.total} créditos</b><span className="sep">·</span>
-            {M.ciclosLabel}
+        <div className="malla-top-left">
+          <div className="aa-brand-pill mono" title={`${M.uni} · ${M.nombre}`}>
+            <span className="aa-brand-icon">❖</span>
+            <span className="aa-brand-title">{M.uni} · {M.nombre}</span>
           </div>
-          <div className="hint">
-            {isGuest
-              ? 'Modo visitante: puedes explorar y marcar cursos, pero nada se guarda al salir. Crea una cuenta para conservar tu avance.'
-              : 'Si encuentras errores en la malla curricular, manda un correo a solopcional16@gmail.com con el asunto «Error en la malla» y describe el problema. Asi mismo, cualquier sugerencia es bienvenida. Gracias por tu ayuda ^^. '}
-          </div>
+
+          <nav className="aa-header-tabs" aria-label="Pestañas principales">
+            <button className={`aa-tab-btn ${mode !== 'plan' ? 'active' : ''}`} onClick={() => changeMode('open')}>
+              Malla
+            </button>
+            <button className={`aa-tab-btn ${mode === 'plan' ? 'active' : ''}`} onClick={() => changeMode(mode === 'plan' ? 'open' : 'plan')}>
+              Planificador
+            </button>
+            <button className="aa-tab-btn" onClick={() => setCalendarOpen(true)}>
+              📅 Calendario
+            </button>
+            {!isMobile && (
+              <button className="aa-tab-btn arcade" onClick={() => setArcadeOpen(true)}>
+                🕹 Arcade
+              </button>
+            )}
+            {!isGuest && (
+              <button className="aa-tab-btn" onClick={() => setPanelOpen(true)}>
+                Mi panel
+              </button>
+            )}
+            {isAdmin && (
+              <button className="aa-tab-btn admin" onClick={() => setAdminOpen(true)}>
+                ⚙️ Admin
+              </button>
+            )}
+          </nav>
         </div>
-        <div className="user-box">
-          <span className="mono user-code">{studentCode}</span>
-          {syncError && <span className="sync-warn">⚠ sin guardar</span>}
-          {isGuest && onSwitchCarrera && (
-            <button className="panel-btn" onClick={onSwitchCarrera}>
-              ⇄ Cambiar de carrera
+
+        <div className="malla-top-right">
+          <div className="buscar-box aa-search-box" onClick={ev => ev.stopPropagation()}>
+            <span className="buscar-icon">🔍</span>
+            <input
+              ref={buscarInputRef}
+              type="text"
+              placeholder="Buscar curso…"
+              value={busca}
+              onChange={e => setBusca(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && matches.length > 1) setMatchIdx(i => (i + 1) % matches.length)
+                if (e.key === 'Escape') { setBusca(''); buscarInputRef.current?.blur() }
+              }}
+            />
+            {busca.trim().length >= 2 ? (
+              <span className="buscar-count mono">
+                {matches.length === 0 ? '0' : `${matchIdx + 1}/${matches.length}`}
+              </span>
+            ) : (
+              <kbd className="aa-kbd mono">⌘K</kbd>
+            )}
+            {busca && (
+              <button className="buscar-clear" onClick={() => setBusca('')} aria-label="Limpiar búsqueda">×</button>
+            )}
+          </div>
+
+          <div className="user-box">
+            {isGuest && onSwitchCarrera && (
+              <button className="panel-btn aa-pill-btn" onClick={onSwitchCarrera}>
+                ⇄ Carrera
+              </button>
+            )}
+            <span className="mono user-code aa-user-badge">{studentCode}</span>
+            {syncError && <span className="sync-warn">⚠ sin guardar</span>}
+            <button className="logout-btn aa-pill-btn" onClick={handleLogout}>
+              {isGuest ? 'Entrar' : 'Salir'}
             </button>
-          )}
-          <button className="panel-btn" onClick={() => setCalendarOpen(true)}>
-            📅 Calendario
-          </button>
-          {!isGuest && (
-            <button className="panel-btn" onClick={() => setPanelOpen(true)}>
-              ☰ Mi panel
-            </button>
-          )}
-          {isAdmin && (
-            <button className="panel-btn" style={{ borderColor: '#3b82f6', color: '#3b82f6', fontWeight: 600 }} onClick={() => setAdminOpen(true)}>
-              ⚙️ Admin
-            </button>
-          )}
-          <button className="logout-btn" onClick={handleLogout}>
-            {isGuest ? 'Crear cuenta / Entrar' : 'Cerrar sesión'}
-          </button>
+          </div>
         </div>
       </header>
 
-      <div className="toolbar">
-        <div className="modes">
-          <button className={mode === 'open' ? 'on' : ''} onClick={ev => { ev.stopPropagation(); changeMode('open') }}>Qué abre</button>
-          <button className={mode === 'req' ? 'on' : ''} onClick={ev => { ev.stopPropagation(); changeMode('req') }}>Qué requiere</button>
-          <button className={mode === 'done' ? 'on' : ''} onClick={ev => { ev.stopPropagation(); changeMode('done') }}>Marcar llevados</button>
-          <button className={mode === 'noreq' ? 'on' : ''} onClick={ev => { ev.stopPropagation(); changeMode('noreq') }}>Qué puedo llevar</button>
-          <button className={mode === 'plan' ? 'on' : ''} onClick={ev => { ev.stopPropagation(); changeMode('plan') }}>Planificar ciclo</button>
-          {!isGuest && (
-            <button className={mode === 'ficha' ? 'on' : ''} onClick={ev => { ev.stopPropagation(); changeMode('ficha') }}>Ficha del curso</button>
-          )}
-        </div>
-        <div className="buscar-box" onClick={ev => ev.stopPropagation()}>
-          <input
-            type="text"
-            placeholder="🔍 Buscar curso…"
-            value={busca}
-            onChange={e => setBusca(e.target.value)}
-            onKeyDown={e => {
-              if (e.key === 'Enter' && matches.length > 1) setMatchIdx(i => (i + 1) % matches.length)
-              if (e.key === 'Escape') setBusca('')
-            }}
-          />
-          {busca.trim().length >= 2 && (
-            <span className="buscar-count mono">
-              {matches.length === 0 ? '0' : `${matchIdx + 1}/${matches.length}`}
-            </span>
-          )}
-          {busca && (
-            <button className="buscar-clear" onClick={() => setBusca('')} aria-label="Limpiar búsqueda">×</button>
-          )}
-        </div>
-        {/* El arcade no está optimizado para táctil: en móvil no se ofrece */}
-        {!isMobile && (
-          <button className="arcade-btn" onClick={ev => { ev.stopPropagation(); setArcadeOpen(true) }}>
-            🕹 ARCADE
-          </button>
-        )}
-        <div className="legend">
-          {mode === 'ficha' ? (
-            <>
-              {Object.entries(STATUS_META).map(([k, m]) => (
-                <span key={k}><span className="sw" style={{ background: m.soft, border: `1.5px solid ${m.color}` }} />{m.label}</span>
-              ))}
-              <span><span className="sw" style={{ background: '#fff', border: '1.5px solid #C7CDC7' }} />Pendiente</span>
-            </>
-          ) : mode === 'noreq' ? (
-            <>
-              <span><span className="sw" style={{ background: '#fff', border: '1.5px solid #059e9f' }} />Disponible ahora</span>
-              <span><span className="sw" style={{ background: '#e3f4f4', border: '1.5px solid #059e9f' }} />Llevado</span>
-              <span><span className="sw" style={{ background: '#EDEFEC', border: '1.5px solid #C7CDC7', opacity: 0.5 }} />Le faltan requisitos</span>
-            </>
-          ) : mode === 'plan' ? (
-            <>
-              <span><span className="sw" style={{ background: '#efe8fb', border: '1.5px solid #7b5cc6' }} />En tu plan</span>
-              <span><span className="sw" style={{ background: '#fff', border: '1.5px solid #059e9f' }} />Puedes planificarlo</span>
-              <span><span className="sw" style={{ background: '#e3f4f4', border: '1.5px solid #059e9f' }} />Llevado</span>
-              <span><span className="sw" style={{ background: '#EDEFEC', border: '1.5px solid #C7CDC7', opacity: 0.5 }} />Le faltan requisitos</span>
-            </>
-          ) : (
-            <>
-              {mode !== 'done' && (
-                <span><span className="sw" style={{ background: '#022F42' }} />Seleccionado</span>
-              )}
-              {mode === 'open' && (
-                <span><span className="sw" style={{ background: 'var(--green-soft)', border: '1.5px solid var(--green)' }} />Cursos que abre</span>
-              )}
-              {mode === 'req' && (
-                <span><span className="sw" style={{ background: 'var(--amber-soft)', border: '1.5px solid var(--amber)' }} />Requisitos previos</span>
-              )}
-              <span><span className="sw" style={{ background: '#EDEFEC', border: '1.5px solid #C7CDC7' }} />Llevado</span>
-            </>
-          )}
-        </div>
-      </div>
+      {/* Estructura de dos columnas: Sidebar Técnico + Card Principal */}
+      <div className="malla-layout">
+        <MallaSidebar
+          mode={mode}
+          onSelectMode={changeMode}
+          isGuest={isGuest}
+          areas={AREAS}
+          activeAreas={Object.keys(AREAS).filter(k => M.cursos.some(c => c.a === k))}
+          selectedArea={selectedArea}
+          onSelectArea={setSelectedArea}
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed(prev => !prev)}
+        />
 
-      <div className="area-legend">
-        <span className="area-title mono">FILTRAR ÁREAS ·</span>
-        <button
-          className={`area-pill ${!selectedArea ? 'active' : ''}`}
-          onClick={ev => { ev.stopPropagation(); setSelectedArea(null) }}
-        >
-          Todas
-        </button>
-        {Object.keys(AREAS).filter(k => M.cursos.some(c => c.a === k)).map(k => (
-          <button
-            key={k}
-            className={`area-pill ${selectedArea === k ? 'active' : ''}`}
-            onClick={ev => { ev.stopPropagation(); setSelectedArea(prev => prev === k ? null : k) }}
-            style={{
-              '--area-col': AREAS[k].color
-            }}
-          >
-            <span className="sw" style={{ background: AREAS[k].color }} />
-            {AREAS[k].label}
-          </button>
-        ))}
-      </div>
+        <main className="malla-main">
+          <div className="malla-card">
+            {/* Cabecera de la Benchmark Card con Source Serif 4 */}
+            <div className="malla-card-head">
+              <div className="malla-card-title-group">
+                <h1 className="malla-card-title">
+                  <span className="aa-title-bullet">■</span> Malla Curricular · {M.nombre}
+                </h1>
+                <div className="malla-card-sub">
+                  Plan de estudios presencial · Total <b>{M.total} créditos</b> · {M.ciclosLabel}
+                </div>
+              </div>
 
-      <div className="status">{status}</div>
+              <div className="malla-card-controls">
+                <div className="aa-metric-pill mono">
+                  <span className="aa-metric-val">{done.size}</span> de {M.cursos.length} cursos llevados
+                </div>
+                <div className="aa-metric-pill mono creds">
+                  <span className="aa-metric-val">{creditosLlevados(done)}</span> / {M.total} créd
+                </div>
+                {!isMobile && (
+                  <div className="aa-zoom-pills">
+                    <button className="aa-zoom-btn" onClick={() => applyZoom(zoomRef.current - 0.15)} title="Alejar">−</button>
+                    <button className="aa-zoom-btn reset" onClick={() => applyZoom(1)} title="Restablecer zoom">100%</button>
+                    <button className="aa-zoom-btn" onClick={() => applyZoom(zoomRef.current + 0.15)} title="Acercar">+</button>
+                  </div>
+                )}
+              </div>
+            </div>
 
-      {M.electivos && (
-        <details className="elec-panel">
-          <summary className="mono">
-            📚 CATÁLOGO DE ELECTIVOS · {M.electivos.length} GRUPOS
-          </summary>
-          <div className="elec-groups">
-            {M.electivos.map(g => (
-              <details key={g.grupo} className="elec-group">
-                <summary>
-                  {g.grupo} <span className="mono elec-count">{g.cursos.length} opciones</span>
+            {/* Selector horizontal de modos para móvil cuando el sidebar se oculta */}
+            {isMobile && (
+              <div className="malla-mobile-modes">
+                <button className={mode === 'open' ? 'on' : ''} onClick={() => changeMode('open')}>Qué abre</button>
+                <button className={mode === 'req' ? 'on' : ''} onClick={() => changeMode('req')}>Qué requiere</button>
+                <button className={mode === 'done' ? 'on' : ''} onClick={() => changeMode('done')}>Llevados</button>
+                <button className={mode === 'noreq' ? 'on' : ''} onClick={() => changeMode('noreq')}>Disponibles</button>
+                <button className={mode === 'plan' ? 'on' : ''} onClick={() => changeMode('plan')}>Plan</button>
+              </div>
+            )}
+
+            <div className="status aa-status-bar">{status}</div>
+
+            {M.electivos && (
+              <details className="elec-panel">
+                <summary className="mono">
+                  📚 CATÁLOGO DE ELECTIVOS · {M.electivos.length} GRUPOS
                 </summary>
-                {g.nota && <p className="elec-nota">{g.nota}</p>}
-                <div className="elec-list">
-                  {g.cursos.map(cu => (
-                    <div key={cu.k} className="elec-row">
-                      <span className="elec-clave mono">{cu.k}</span>
-                      <span className="elec-nombre">{cu.n}</span>
-                      {cu.req && <span className="elec-req">req: {cu.req}</span>}
-                      <span className="elec-cr mono">{cu.cr} créd</span>
-                    </div>
+                <div className="elec-groups">
+                  {M.electivos.map(g => (
+                    <details key={g.grupo} className="elec-group">
+                      <summary>
+                        {g.grupo} <span className="mono elec-count">{g.cursos.length} opciones</span>
+                      </summary>
+                      {g.nota && <p className="elec-nota">{g.nota}</p>}
+                      <div className="elec-list">
+                        {g.cursos.map(cu => (
+                          <div key={cu.k} className="elec-row">
+                            <span className="elec-clave mono">{cu.k}</span>
+                            <span className="elec-nombre">{cu.n}</span>
+                            {cu.req && <span className="elec-req">req: {cu.req}</span>}
+                            <span className="elec-cr mono">{cu.cr} créd</span>
+                          </div>
+                        ))}
+                      </div>
+                    </details>
                   ))}
                 </div>
               </details>
-            ))}
-          </div>
-        </details>
-      )}
+            )}
 
       <div className="frame">
         <div className="scroller" ref={scrollerRef} onClick={onScrollerClick} onMouseDown={onMouseDown}>
@@ -1005,10 +1014,13 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
           </div>
         )}
       </div>
+          </div>
 
-      <footer className="malla-foot mono">
-        {M.foot}
-      </footer>
+          <footer className="malla-foot mono">
+            {M.foot}
+          </footer>
+        </main>
+      </div>
 
       {!isGuest && (
         <SidePanel user={user} open={panelOpen} onClose={() => setPanelOpen(false)} done={done} cursos={M.cursos} ciclos={M.ciclos} statuses={statuses} uni={M.uni} nombreCarrera={M.nombre} />
