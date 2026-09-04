@@ -275,8 +275,8 @@ export default function CourseDetail({ user, course, ciclos, byId, statusRow, is
       <aside className={'cd' + (open ? ' open' : '')} aria-hidden={!open}>
         <header className="cd-head">
           <div>
-            <div className="cd-eyebrow mono">FICHA DEL CURSO</div>
-            <h2>{course.n}</h2>
+            <div className="cd-eyebrow mono">{course.id.toUpperCase()} · CICLO {course.c}</div>
+            <h2><span className="aa-title-bullet">■</span> {course.n}</h2>
           </div>
           <button className="cd-close" onClick={onClose} aria-label="Cerrar ficha">×</button>
         </header>
