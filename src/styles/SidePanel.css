@@ -7,7 +7,7 @@
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.22s ease;
-  z-index: 40;
+  z-index: 1000;
 }
 
 .sp-backdrop.show {
@@ -21,16 +21,16 @@
   right: 0;
   height: 100dvh;
   width: min(420px, 100vw);
-  background: #ffffff;
-  border-left: 1px solid #e3e6e2;
-  box-shadow: -8px 0 30px rgba(21, 32, 46, 0.12);
+  background: var(--aa-card);
+  border-left: 1px solid var(--aa-border);
+  box-shadow: -8px 0 30px rgba(12, 17, 29, 0.1);
   transform: translateX(102%);
   transition: transform 0.26s ease;
-  z-index: 41;
+  z-index: 1001;
   display: flex;
   flex-direction: column;
-  font-family: 'Inter', system-ui, sans-serif;
-  color: #15202e;
+  font-family: var(--aa-font-sans);
+  color: var(--aa-ink);
 }
 
 .sp.open {
@@ -38,7 +38,7 @@
 }
 
 .sp .mono {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--aa-font-mono);
 }
 
 /* ---------- Cabecera ---------- */
@@ -46,49 +46,55 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  padding: 22px 24px 14px;
+  padding: 18px 22px 14px;
+  border-bottom: 1px solid var(--aa-border);
 }
 
 .sp-eyebrow {
   font-size: 10.5px;
-  font-weight: 500;
-  letter-spacing: 2px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
   text-transform: uppercase;
-  color: #5c6672;
+  color: var(--aa-ink-muted);
 }
 
 .sp-head h2 {
-  font-family: 'Source Serif 4', Georgia, serif;
+  font-family: var(--aa-font-serif);
   font-size: 22px;
   font-weight: 700;
+  color: var(--aa-ink);
   margin: 4px 0 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .sp-close {
-  border: 1px solid #e3e6e2;
-  background: #fff;
-  color: #5c6672;
+  border: 1px solid var(--aa-border);
+  background: var(--aa-card);
+  color: var(--aa-ink-muted);
   width: 32px;
   height: 32px;
   border-radius: 50%;
   font-size: 18px;
   line-height: 1;
   cursor: pointer;
+  transition: all 0.15s ease;
 }
 
 .sp-close:hover {
-  background: #f5f6f4;
-  color: #15202e;
+  background: var(--aa-pill-neutral-bg);
+  color: var(--aa-ink);
 }
 
 /* ---------- Pestañas ---------- */
 .sp-tabs {
   display: flex;
   gap: 4px;
-  margin: 0 24px 4px;
-  background: #f5f6f4;
-  border: 1px solid #e3e6e2;
-  border-radius: 999px;
+  margin: 12px 20px 6px;
+  background: var(--aa-pill-neutral-bg);
+  border: 1px solid var(--aa-border);
+  border-radius: var(--aa-radius-pill);
   padding: 3px;
 }
 
@@ -96,17 +102,24 @@
   flex: 1;
   border: none;
   background: transparent;
-  font: 500 12.5px 'Inter', sans-serif;
-  color: #5c6672;
-  padding: 7px 0;
-  border-radius: 999px;
+  font-family: var(--aa-font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--aa-ink-muted);
+  padding: 6px 0;
+  border-radius: var(--aa-radius-pill);
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition: all 0.15s ease;
+}
+
+.sp-tabs button:hover {
+  color: var(--aa-ink);
 }
 
 .sp-tabs button.on {
-  background: #15202e;
-  color: #fff;
+  background: var(--aa-pill-dark-bg);
+  color: var(--aa-pill-dark-text);
+  font-weight: 600;
 }
 
 .sp-msg {
@@ -844,6 +857,8 @@
 .sp .sp-tabs button {
   flex: 1 1 30%;
   white-space: nowrap;
+  padding: 7px 4px;
+  font-size: 12px;
 }
 
 /* ---------- Logros ---------- */
@@ -1007,6 +1022,55 @@
 }
 
 [data-theme='dark'] .sp-resumen-btn:hover { background: #1e3a2f; }
+
+/* Overrides de modo oscuro para SidePanel estilo Artificial Analysis */
+[data-theme='dark'] .sp {
+  background: var(--aa-card);
+  border-left-color: var(--aa-border);
+  color: var(--aa-ink);
+}
+
+[data-theme='dark'] .sp-head {
+  border-bottom-color: var(--aa-border);
+}
+
+[data-theme='dark'] .sp-close {
+  background: var(--aa-card);
+  border-color: var(--aa-border);
+  color: var(--aa-ink-muted);
+}
+
+[data-theme='dark'] .sp-close:hover {
+  background: var(--aa-pill-neutral-bg);
+  color: var(--aa-ink);
+}
+
+[data-theme='dark'] .sp-tabs {
+  background: var(--aa-pill-neutral-bg);
+  border-color: var(--aa-border);
+}
+
+[data-theme='dark'] .sp-tabs button {
+  color: var(--aa-ink-muted);
+}
+
+[data-theme='dark'] .sp-tabs button.on {
+  background: var(--aa-pill-dark-bg);
+  color: var(--aa-pill-dark-text);
+}
+
+[data-theme='dark'] .stat {
+  background: var(--aa-card);
+  border-color: var(--aa-border);
+}
+
+[data-theme='dark'] .stat-val {
+  color: var(--aa-ink);
+}
+
+[data-theme='dark'] .chart .grid {
+  stroke: var(--aa-border);
+}
 
 /* ---------- Móvil: el panel ocupa toda la pantalla, aire más justo ---------- */
 @media (max-width: 480px) {

@@ -8,8 +8,22 @@ import '../styles/SidePanel.css'
 const PASS = 10.5 // nota mínima aprobatoria de referencia
 
 const fmt = v => (Number.isInteger(v) ? String(v) : v.toFixed(2).replace(/0$/, ''))
-const fdate = iso =>
-  new Date(iso).toLocaleDateString('es-PE', { day: 'numeric', month: 'short', year: 'numeric' })
+const fdate = iso => {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return ''
+  return d.toLocaleDateString('es-PE', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+const getHostname = url => {
+  if (!url) return ''
+  try {
+    const raw = /^https?:\/\//i.test(url) ? url : 'https://' + url
+    return new URL(raw).hostname
+  } catch {
+    return url
+  }
+}
 
 // ---------- Gráficos (SVG a mano, una sola serie) ----------
 
@@ -22,31 +36,41 @@ const barPath = (x0, y, w, t) => {
 
 function BarChartNotas({ items }) {
   const W = 336, LABEL_W = 118, X0 = LABEL_W + 8, X1 = W - 34
-  const ROW = 26, TOP = 16, T = 14
-  const H = TOP + items.length * ROW + 14
+  const ROW = 26, TOP = 22, T = 14
+  const H = TOP + items.length * ROW + 16
   const x = g => X0 + (g / 20) * (X1 - X0)
+
+  const AA_BENCH_COLORS = [
+    '#2563eb', '#0891b2', '#059669', '#4f46e5', '#7c3aed',
+    '#c026d3', '#ea580c', '#d97706', '#0284c7', '#10b981'
+  ]
 
   return (
     <svg className="chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Notas por curso">
       {[5, 10, 15, 20].map(v => (
-        <line key={v} x1={x(v)} y1={TOP - 6} x2={x(v)} y2={H - 12} className="grid" />
+        <line key={v} x1={x(v)} y1={TOP - 5} x2={x(v)} y2={H - 13} className="grid" strokeDasharray="2 2" />
       ))}
       {/* línea de referencia: nota aprobatoria */}
-      <line x1={x(PASS)} y1={TOP - 10} x2={x(PASS)} y2={H - 12} className="ref" />
-      <text x={x(PASS)} y={TOP - 13} className="ref-lbl" textAnchor="middle">{PASS}</text>
+      <line x1={x(PASS)} y1={TOP - 9} x2={x(PASS)} y2={H - 13} className="ref" />
+      <text x={x(PASS)} y={TOP - 11} className="ref-lbl" textAnchor="middle">{PASS}</text>
       {[0, 5, 10, 15, 20].map(v => (
-        <text key={v} x={x(v)} y={H - 2} className="tick" textAnchor="middle">{v}</text>
+        <text key={v} x={x(v)} y={H - 3} className="tick" textAnchor="middle">{v}</text>
       ))}
       {items.map((it, i) => {
         const y = TOP + i * ROW
         const ok = it.grade >= PASS
+        const barColor = ok ? AA_BENCH_COLORS[i % AA_BENCH_COLORS.length] : '#dc2626'
         return (
           <g key={it.id}>
             <title>{`${it.name}: ${fmt(it.grade)} / 20`}</title>
             <text x={LABEL_W} y={y + T / 2 + 3.5} className="bar-lbl" textAnchor="end">
               {it.name.length > 19 ? it.name.slice(0, 18) + '…' : it.name}
             </text>
-            <path d={barPath(X0, y, x(it.grade) - X0, T)} className={ok ? 'bar ok' : 'bar bad'} />
+            <path
+              d={barPath(X0, y, x(it.grade) - X0, T)}
+              className={ok ? 'bar ok' : 'bar bad'}
+              style={{ fill: barColor }}
+            />
             <text x={x(it.grade) + 5} y={y + T / 2 + 3.5} className="bar-val">{fmt(it.grade)}</text>
           </g>
         )
@@ -56,7 +80,7 @@ function BarChartNotas({ items }) {
 }
 
 function LineChartPonderado({ points }) {
-  const W = 336, H = 168, ML = 26, MR = 34, MT = 16, MB = 22
+  const W = 336, H = 176, ML = 26, MR = 34, MT = 22, MB = 22
   const y = v => MT + (1 - v / 20) * (H - MT - MB)
   const x = i =>
     points.length === 1 ? ML + (W - ML - MR) / 2 : ML + (i * (W - ML - MR)) / (points.length - 1)
@@ -80,7 +104,7 @@ function LineChartPonderado({ points }) {
           <text x={x(i)} y={H - 6} className="tick" textAnchor="middle">{p.label}</text>
         </g>
       ))}
-      <text x={x(points.length - 1)} y={y(last.value) - 9} className="end-lbl" textAnchor="middle">
+      <text x={x(points.length - 1)} y={y(last.value) - 8} className="end-lbl" textAnchor="middle">
         {last.value.toFixed(2)}
       </text>
     </svg>
@@ -92,7 +116,7 @@ function HistNotas({ values }) {
   const counts = Array.from({ length: 21 }, () => 0)
   values.forEach(v => counts[Math.min(20, Math.max(0, Math.round(v)))]++)
   const max = Math.max(...counts, 1)
-  const W = 336, H = 150, ML = 8, MR = 8, MT = 18, MB = 20
+  const W = 336, H = 154, ML = 8, MR = 8, MT = 22, MB = 20
   const bw = (W - ML - MR) / 21
   const y0 = H - MB
   const hOf = c => (c / max) * (y0 - MT)
@@ -165,6 +189,22 @@ export default function SidePanel({ user, open, onClose, done, cursos, ciclos, s
       })
   }, [open, user.id])
 
+  // Cerrar el panel con tecla Escape
+  useEffect(() => {
+    if (!open) return
+    const onKey = e => { if (e.key === 'Escape') onClose?.() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open, onClose])
+
+  // Si cambia la carrera y el ciclo actual no existe en ella, seleccionar el primero válido
+  useEffect(() => {
+    if (ciclos && !ciclos[ciclo]) {
+      const first = Object.keys(ciclos).map(Number).sort((a, b) => a - b)[0] ?? 1
+      setCiclo(first)
+    }
+  }, [ciclos, ciclo])
+
   // Cargar herramientas al entrar a esa pestaña.
   // OJO: tool_comments se pide con columnas explícitas — author_id no es
   // legible desde el cliente (anonimato por permiso de columna).
@@ -175,7 +215,7 @@ export default function SidePanel({ user, open, onClose, done, cursos, ciclos, s
       .order('created_at', { ascending: true })
     if (error) { console.error('[tools:load]', error); setMsg('No se pudieron cargar las herramientas.'); return }
     // Más likes primero; a igualdad, se conserva el orden de creación
-    setTools((data || []).sort((a, b) => b.tool_likes.length - a.tool_likes.length))
+    setTools((data || []).sort((a, b) => (b.tool_likes?.length || 0) - (a.tool_likes?.length || 0)))
   }, [])
 
   useEffect(() => {
@@ -275,15 +315,16 @@ export default function SidePanel({ user, open, onClose, done, cursos, ciclos, s
   // Like con actualización optimista (mismo patrón que los votos de profesores).
   // La lista no se reordena al instante para que las filas no salten.
   const toggleLike = async t => {
-    const mine = t.tool_likes.some(l => l.student_id === user.id)
+    const likes = t.tool_likes || []
+    const mine = likes.some(l => l.student_id === user.id)
     const prev = tools
-    setTools(tools.map(row => {
+    setTools((tools || []).map(row => {
       if (row.id !== t.id) return row
       return {
         ...row,
         tool_likes: mine
-          ? row.tool_likes.filter(l => l.student_id !== user.id)
-          : [...row.tool_likes, { student_id: user.id }]
+          ? likes.filter(l => l.student_id !== user.id)
+          : [...likes, { student_id: user.id }]
       }
     }))
     let error
@@ -364,8 +405,8 @@ export default function SidePanel({ user, open, onClose, done, cursos, ciclos, s
     (done.has(c.id) || statuses[c.id]?.status === 'desaprobado')
 
   const cicloCourses = useMemo(
-    () => cursos.filter(c => c.c === Number(ciclo) && done.has(c.id)),
-    [cursos, ciclo, done]
+    () => cursos.filter(c => c.c === Number(ciclo) && (done.has(c.id) || statuses[c.id]?.status === 'desaprobado')),
+    [cursos, ciclo, done, statuses]
   )
 
   const cicloItems = useMemo(
@@ -418,7 +459,7 @@ export default function SidePanel({ user, open, onClose, done, cursos, ciclos, s
       const p = porCiclo.find(x => x.num === num)
       items.push({
         icon: '📚',
-        t: `${ciclos[num].t}: ${llevados.length} ${llevados.length === 1 ? 'curso llevado' : 'cursos llevados'}`,
+        t: `${ciclos[num]?.t || `Ciclo ${num}`}: ${llevados.length} ${llevados.length === 1 ? 'curso llevado' : 'cursos llevados'}`,
         s: `${fmt(cr)} créditos${p ? ` · ponderado ${p.value.toFixed(2)}` : ''}`
       })
       const pct = total > 0 ? (acum / total) * 100 : 0
@@ -454,8 +495,8 @@ export default function SidePanel({ user, open, onClose, done, cursos, ciclos, s
       <aside className={'sp' + (open ? ' open' : '')} aria-hidden={!open}>
         <header className="sp-head">
           <div>
-            <div className="sp-eyebrow mono">PANEL</div>
-            <h2>Mi panel</h2>
+            <div className="sp-eyebrow mono">{uni ? `${uni} · ${nombreCarrera}` : 'PANEL ACADÉMICO'}</div>
+            <h2><span className="aa-title-bullet">■</span> Mi panel</h2>
           </div>
           <button className="sp-close" onClick={onClose} aria-label="Cerrar panel">×</button>
         </header>
@@ -492,7 +533,7 @@ export default function SidePanel({ user, open, onClose, done, cursos, ciclos, s
 
               {cicloCourses.length === 0 ? (
                 <div className="sp-empty">
-                  No tienes cursos marcados como llevados en {ciclos[ciclo].t}. Márcalos en la malla
+                  No tienes cursos marcados como llevados en {ciclos[ciclo]?.t || `Ciclo ${ciclo}`}. Márcalos en la malla
                   («Marcar llevados») y aparecerán aquí.
                 </div>
               ) : (
@@ -516,7 +557,7 @@ export default function SidePanel({ user, open, onClose, done, cursos, ciclos, s
 
               {cicloItems.length > 0 && (
                 <section className="sp-section">
-                  <h3>{ciclos[ciclo].t} · notas</h3>
+                  <h3>{(ciclos[ciclo]?.t || `Ciclo ${ciclo}`)} · notas</h3>
                   <BarChartNotas items={cicloItems} />
                 </section>
               )}
@@ -531,7 +572,7 @@ export default function SidePanel({ user, open, onClose, done, cursos, ciclos, s
                     if (items.length === 0) return null
                     return (
                       <div key={num} className="sp-subblock">
-                        <h4 className="sp-subhead mono">{ciclos[num].t}</h4>
+                        <h4 className="sp-subhead mono">{ciclos[num]?.t || `Ciclo ${num}`}</h4>
                         <BarChartNotas items={items} />
                       </div>
                     )
@@ -578,7 +619,7 @@ export default function SidePanel({ user, open, onClose, done, cursos, ciclos, s
                   <div className="pond-list">
                     {porCiclo.map(p => (
                       <div key={p.label} className="pond-row">
-                        <span>{ciclos[p.num].t}</span>
+                        <span>{ciclos[p.num]?.t || `Ciclo ${p.num}`}</span>
                         <span className="pond-cr mono">{p.cr} créd</span>
                         <span className="pond-val mono">{p.value.toFixed(2)}</span>
                       </div>
@@ -655,12 +696,12 @@ export default function SidePanel({ user, open, onClose, done, cursos, ciclos, s
                     <div className="stat">
                       <span className="stat-lbl">Mejor ciclo</span>
                       <span className="stat-val mono">{stats.mejorCiclo.value.toFixed(2)}</span>
-                      <span className="stat-sub">{ciclos[stats.mejorCiclo.num].t}</span>
+                      <span className="stat-sub">{ciclos[stats.mejorCiclo.num]?.t || `Ciclo ${stats.mejorCiclo.num}`}</span>
                     </div>
                     <div className="stat">
                       <span className="stat-lbl">Ciclo más difícil</span>
                       <span className="stat-val mono">{stats.peorCiclo.value.toFixed(2)}</span>
-                      <span className="stat-sub">{ciclos[stats.peorCiclo.num].t}</span>
+                      <span className="stat-sub">{ciclos[stats.peorCiclo.num]?.t || `Ciclo ${stats.peorCiclo.num}`}</span>
                     </div>
                   </div>
                 )}
@@ -691,29 +732,31 @@ export default function SidePanel({ user, open, onClose, done, cursos, ciclos, s
               ) : (
                 <div className="tool-list">
                   {tools.map(t => {
-                    const liked = t.tool_likes.some(l => l.student_id === user.id)
+                    const likes = t.tool_likes || []
+                    const commentsRaw = t.tool_comments || []
+                    const liked = likes.some(l => l.student_id === user.id)
                     const expanded = openComments === t.id
-                    const comments = [...t.tool_comments].sort((a, b) => a.created_at.localeCompare(b.created_at))
+                    const comments = [...commentsRaw].sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''))
                     return (
                       <div key={t.id} className="tool-row">
                         <div className="tool-main">
                           <a href={t.url} target="_blank" rel="noopener noreferrer">
                             <span className="tool-name">{t.name}</span>
-                            <span className="tool-host mono">{new URL(t.url).hostname} ↗</span>
+                            <span className="tool-host mono">{getHostname(t.url)} ↗</span>
                           </a>
                           <button
                             className={'tool-like' + (liked ? ' on' : '')}
                             onClick={() => toggleLike(t)}
                             title={liked ? 'Quitar mi like' : 'Me sirve esta herramienta'}
                           >
-                            ♥ <b className="mono">{t.tool_likes.length}</b>
+                            ♥ <b className="mono">{likes.length}</b>
                           </button>
                           <button
                             className={'tool-cmt' + (expanded ? ' on' : '')}
                             onClick={() => { setOpenComments(expanded ? null : t.id); setCommentDraft('') }}
                             title={expanded ? 'Ocultar comentarios' : 'Ver comentarios'}
                           >
-                            💬 <b className="mono">{t.tool_comments.length}</b>
+                            💬 <b className="mono">{comments.length}</b>
                           </button>
                           {t.created_by === user.id && (
                             <button className="tool-del" onClick={() => removeTool(t)} aria-label={`Eliminar ${t.name}`}>×</button>
@@ -811,7 +854,7 @@ export default function SidePanel({ user, open, onClose, done, cursos, ciclos, s
                       <div key={k} className={'lg-card' + (won ? ' won' : '')}>
                         <span className="lg-icon">{m.icon}</span>
                         <span className="lg-name">{m.name}</span>
-                        <span className="lg-desc">{won ? `Desbloqueado · ${fdate(won)}` : m.desc}</span>
+                        <span className="lg-desc">{won ? `Desbloqueado${fdate(won) ? ` · ${fdate(won)}` : ''}` : m.desc}</span>
                       </div>
                     )
                   })}
@@ -834,7 +877,7 @@ export default function SidePanel({ user, open, onClose, done, cursos, ciclos, s
                   <span className="tl-icon">🎉</span>
                   <div className="tl-txt">
                     <div className="tl-t">Te uniste a la malla interactiva</div>
-                    <div className="tl-s">{fdate(user.created_at)}</div>
+                    <div className="tl-s">{user?.created_at ? fdate(user.created_at) : ''}</div>
                   </div>
                 </div>
                 {historia.map((it, i) => (
