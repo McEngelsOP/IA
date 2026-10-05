@@ -14,6 +14,7 @@ Aplicación web de la malla de **Ingeniería en IA (ESAN)**: cada alumno inicia 
 - 📅 **Planificador de ciclo y Calendario Académico** (eventos oficiales + personales sincronizados en la nube)
 - 📝 **Ficha del curso**: notas, veces llevado, comentarios personales, reseñas anónimas y estrellas de dificultad
 - 🤖 **Asesor académico Gemini**: estima la carga del plan con créditos y dificultad agregada
+- 🧭 **Proyección de ciclos**: compara rutas ligeras, equilibradas e intensivas respetando prerrequisitos
 - 👨‍🏫 **Directorio de profesores**: likes/dislikes y etiquetas comunitarias
 - 📊 **Mi Panel**: estadísticas, histogramas y línea de tiempo con logros desbloqueables
 - 🕹️ **Arcade Retro**: 5 juegos nativos con ranking por temporada + juegos locales
