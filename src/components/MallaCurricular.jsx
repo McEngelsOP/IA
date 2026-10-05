@@ -15,6 +15,7 @@ import '../styles/MallaCurricular.css'
 // así el juego no engorda la carga inicial de la malla.
 const Arcade = lazy(() => import('./Arcade'))
 const AcademicCalendar = lazy(() => import('./AcademicCalendar'))
+const StudyAdvisor = lazy(() => import('./StudyAdvisor'))
 
 // Para el buscador: sin tildes ni mayúsculas ("Calculo" encuentra "Cálculo")
 const norm = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
@@ -132,6 +133,7 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
   const [courseStats, setCourseStats] = useState(null) // agregados por curso (query 28) · null = sin pedir
   const [planModalOpen, setPlanModalOpen] = useState(false) // modal de detalles del plan
   const [calendarOpen, setCalendarOpen] = useState(false) // vista de calendario academico
+  const [advisorOpen, setAdvisorOpen] = useState(false) // asesor académico Gemini
   const [isAdmin, setIsAdmin] = useState(false)
   const [adminOpen, setAdminOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
@@ -201,6 +203,10 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
   useEffect(() => {
     try { setPlan(new Set(JSON.parse(localStorage.getItem(planKey) || '[]'))) } catch { setPlan(new Set()) }
   }, [planKey])
+
+  const planCourses = useMemo(() => M.cursos
+    .filter(c => plan.has(c.id))
+    .map(c => ({ id: c.id, name: c.n, credits: c.cr })), [M, plan])
 
   // Reclamar logros: el servidor valida las condiciones y devuelve SOLO
   // los nuevos. Corre al entrar y al abrir/cerrar el arcade (los puntajes
@@ -823,6 +829,11 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
             <button className={`aa-tab-btn ${mode === 'plan' ? 'active' : ''}`} onClick={() => changeMode(mode === 'plan' ? 'open' : 'plan')}>
               Planificador
             </button>
+            {!isGuest && (
+              <button className="aa-tab-btn" onClick={() => setAdvisorOpen(true)}>
+                ✨ Asesor IA
+              </button>
+            )}
             <button className="aa-tab-btn" onClick={() => setCalendarOpen(true)}>
               📅 Calendario
             </button>
@@ -1096,6 +1107,16 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
             )}
           </div>
         </div>
+      )}
+
+      {advisorOpen && !isGuest && (
+        <Suspense fallback={<div className="arcade-loading mono">CARGANDO ASESOR…</div>}>
+          <StudyAdvisor
+            planCourses={planCourses}
+            careerName={M.nombre}
+            onClose={() => setAdvisorOpen(false)}
+          />
+        </Suspense>
       )}
 
       {adminOpen && <AdminPanel onClose={() => setAdminOpen(false)} />}
