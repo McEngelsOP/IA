@@ -16,6 +16,7 @@ import '../styles/MallaCurricular.css'
 const Arcade = lazy(() => import('./Arcade'))
 const AcademicCalendar = lazy(() => import('./AcademicCalendar'))
 const StudyAdvisor = lazy(() => import('./StudyAdvisor'))
+const SemesterRoadmap = lazy(() => import('./SemesterRoadmap'))
 
 // Para el buscador: sin tildes ni mayúsculas ("Calculo" encuentra "Cálculo")
 const norm = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
@@ -134,6 +135,7 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
   const [planModalOpen, setPlanModalOpen] = useState(false) // modal de detalles del plan
   const [calendarOpen, setCalendarOpen] = useState(false) // vista de calendario academico
   const [advisorOpen, setAdvisorOpen] = useState(false) // asesor académico Gemini
+  const [roadmapOpen, setRoadmapOpen] = useState(false) // comparación de rutas por ciclos
   const [isAdmin, setIsAdmin] = useState(false)
   const [adminOpen, setAdminOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
@@ -207,6 +209,20 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
   const planCourses = useMemo(() => M.cursos
     .filter(c => plan.has(c.id))
     .map(c => ({ id: c.id, name: c.n, credits: c.cr })), [M, plan])
+  const completedIds = useMemo(() => [...done], [done])
+
+  const addRoadmapTerm = ids => {
+    const nextPlan = new Set(plan)
+    ids.forEach(id => {
+      const course = byId[id]
+      if (course && disponible(course)) nextPlan.add(id)
+    })
+    setPlan(nextPlan)
+    setLastAction(null)
+    persist(done, nextPlan)
+    setMode('plan')
+    setRoadmapOpen(false)
+  }
 
   // Reclamar logros: el servidor valida las condiciones y devuelve SOLO
   // los nuevos. Corre al entrar y al abrir/cerrar el arcade (los puntajes
@@ -829,6 +845,9 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
             <button className={`aa-tab-btn ${mode === 'plan' ? 'active' : ''}`} onClick={() => changeMode(mode === 'plan' ? 'open' : 'plan')}>
               Planificador
             </button>
+            <button className="aa-tab-btn" onClick={() => setRoadmapOpen(true)}>
+              Proyección
+            </button>
             {!isGuest && (
               <button className="aa-tab-btn" onClick={() => setAdvisorOpen(true)}>
                 ✨ Asesor IA
@@ -1115,6 +1134,17 @@ export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogo
             planCourses={planCourses}
             careerName={M.nombre}
             onClose={() => setAdvisorOpen(false)}
+          />
+        </Suspense>
+      )}
+
+      {roadmapOpen && (
+        <Suspense fallback={<div className="arcade-loading mono">CALCULANDO PROYECCIÓN…</div>}>
+          <SemesterRoadmap
+            courses={M.cursos}
+            completedIds={completedIds}
+            onAddFirstSemester={addRoadmapTerm}
+            onClose={() => setRoadmapOpen(false)}
           />
         </Suspense>
       )}
