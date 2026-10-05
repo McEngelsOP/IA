@@ -1,5 +1,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
 
+const DEFAULT_GEMINI_MODEL = 'gemini-3.5-flash-lite'
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -37,7 +39,9 @@ Deno.serve(async req => {
 
   let body: Record<string, unknown>
   try {
-    body = await req.json()
+    const parsed = await req.json()
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return json({ error: 'bad_request' }, 400)
+    body = parsed
   } catch {
     return json({ error: 'bad_request' }, 400)
   }
@@ -86,12 +90,12 @@ Deno.serve(async req => {
     `Pregunta: ${question}`
   ].join('\n')
 
-  const model = cleanText(Deno.env.get('GEMINI_MODEL'), 80) || 'gemini-2.5-flash-lite'
+  const model = cleanText(Deno.env.get('GEMINI_MODEL'), 80).replace(/^models\//, '') || DEFAULT_GEMINI_MODEL
   if (!/^[a-zA-Z0-9._-]+$/.test(model)) return json({ error: 'invalid_model' }, 500)
 
   try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+    const requestModel = (activeModel: string) => fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${activeModel}:generateContent`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
@@ -104,23 +108,38 @@ Deno.serve(async req => {
       }
     )
 
+    let activeModel = model
+    let response = await requestModel(activeModel)
+    // A 404 can mean an obsolete model or a model unavailable to this Google project.
+    // Retry once with the current Flash-Lite model; don't retry quota or authentication errors.
+    if (response.status === 404 && activeModel !== DEFAULT_GEMINI_MODEL) {
+      console.warn('[study-advisor] Configured model unavailable:', activeModel)
+      activeModel = DEFAULT_GEMINI_MODEL
+      response = await requestModel(activeModel)
+    }
+
     if (!response.ok) {
-      console.error('[study-advisor] Gemini status:', response.status)
+      console.error('[study-advisor] Gemini request rejected:', { model: activeModel, status: response.status })
+      if (response.status === 404) return json({ error: 'model_unavailable' }, 502)
       if (response.status === 429) return json({ error: 'rate_limited' }, 429)
-      if (response.status === 401 || response.status === 403) return json({ error: 'provider_configuration' }, 502)
+      if (response.status === 400 || response.status === 401 || response.status === 403) return json({ error: 'provider_configuration' }, 502)
       return json({ error: 'provider_unavailable' }, 502)
     }
 
     const result = await response.json()
     const answer = result?.candidates?.[0]?.content?.parts
-      ?.map((part: { text?: string }) => cleanText(part?.text, 8000))
+      ?.filter((part: { thought?: boolean }) => !part?.thought)
+      .map((part: { text?: string }) => cleanText(part?.text, 8000))
       .filter(Boolean)
       .join('\n')
 
     if (!answer) return json({ error: 'empty_response' }, 502)
+    console.info('[study-advisor] Gemini request completed:', activeModel)
     return json({ answer })
   } catch (error) {
     console.error('[study-advisor] request failed:', error instanceof Error ? error.name : 'unknown')
-    return json({ error: 'provider_unavailable' }, 502)
+    return json({ error: error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError')
+      ? 'provider_timeout'
+      : 'provider_unavailable' }, 502)
   }
 })
