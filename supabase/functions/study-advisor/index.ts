@@ -50,8 +50,9 @@ Deno.serve(async req => {
         id: cleanText(item?.id, 80),
         name: cleanText(item?.name, 120),
         credits: Math.min(40, Math.max(0, Number(item?.credits) || 0)),
-        difficultyAverage: Number.isFinite(Number(item?.difficultyAverage))
-          ? Math.min(5, Math.max(1, Number(item?.difficultyAverage)))
+        difficultyAverage: item?.difficultyAverage !== null && item?.difficultyAverage !== undefined &&
+          Number.isFinite(Number(item.difficultyAverage))
+          ? Math.min(5, Math.max(1, Number(item.difficultyAverage)))
           : null,
         difficultyVotes: Math.min(10000, Math.max(0, Math.floor(Number(item?.difficultyVotes) || 0)))
       })).filter(course => course.id && course.name)
