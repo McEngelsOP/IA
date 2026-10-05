@@ -7,6 +7,18 @@ const INITIAL_MESSAGE = {
   content: 'Puedo ayudarte a evaluar la carga de tu próximo ciclo usando los créditos y las calificaciones de dificultad de los cursos. ¿Qué te gustaría saber?'
 }
 
+const ERROR_MESSAGES = {
+  configuration_missing: 'El asesor aún no está configurado en el servidor.',
+  unauthorized: 'Tu sesión venció. Vuelve a iniciar sesión para consultar al asesor.',
+  function_missing: 'El asesor aún no está disponible. Contacta al administrador.',
+  model_unavailable: 'El modelo de IA del asesor no está disponible. Contacta al administrador.',
+  invalid_model: 'El modelo de IA del asesor no está configurado correctamente.',
+  provider_configuration: 'Google rechazó la configuración del asesor. Contacta al administrador.',
+  rate_limited: 'Se alcanzó el límite de consultas del asesor. Inténtalo más tarde.',
+  provider_timeout: 'Google tardó demasiado en responder. Inténtalo de nuevo.',
+  empty_response: 'Google no devolvió una respuesta. Prueba reformular tu pregunta.'
+}
+
 export default function StudyAdvisor({ planCourses, careerName, onClose }) {
   const [messages, setMessages] = useState([INITIAL_MESSAGE])
   const [draft, setDraft] = useState('')
@@ -96,11 +108,13 @@ export default function StudyAdvisor({ planCourses, careerName, onClose }) {
         try { errorCode = (await error.context?.json())?.error } catch { /* respuesta sin cuerpo JSON */ }
       }
       if (error || !data?.answer) {
-        setErrorMessage(errorCode === 'configuration_missing'
-          ? 'El asesor aún no está configurado en el servidor.'
-          : errorCode === 'rate_limited'
-            ? 'Se alcanzó el límite temporal de consultas. Inténtalo más tarde.'
-            : 'No pude obtener una respuesta. Inténtalo de nuevo en un momento.')
+        if (!errorCode) {
+          const status = error?.context?.status
+          if (status === 401) errorCode = 'unauthorized'
+          if (status === 404) errorCode = 'function_missing'
+          if (status === 429) errorCode = 'rate_limited'
+        }
+        setErrorMessage(ERROR_MESSAGES[errorCode] || 'No pude obtener una respuesta. Inténtalo de nuevo en un momento.')
         return
       }
       setMessages(current => [...current, { role: 'assistant', content: data.answer }])
