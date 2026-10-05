@@ -91,10 +91,16 @@ export default function StudyAdvisor({ planCourses, careerName, onClose }) {
       const { data, error } = await supabase.functions.invoke('study-advisor', {
         body: { question, history: previousMessages, courses, careerName }
       })
+      let errorCode = data?.error
+      if (error && !errorCode) {
+        try { errorCode = (await error.context?.json())?.error } catch { /* respuesta sin cuerpo JSON */ }
+      }
       if (error || !data?.answer) {
-        setErrorMessage(data?.error === 'configuration_missing'
+        setErrorMessage(errorCode === 'configuration_missing'
           ? 'El asesor aún no está configurado en el servidor.'
-          : 'No pude obtener una respuesta. Inténtalo de nuevo en un momento.')
+          : errorCode === 'rate_limited'
+            ? 'Se alcanzó el límite temporal de consultas. Inténtalo más tarde.'
+            : 'No pude obtener una respuesta. Inténtalo de nuevo en un momento.')
         return
       }
       setMessages(current => [...current, { role: 'assistant', content: data.answer }])
