@@ -1,6 +1,6 @@
 -- ============================================================
 -- Sílabo IA · Etiquetas de profesores
--- Cada alumno puede ponerle UNA etiqueta a cada profesor
+-- Cada alumno puede poner hasta tres etiquetas distintas por profesor
 -- (cambiable o quitable): estricto pero bueno, para aprender,
 -- relajo, etc. Se muestran como conteos junto a los corazones.
 -- Ejecutar en: Supabase → SQL Editor → New query → Run
@@ -21,7 +21,7 @@ create table public.professor_tags (
     'balance'          -- Balance
   )),
   updated_at timestamptz default now(),
-  primary key (professor_id, student_id)
+  primary key (professor_id, student_id, tag)
 );
 
 alter table public.professor_tags enable row level security;
@@ -30,14 +30,17 @@ create policy "Authenticated read professor tags"
 on public.professor_tags for select to authenticated
 using (true);
 
-create policy "Students insert own professor tag"
-on public.professor_tags for insert to authenticated
-with check (auth.uid() = student_id);
-
-create policy "Students update own professor tag"
-on public.professor_tags for update to authenticated
-using (auth.uid() = student_id);
-
 create policy "Students delete own professor tag"
 on public.professor_tags for delete to authenticated
 using (auth.uid() = student_id);
+
+create policy "Students insert own professor tag"
+on public.professor_tags for insert to authenticated
+with check (
+  auth.uid() = student_id
+  and (
+    select count(*) from public.professor_tags t
+    where t.professor_id = professor_tags.professor_id
+      and t.student_id = auth.uid()
+  ) < 3
+);

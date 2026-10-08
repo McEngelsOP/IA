@@ -51,8 +51,9 @@ npm run dev
 Ejecuta en el **SQL Editor** los scripts de la carpeta [`supabase/`](supabase/), según corresponda:
 - `setup.sql` — perfiles y triggers de autenticación
 - `progress.sql` — avance de malla
-- `sync_features.sql` — soporte para sincronización de plan y calendario académico
-- `course_detail.sql`, `temporadas.sql`, `logros.sql` — ficha de curso, rankings de arcade y sistema de logros
+- `sync_features.sql` — plan, eventos con horarios/repetición semanal y tareas privadas; ejecutar antes de publicar `pagina.html`
+- [`CALENDAR_SETUP.md`](supabase/CALENDAR_SETUP.md) — migración, revisión de RLS y orden de instalación de los scripts consolidados
+- `course_detail.sql`, `arcade.sql`, `logros.sql` — ficha de curso, rankings de arcade y sistema de logros
 - `GEMINI_ADVISOR.md` — configuración segura del asesor académico con una clave privada de Gemini
 
 ## Scripts
@@ -60,4 +61,11 @@ Ejecuta en el **SQL Editor** los scripts de la carpeta [`supabase/`](supabase/),
 - `npm run dev` — servidor de desarrollo
 - `npm run build` — build de producción
 - `npm run preview` — previsualizar el build
+- `node --test tests/calendarModel.test.mjs` — fechas, repeticiones y eventos simultáneos
 
+
+## Oficial: información real por usuario
+
+`login.html` abre `pagina.html` en Inicio. Calendario/Horarios permite crear, editar y eliminar eventos y tareas de la cuenta, con vistas Día/Semana/Mes, horarios semanales, filtros y agenda accesible. Los cambios fallidos conservan los registros anteriores y el borrador. Inicio y Malla usan el mismo progreso privado.
+
+Se retiraron las notas, horarios, conversaciones, menciones y enlaces de muestra. Asesor y Brújula reutilizan las herramientas reales; Recursos consulta los enlaces compartidos en Supabase. Grupos y Buzón muestran su estado pendiente hasta que exista un servicio real, sin simular mensajes ni confirmaciones de envío.

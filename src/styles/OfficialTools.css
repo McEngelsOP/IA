@@ -1,0 +1,19 @@
+.official-tools{color:var(--txt)}
+.official-tools :is(.study-advisor-backdrop,.roadmap-backdrop){position:static;inset:auto;padding:0;background:none;backdrop-filter:none;display:block}
+.official-tools :is(.study-advisor,.roadmap-modal){width:100%;max-width:900px;max-height:none;border-radius:26px;box-shadow:none;color:var(--txt);background:var(--panel);border-color:var(--bar-b)}
+.official-tools .study-advisor{height:700px;max-height:calc(100dvh - 130px)}
+.official-tools :is(.study-advisor-kicker,.roadmap-kicker){display:none}
+.official-tools :is(input,textarea,select){color:var(--txt);background:var(--panel);border-color:var(--bar-b)}
+.official-tools :is(.study-advisor-head,.roadmap-head){border-color:var(--bar-b)}
+.official-tools .roadmap-body{overflow:visible}
+.official-tools :focus-visible{outline:2px solid var(--ic);outline-offset:3px}
+.official-tools :is(.roadmap-note,.roadmap-term,.roadmap-empty,.study-advisor-summary,.study-advisor-message.assistant,.study-advisor-empty,.study-advisor-error){color:var(--txt);background:var(--tile);border:0}
+.official-tools :is(.roadmap-close,.study-advisor-close,.roadmap-loads button){color:var(--txt);background:var(--tile);border-color:var(--bar-b)}
+.official-tools .roadmap-loads button.active{color:var(--on-t);background:var(--on);border-color:var(--on)}
+.official-tools .roadmap-loads button.active :is(span,b,small){color:var(--on-t)}
+.official-tools :is(.roadmap-term,.roadmap-loads button) :is(header,span,li,small,b){color:inherit}
+.official-tools :is(.roadmap-footer,.study-advisor-privacy,.study-advisor-count,.study-advisor-summary small){color:color-mix(in srgb,var(--txt) 74%,var(--panel));border-color:var(--bar-b)}
+.official-tools .study-advisor-summary strong{color:var(--txt)}
+.official-tools :is(.roadmap-footer button,.study-advisor-compose button,.study-advisor-message.user){color:var(--on-t);background:var(--on)}
+.official-tools .study-advisor-form{border-color:var(--bar-b)}
+.official-tools :is(.study-advisor-summary,.roadmap-term){font-family:inherit}

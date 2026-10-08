@@ -1,0 +1,35 @@
+.sc{color:var(--txt);--sc-muted:color-mix(in srgb,var(--txt) 74%,var(--panel));font-size:14px;line-height:1.45}
+.sc button,.sc input,.sc textarea,.sc select{font:inherit;color:inherit}
+.sc button{cursor:pointer}.sc button:disabled{cursor:wait;opacity:.65}.sc .mk,.sc .sc-done{color:var(--on-t)}
+.sc :is(button,input,textarea,select,[tabindex]):focus-visible{outline:2px solid var(--ic);outline-offset:3px}
+.sc ::selection{background:var(--on);color:var(--on-t)}.sc input,.sc textarea{caret-color:var(--ic)}
+.sc .wkw{scrollbar-width:thin;scrollbar-color:var(--ic) var(--tile)}
+.sc .sc-zone,.sc .sc-private{color:var(--sc-muted);font-size:12px;margin:0 0 12px}
+.sc .sc-status:empty{display:none}.sc .sc-status,.sc .sc-error{margin:0 0 14px}.sc .sc-error{padding:12px 16px;border:1px solid var(--ic);border-radius:16px}
+.sc .sc-allday{display:grid;grid-template-columns:48px repeat(var(--n),minmax(0,1fr));font-size:11px;margin-top:6px}
+.sc .sc-allday>span{color:var(--sc-muted)}.sc .sc-allday>div{min-width:0;border-left:1px solid var(--bar-b);padding:2px}
+.sc .sc-allday button{width:100%;border:0;border-radius:8px;background:var(--tile);text-align:left;padding:5px;overflow-wrap:anywhere}
+.sc .ev2{text-align:left;border:0;right:auto;padding:4px 6px}.sc .y-entrega{border:1px dashed var(--ic)}.sc .y-estudio{border-left:1px solid var(--ic)}
+.sc .ev2:hover,.sc .sc-allday button:hover{outline:1px solid var(--ic)}
+.sc .ev2 small,.sc .hr span,.sc .dhd small,.sc .mg em,.sc .mini b{opacity:1;color:var(--sc-muted)}.sc .y-examen small{color:var(--on-t)}
+.sc .mc.out,.sc .mini .out{opacity:1;color:var(--sc-muted)}
+.sc .rme,.sc .rem small{opacity:1}.sc .sc-agenda{margin-top:20px;border-top:1px solid var(--bar-b);padding-top:16px}
+.sc .sc-agenda h3{font-size:15px;margin:0 0 10px;text-transform:capitalize}.sc .sc-agenda p{color:var(--sc-muted);margin:8px 0}
+.sc .sc-agenda-row{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;border:0;border-bottom:1px solid var(--bar-b);background:none;text-align:left;padding:12px 0}
+.sc .sc-agenda-row span{min-width:0;overflow-wrap:anywhere}.sc .sc-agenda-row b,.sc .sc-agenda-row small{display:block}.sc .sc-agenda-row small{color:var(--sc-muted);margin:3px 0}.sc .sc-agenda-row svg{flex:none}
+.sc .sc-editor h2{font-size:18px;margin:0 0 18px}.sc fieldset{border:0;padding:0;margin:0;min-width:0}
+.sc .sc-editor label{display:flex;flex-direction:column;gap:5px;font-size:12px;margin:12px 0}
+.sc .sc-editor input,.sc .sc-editor select,.sc .sc-editor textarea{width:100%;box-sizing:border-box;min-width:0;border:1px solid var(--bar-b);border-radius:12px;padding:9px;background:var(--panel);font-size:14px;color:var(--txt);color-scheme:light dark}
+.sc .sc-editor select{color-scheme:normal}.sc .sc-editor option{background:var(--panel);color:var(--txt)}
+.sc .sc-check{flex-direction:row!important;align-items:center;gap:8px!important}.sc .sc-check input{width:18px;height:18px;accent-color:var(--ic)}
+.sc .sc-time{display:flex;gap:8px}.sc .sc-time label{width:50%;min-width:0}.sc .sc-actions{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0 12px}
+.sc .sc-confirm{border-top:1px solid var(--bar-b);margin-top:16px;padding-top:12px}.sc .sc-confirm button{margin:8px 0;max-width:100%}
+.sc .sc-editor p,.sc .cside>section>p{color:var(--sc-muted);font-size:13px}
+.sc .sc-task{display:flex;gap:10px;align-items:center;margin:10px 0}.sc .sc-task>span{flex:1;min-width:0;overflow-wrap:anywhere}.sc .sc-done{background:var(--on);border-color:var(--on)}.sc .sc-crossed{text-decoration:line-through}
+.sc .sc-private{margin:0 8px}.sc .hb{min-width:32px}.sc .ch .nv{flex-basis:100%;justify-content:space-between}.sc .cl{text-align:center}.sc .mini .sl{color:var(--on-t)}
+@container page (max-width:900px){.sc .cw{grid-template-columns:minmax(0,1fr)}.sc .cside{order:0}.sc .sc-editor{order:-1}}
+@container page (max-width:450px){.sc .ch{gap:10px}.sc .cl{font-size:15px;line-height:1.35}.sc .seg button{padding:6px 10px}.sc .blk{padding:16px}.sc .mk{padding:8px 12px}.sc .cw{gap:14px}}
+
+.sc .sc-editor{scroll-margin-top:80px}.sc .hl.rem>p{color:var(--on-t)}
+.sc .fl.on .ck,.sc .ev2.y-examen{color:var(--on-t)}
+.page .sc .ev2{min-height:0}

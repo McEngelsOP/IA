@@ -45,16 +45,4 @@ create trigger on_auth_user_created
 after insert on auth.users
 for each row execute procedure public.handle_new_user();
 
--- 3. Función pública: devuelve el correo asociado a un código de alumno.
---    La usa la app para el login por código y la recuperación de contraseña,
---    sin exponer la tabla profiles completa al público.
-create or replace function public.email_for_student_code(code text)
-returns text
-language sql
-security definer set search_path = public
-stable
-as $$
-  select email from public.profiles where student_code = upper(trim(code));
-$$;
-
-grant execute on function public.email_for_student_code(text) to anon, authenticated;
+-- El login por código se resuelve exclusivamente en la Edge Function auth-by-code.

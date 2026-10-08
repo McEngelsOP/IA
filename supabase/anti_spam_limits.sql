@@ -1,7 +1,7 @@
 -- ============================================================
 -- Sílabo IA · Topes anti-spam en listas compartidas
 -- Máximo 5 profesores agregados por alumno por curso y
--- 10 herramientas por alumno en total. Evita que un usuario
+-- 20 herramientas por alumno en total. Evita que un usuario
 -- llene las listas en bucle desde la consola del navegador.
 -- Ejecutar en: Supabase → SQL Editor → New query → Run
 -- Nombre sugerido de la query: 06 · Topes anti-spam
@@ -29,5 +29,5 @@ with check (
   and (
     select count(*) from public.tools t
     where t.created_by = auth.uid()
-  ) < 10
+  ) < 20
 );

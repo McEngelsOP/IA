@@ -19,7 +19,7 @@ const ERROR_MESSAGES = {
   empty_response: 'Google no devolvió una respuesta. Prueba reformular tu pregunta.'
 }
 
-export default function StudyAdvisor({ planCourses, careerName, onClose }) {
+export default function StudyAdvisor({ planCourses, careerName, onClose, embedded = false }) {
   const [messages, setMessages] = useState([INITIAL_MESSAGE])
   const [draft, setDraft] = useState('')
   const [ratings, setRatings] = useState({})
@@ -130,7 +130,7 @@ export default function StudyAdvisor({ planCourses, careerName, onClose }) {
     <div className="study-advisor-backdrop" onMouseDown={event => {
       if (event.target === event.currentTarget) onClose()
     }}>
-      <section className="study-advisor" role="dialog" aria-modal="true" aria-labelledby="study-advisor-title">
+      <section className="study-advisor" role={embedded ? "region" : "dialog"} aria-modal={embedded ? undefined : true} aria-labelledby="study-advisor-title">
         <header className="study-advisor-head">
           <div>
             <span className="study-advisor-kicker">LESAN · ASESOR ACADÉMICO</span>

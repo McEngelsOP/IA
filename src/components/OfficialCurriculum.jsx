@@ -184,7 +184,7 @@ function OfficialCurriculum({ career, user, client, sessionMode, initialDone, in
       <div><h2>{M.nombre}</h2><p>{M.uni} · {M.ciclosLabel} · {number(M.total)} créditos</p></div>
       <div className="oc-progress"><strong>{M.cursos.filter(c => done.has(c.id)).length}<span> / {M.cursos.length} llevados</span></strong><span>{number(credits)} / {number(M.total)} créditos</span></div>
     </div>
-    {!isLive && <p className="oc-visitor">{sessionMode === 'demo' ? 'Vista de ejemplo.' : 'Modo visitante.'} Explora la malla de {M.uni}. Los cambios duran mientras esta página esté abierta. <a href="./login.html">Iniciar sesión</a></p>}
+    {!isLive && <p className="oc-visitor">Modo visitante. Explora la malla de {M.uni}. Los cambios duran mientras esta página esté abierta. <a href="./login.html">Iniciar sesión</a></p>}
     <div className="oc-modes" role="group" aria-label="Acciones de la malla">{MODES.map(([key, label]) => <button key={key} type="button" className={mode === key ? 'on' : ''} aria-pressed={mode === key} disabled={busy} onClick={() => changeMode(key)}>{label}</button>)}</div>
     <div className="oc-tools">
       <label className="oc-search"><Icon name="search"/><input ref={search} value={query} placeholder="Buscar curso…" aria-label="Buscar curso en la malla" onChange={e => { setQuery(e.target.value); setMatchIndex(0); }} onKeyDown={e => {

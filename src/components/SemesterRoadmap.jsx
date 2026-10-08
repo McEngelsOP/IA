@@ -51,7 +51,7 @@ function projectSemesters(courses, completedIds, limit) {
   return { semesters, remaining: pending.size }
 }
 
-export default function SemesterRoadmap({ courses, completedIds, onAddFirstSemester, onClose }) {
+export default function SemesterRoadmap({ courses, completedIds, onAddFirstSemester, onClose, embedded = false }) {
   const [activeLoad, setActiveLoad] = useState('equilibrada')
   const projections = useMemo(() => Object.fromEntries(
     LOADS.map(load => [load.id, { ...load, ...projectSemesters(courses, completedIds, load.credits) }])
@@ -65,7 +65,7 @@ export default function SemesterRoadmap({ courses, completedIds, onAddFirstSemes
     <div className="roadmap-backdrop" onMouseDown={event => {
       if (event.target === event.currentTarget) onClose()
     }}>
-      <section className="roadmap-modal" role="dialog" aria-modal="true" aria-labelledby="roadmap-title">
+      <section className="roadmap-modal" role={embedded ? "region" : "dialog"} aria-modal={embedded ? undefined : true} aria-labelledby="roadmap-title">
         <header className="roadmap-head">
           <div>
             <span className="roadmap-kicker">PLANIFICACIÓN · PROYECCIÓN</span>
