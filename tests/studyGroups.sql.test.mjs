@@ -1,0 +1,106 @@
+const { PGlite } = await import(process.env.PGLITE_MODULE || '@electric-sql/pglite')
+import {readFileSync} from 'node:fs'
+import assert from 'node:assert/strict'
+const db=new PGlite(), root=new URL('../supabase/', import.meta.url)
+await db.exec(`create role anon;create role authenticated;create schema auth;create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;grant usage on schema auth,public to anon,authenticated;grant execute on function auth.uid() to anon,authenticated;create table public.profiles(id uuid primary key);`)
+const A='11111111-1111-4111-8111-111111111111',B='22222222-2222-4222-8222-222222222222',C='33333333-3333-4333-8333-333333333333'
+await db.exec(`insert into profiles values('${A}'),('${B}'),('${C}');`)
+const run=async name=>{try{await db.exec(readFileSync(new URL(name, root),'utf8'))}catch(e){throw new Error(name+': '+e.message)}}
+await run('study_groups.sql');await run('study_groups.sql')
+const own=async uid=>db.exec(`reset role;select set_config('request.jwt.claim.sub','${uid}',false);set role authenticated;`)
+const rows=async sql=>(await db.query(sql)).rows
+const rejects=async(sql,match)=>assert.rejects(()=>db.exec(sql),match)
+await own(A)
+assert.equal((await rows("select * from list_study_rooms(array['calc1'])")).length,0)
+const request='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+const privateId=(await rows(`select create_study_room('calc1','Sala privada','Mi sala',true,'Nombre A','${request}') as id`))[0].id
+assert.equal((await rows(`select create_study_room('calc1','Sala privada','Mi sala',true,'Nombre A','${request}') as id`))[0].id,privateId)
+const publicId=(await rows("select create_study_room('calc1','Sala pública','Ejercicios',false,'Nombre A') as id"))[0].id
+const invite=(await rows(`select study_room_invite('${privateId}') as code`))[0].code
+assert(/^[0-9a-f]{32}$/.test(invite));assert.equal((await rows(`select member_count from study_room_info('${privateId}')`))[0].member_count,1)
+await rejects('select invite_code from study_rooms',/permission denied/)
+await rejects(`insert into study_room_members values('${privateId}','${A}','Inventado',now())`,/permission denied/)
+await own(B)
+assert.equal((await rows("select * from list_study_rooms(array['calc1'])")).length,1)
+assert.equal((await rows(`select * from study_room_info('${privateId}')`)).length,0)
+await rejects(`select join_study_room('${privateId}',null,'Nombre B')`,/ROOM_UNAVAILABLE/)
+await rejects(`select study_room_invite('${privateId}')`,/ROOM_UNAVAILABLE/)
+await rejects(`select read_study_messages('${privateId}')`,/ROOM_UNAVAILABLE/)
+await rejects(`select close_study_room('${publicId}')`,/ROOM_UNAVAILABLE/)
+assert.equal((await rows(`select join_study_room(null,'${invite}','Nombre B') as id`))[0].id,privateId)
+assert.equal((await rows(`select join_study_room(null,'${invite}','Nombre B') as id`))[0].id,privateId)
+assert.equal((await rows(`select member_count from study_room_info('${privateId}')`))[0].member_count,2)
+const msgId='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
+const message=(await rows(`select * from send_study_message('${privateId}','Mensaje real','${msgId}')`))[0]
+assert.equal(message.nickname,'Nombre B');assert.equal(message.body,'Mensaje real');assert.equal(message.is_mine,true)
+assert.equal((await rows(`select * from send_study_message('${privateId}','Mensaje real','${msgId}')`))[0].id,msgId)
+assert.equal((await rows(`select * from read_study_messages('${privateId}')`)).length,1)
+await rejects('select author_id from study_messages',/permission denied/)
+await rejects('select student_id from study_room_members',/permission denied/)
+await own(A)
+const seen=(await rows(`select * from read_study_messages('${privateId}')`))[0]
+assert.equal(seen.is_mine,false);assert.equal(seen.nickname,'Nombre B')
+await rejects(`select leave_study_room('${privateId}')`,/OWNER_CANNOT_LEAVE/)
+const newCode=(await rows(`select study_room_invite('${privateId}',true) as code`))[0].code
+assert.notEqual(newCode,invite)
+await own(C)
+await rejects(`select join_study_room(null,'${invite}','Nombre C')`,/ROOM_UNAVAILABLE/)
+await db.exec(`select join_study_room(null,'${newCode}','Nombre C')`)
+await own(B)
+await db.exec(`select leave_study_room('${privateId}')`)
+await rejects(`select read_study_messages('${privateId}')`,/ROOM_UNAVAILABLE/)
+await rejects(`select send_study_message('${privateId}','No autorizado')`,/ROOM_UNAVAILABLE/)
+await own(A)
+assert.equal((await rows(`select * from read_study_messages('${privateId}')`)).length,1)
+await db.exec(`select close_study_room('${privateId}')`)
+assert.equal((await rows("select * from list_study_rooms(array['calc1'])")).length,1)
+await own(C)
+assert.equal((await rows(`select nickname from study_room_members where room_id='${privateId}'`)).length,0)
+await db.exec('reset role;set role anon;')
+await rejects("select * from list_study_rooms(array['calc1'])",/permission denied/)
+await rejects('select id from study_rooms',/permission denied/)
+await db.exec('reset role;')
+assert.equal((await rows(`select count(*) as n from study_messages where room_id='${privateId}'`))[0].n,0)
+// Rate limits cannot be bypassed by retrying or choosing another room.
+await own(A)
+for (let i=0;i<10;i++) await db.exec(`select send_study_message('${publicId}','Mensaje ${i}')`)
+await rejects(`select send_study_message('${publicId}','Undécimo mensaje')`,/MESSAGE_LIMIT/)
+await db.exec('reset role;')
+await db.exec(`update study_messages set created_at=now()-interval '2 minutes'`)
+await own(A)
+await db.exec(`select send_study_message('${publicId}','Tras la pausa')`)
+// Six owned rooms are rejected; the first five remain available.
+for (let i=0;i<4;i++) await db.exec(`select create_study_room('calc1','Sala ${i}','',false,'Nombre A')`)
+await rejects("select create_study_room('calc1','Sexta sala','',false,'Nombre A')",/ROOM_LIMIT/)
+// Seed only this disposable database to exercise message cursor boundaries.
+await db.exec('reset role;')
+await db.exec(`delete from study_messages where room_id='${publicId}';insert into study_messages(room_id,author_id,nickname,body,created_at) select '${publicId}','${A}','Nombre A','Histórico '||i,'2026-10-01T12:00:00Z'::timestamptz from generate_series(1,110) i;`)
+await own(A)
+const first=await rows(`select * from read_study_messages('${publicId}')`)
+assert.equal(first.length,50)
+const cursor=first.at(-1)
+const second=await rows(`select * from read_study_messages('${publicId}','${cursor.created_at.toISOString()}','${cursor.id}')`)
+assert.equal(second.length,50)
+assert.equal(new Set([...first,...second].map(m=>m.id)).size,100)
+const last=second.at(-1)
+assert.equal((await rows(`select * from read_study_messages('${publicId}','${last.created_at.toISOString()}','${last.id}')`)).length,10)
+// A visible public room still requires membership to read or send messages.
+await own(C)
+await rejects(`select read_study_messages('${publicId}')`,/ROOM_UNAVAILABLE/)
+await rejects(`select send_study_message('${publicId}','Sin membresía')`,/ROOM_UNAVAILABLE/)
+// Membership and room capacity limits include creation as well as joining.
+await db.exec('reset role;')
+await db.exec(`insert into profiles select ('44444444-4444-4444-8444-'||lpad(i::text,12,'0'))::uuid from generate_series(1,100) i;insert into study_room_members(room_id,student_id,nickname) select '${publicId}',id,'Miembro' from profiles where id::text like '44444444-%' limit 99;`)
+await own(C)
+await rejects(`select join_study_room('${publicId}',null,'Nombre C')`,/ROOM_FULL/)
+await db.exec('reset role;')
+await db.exec(`with inserted as (insert into study_rooms(owner_id,course_id,name) select '${A}','calc1','Límite '||i from generate_series(1,50) i returning id) insert into study_room_members(room_id,student_id,nickname) select id,'${C}','Nombre C' from inserted;`)
+await own(C)
+await rejects("select create_study_room('calc1','No cabe','',false,'Nombre C')",/MEMBERSHIP_LIMIT/)
+// Pick a public room not already joined by C from the original five.
+await db.exec('reset role;')
+const available=(await rows(`select id from study_rooms where not exists(select 1 from study_room_members where room_id=study_rooms.id and student_id='${C}') and id<>'${publicId}' limit 1`))[0].id
+await own(C)
+await rejects(`select join_study_room('${available}',null,'Nombre C')`,/MEMBERSHIP_LIMIT/)
+console.log('PASS groups SQL: idempotent migration, empty state, public discovery, private code access, owner-only code rotation/close, members-only messages, server nickname, hidden authors/IDs, retry idempotence, leave revokes access, cascade close, anonymous denial, rate/room/membership/capacity limits, 110-message cursor pagination')
+await db.close()

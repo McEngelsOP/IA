@@ -37,4 +37,4 @@ Los scripts de instalación, salvo los que lo indican expresamente, no son idemp
 
 ## Estado de esta entrega
 
-La migración se verificó en PostgreSQL local con datos ficticios de prueba y el frontend con fixtures de navegador. **No se aplicó a la base activa** porque la conexión administrativa aún no está disponible. No se eliminaron registros, tablas ni funciones en producción. `harden_functions.sql` omite el permiso de `rls_auto_enable()` cuando ese helper de plantilla no existe.
+La migración se verificó en PostgreSQL local con datos ficticios de prueba y el frontend con fixtures de navegador. **No se aplicó a la base activa** porque, aunque `SUPABASE_DB_URL` está configurada, el proxy del entorno rechaza PostgreSQL con HTTP 403. El usuario eligió aplicar las migraciones en el SQL Editor; ejecutar primero `sync_features.sql` y después `study_groups.sql` (ver `STUDY_GROUPS_SETUP.md`). No se eliminaron registros, tablas ni funciones en producción. `harden_functions.sql` omite el permiso de `rls_auto_enable()` cuando ese helper de plantilla no existe.

@@ -762,7 +762,7 @@ function homeReset(mode='guest',clearFocus=true){
  HOME.done=new Set();HOME.plan=new Set();HOME.grades={};HOME.drafts={};HOME.feedback={};HOME.statuses={};HOME.achievements={};HOME.error='';HOME.saving=new Set();
  if(clearFocus){kBack();fx.course='';fx.log=[];}
 }
-function homeRender(){if(['Inicio','Malla Curricular','Calendario/Horarios','Herramientas'].includes(cur))renderPage()}
+function homeRender(){if(['Inicio','Malla Curricular','Calendario/Horarios','Grupos de estudio','Herramientas'].includes(cur))renderPage()}
 async function homeLoad(user){
  homeReset('loading',HOME.user?.id!==user.id);HOME.user=user;
  const revision=HOME.revision;
@@ -937,6 +937,7 @@ function renderPage(){
  if($('official-curriculum'))mountCurriculum();
  if($('official-calendar'))mountCalendar();
  if($('official-tool'))mountTool();
+ if($('official-study-groups'))mountStudyGroups();
 }
 const esc=value=>homeEsc(value);
 function cal2(){
@@ -1011,7 +1012,19 @@ $('page').onchange=e=>{if(e.target.id==='kcs'){fx.course=e.target.value;kPrev()}
 
 const selQ=b=>'[data-a="'+b.dataset.a+'"]'+['k','i','d','g','v'].filter(x=>b.dataset[x]!=null).map(x=>`[data-${x}="${b.dataset[x]}"]`).join('');
 const focusCourses=()=>HOME.mode==='live'?homeCareer().cursos:[];
-function salas(){return '<section class="blk">'+homeEmpty('Grupos de estudio','Todavía no hay salas de estudio conectadas. Aquí aparecerán los grupos cuando esté disponible el servicio.',false)+'</section>'}
+function salas(){
+ if(HOME.mode==='loading')return '<section class="blk" role="status"><h2 class="bt">Comprobando tu sesión…</h2></section>';
+ if(HOME.mode!=='live')return '<section class="blk">'+homeEmpty('Grupos de estudio',HOME.user?'Reintenta la carga de tu perfil para consultar las salas de tus cursos.':'Inicia sesión para crear una sala o estudiar con tus compañeros.')+(HOME.user?'<button class="h-btn" data-a="hretry">Reintentar</button>':'')+'</section>';
+ return '<div id="official-study-groups" aria-busy="true"><p class="h-muted" role="status">Preparando las salas de estudio…</p></div>';
+}
+async function mountStudyGroups(){
+ const container=$('official-study-groups'),render=curriculumRender,revision=HOME.revision;
+ try{
+  const {mountOfficialStudyGroups}=await import('./src/components/OfficialStudyGroups.jsx');
+  if(render!==curriculumRender||revision!==HOME.revision||!container.isConnected)return;
+  curriculumUnmount=mountOfficialStudyGroups(container,{client:homeClient,user:HOME.user,courses:homeCareer().cursos,onBusy:value=>{if(revision===HOME.revision){if(value)HOME.saving.add('groups');else HOME.saving.delete('groups')}}});container.removeAttribute('aria-busy');
+ }catch{if(render===curriculumRender&&container.isConnected)container.innerHTML=homeEmpty('No se pudo abrir Grupos de estudio','Reintenta para consultar las salas.',false)+'<button class="h-btn" data-a="hretry">Reintentar</button>'}
+}
 function buzon(){return '<section class="blk">'+homeEmpty('Buzón de sugerencias','La recepción de sugerencias aún no está habilitada. No hay mensajes enviados ni archivados desde esta sección.',false)+'</section>'}
 function toolSurface(tool){
  if(!['Asesor IA','Brújula IA','Recursos'].includes(tool))return '';

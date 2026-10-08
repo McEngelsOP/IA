@@ -52,6 +52,8 @@ Ejecuta en el **SQL Editor** los scripts de la carpeta [`supabase/`](supabase/),
 - `setup.sql` — perfiles y triggers de autenticación
 - `progress.sql` — avance de malla
 - `sync_features.sql` — plan, eventos con horarios/repetición semanal y tareas privadas; ejecutar antes de publicar `pagina.html`
+- `study_groups.sql` — salas públicas/privadas, participantes, mensajes y funciones con permisos de membresía
+- [`STUDY_GROUPS_SETUP.md`](supabase/STUDY_GROUPS_SETUP.md) — activación y pruebas de Grupos de estudio
 - [`CALENDAR_SETUP.md`](supabase/CALENDAR_SETUP.md) — migración, revisión de RLS y orden de instalación de los scripts consolidados
 - `course_detail.sql`, `arcade.sql`, `logros.sql` — ficha de curso, rankings de arcade y sistema de logros
 - `GEMINI_ADVISOR.md` — configuración segura del asesor académico con una clave privada de Gemini
@@ -61,11 +63,13 @@ Ejecuta en el **SQL Editor** los scripts de la carpeta [`supabase/`](supabase/),
 - `npm run dev` — servidor de desarrollo
 - `npm run build` — build de producción
 - `npm run preview` — previsualizar el build
-- `node --test tests/calendarModel.test.mjs` — fechas, repeticiones y eventos simultáneos
+- `node --test tests/calendarModel.test.mjs tests/studyGroups.test.mjs` — calendario, conversación y validación de salas
 
 
 ## Oficial: información real por usuario
 
 `login.html` abre `pagina.html` en Inicio. Calendario/Horarios permite crear, editar y eliminar eventos y tareas de la cuenta, con vistas Día/Semana/Mes, horarios semanales, filtros y agenda accesible. Los cambios fallidos conservan los registros anteriores y el borrador. Inicio y Malla usan el mismo progreso privado.
 
-Se retiraron las notas, horarios, conversaciones, menciones y enlaces de muestra. Asesor y Brújula reutilizan las herramientas reales; Recursos consulta los enlaces compartidos en Supabase. Grupos y Buzón muestran su estado pendiente hasta que exista un servicio real, sin simular mensajes ni confirmaciones de envío.
+Se retiraron las notas, horarios, conversaciones, menciones y enlaces de muestra. Asesor y Brújula reutilizan las herramientas reales; Recursos consulta los enlaces compartidos en Supabase. Grupos de estudio permite crear salas públicas o privadas por curso, entrar por código, consultar participantes y conversar con mensajes persistentes. Empieza vacío hasta que alguien cree una sala. Buzón sigue pendiente, sin simular envíos.
+
+Para activar Calendario y Grupos en la base existente, ejecuta `supabase/sync_features.sql` y después `supabase/study_groups.sql` en el SQL Editor. Las migraciones no se aplicaron a producción desde este entorno: su proxy rechaza la conexión PostgreSQL. Consulta [la guía de Grupos de estudio](supabase/STUDY_GROUPS_SETUP.md). La variable administrativa `SUPABASE_DB_URL` nunca se incluye en el frontend.
