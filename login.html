@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#18110f">
   <meta name="description"
-    content="Propuesta independiente de entrada e inicio de sesión de ESAN, con paisaje al atardecer y panel translúcido.">
+    content="Accede con tu cuenta universitaria a tus notas, avance y logros académicos.">
   <title>ESAN · Un momento para comenzar</title>
   <style>
     @font-face {
@@ -887,6 +887,7 @@
         background: rgba(17, 18, 16, .96)
       }
     }
+    .recovery-row { flex-wrap: wrap; gap: 12px; }
   </style>
 </head>
 
@@ -922,7 +923,7 @@
           <p class="subtitle">El paisaje espera.<br>Tu espacio también.</p>
           <div class="preparation">
             <div class="loading-track" aria-hidden="true"><span id="loadFill"></span></div>
-            <p class="loading-copy" id="loadingCopy" role="status" aria-live="polite">Preparando la vista previa…</p>
+            <p class="loading-copy" id="loadingCopy" role="status" aria-live="polite">Preparando tu espacio…</p>
           </div>
           <button type="button" class="text-button load-skip" id="skipStartup">Continuar al acceso</button>
         </div>
@@ -934,15 +935,15 @@
           <form class="access-form" id="loginForm" method="post" action="#" novalidate>
             <div class="field">
               <label for="studentCode">Código universitario</label>
-              <input id="studentCode" name="studentCode" type="text" inputmode="numeric" autocomplete="off"
+              <input id="studentCode" name="studentCode" type="text" inputmode="numeric" autocomplete="username"
                 maxlength="8" placeholder="Tu código" required spellcheck="false"
-                aria-describedby="previewHint formMessage">
+                aria-describedby="accessHint formMessage">
             </div>
             <div class="field">
               <label for="password">Contraseña</label>
               <div class="password-wrap">
-                <input id="password" name="password" type="password" autocomplete="off" placeholder="Tu contraseña"
-                  required aria-describedby="previewHint formMessage">
+                <input id="password" name="password" type="password" autocomplete="current-password" placeholder="Tu contraseña"
+                  required aria-describedby="accessHint formMessage">
                 <button class="eye" id="passwordToggle" type="button" aria-label="Mostrar contraseña"
                   aria-pressed="false">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"
@@ -955,6 +956,7 @@
               </div>
             </div>
             <div class="recovery-row">
+              <button type="button" class="text-button" id="resendConfirmation" hidden>Reenviar confirmación</button>
               <button type="button" class="text-button" id="forgot">¿Olvidaste tu contraseña?</button>
             </div>
             <p class="message" id="formMessage" role="status" aria-live="polite" hidden></p>
@@ -975,11 +977,11 @@
             <circle cx="12" cy="12" r="10" />
             <path d="m7 12 3 3 7-7" />
           </svg>
-          <h2 id="completeTitle" tabindex="-1">La entrada está lista.</h2>
-          <p class="subtitle">Así se verá la confirmación de acceso en tu sistema.</p>
-          <p class="message">Esta es una demostración visual. No se ha iniciado una sesión.</p>
+          <h2 id="completeTitle" tabindex="-1">Tu espacio está listo.</h2>
+          <p class="subtitle">Te llevamos a Inicio.</p>
+          <p class="message">Sesión iniciada. Ya puedes consultar tu avance académico.</p>
           <button class="primary" type="button" id="backToLogin">
-            Volver al acceso
+            Abrir Inicio
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
               stroke-linejoin="round" aria-hidden="true">
               <path d="M20 12H5m6-6-6 6 6 6" />
@@ -990,7 +992,7 @@
 
       <footer class="panel-foot">
         <div class="foot-top">
-          <span>Vista previa de acceso</span>
+          <span>Acceso a tu espacio académico</span>
           <button type="button" class="icon-button" id="replay" aria-label="Repetir animación de entrada"
             title="Repetir entrada">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
@@ -999,7 +1001,7 @@
             </svg>
           </button>
         </div>
-        <small id="previewHint">Usa datos ficticios.</small>
+        <small id="accessHint">Inicia sesión con tu cuenta universitaria.</small>
       </footer>
       <noscript>
         <style>
@@ -1008,7 +1010,7 @@
             display: none
           }
         </style>
-        <p>Activa JavaScript para probar los controles de esta vista previa.</p>
+        <p>Activa JavaScript para iniciar sesión.</p>
       </noscript>
     </section>
   </main>
@@ -1033,157 +1035,239 @@
     </div>
   </aside>
 
-  <script>
-    (() => {
-      'use strict';
-      const $ = id => document.getElementById(id);
-      const screens = [$('startup'), $('loginScreen'), $('complete')];
-      const reduce = matchMedia('(prefers-reduced-motion: reduce)');
-      let revision = 0, busy = false, transitioning = false, manualPause = false;
-      const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+  <script type="module">
+import { createClient } from '@supabase/supabase-js';
 
-      function motion() {
-        document.body.dataset.paused = String(manualPause || reduce.matches);
-        const b = $('motionToggle');
-        b.disabled = reduce.matches;
-        b.setAttribute('aria-pressed', String(manualPause || reduce.matches));
-        b.setAttribute('aria-label', reduce.matches ? 'Movimiento reducido del sistema activado' : manualPause ? 'Reanudar movimiento del paisaje' : 'Pausar movimiento del paisaje');
-        b.title = reduce.matches ? 'Movimiento reducido' : manualPause ? 'Reanudar paisaje' : 'Pausar paisaje';
-        $('pauseIcon').toggleAttribute('hidden', manualPause || reduce.matches);
-        $('playIcon').toggleAttribute('hidden', !(manualPause || reduce.matches));
-        const background = $('landscape');
-        if (background instanceof HTMLVideoElement) {
-          if (manualPause || reduce.matches) background.pause();
-          else background.play().catch(() => { });
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const screens = [$('startup'), $('loginScreen'), $('complete')];
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)');
+  const callback = new URL(location.href);
+  let recovering = new URLSearchParams(callback.hash.slice(1)).get('type') === 'recovery' || callback.searchParams.get('type') === 'recovery';
+  let revision = 0, busy = false, transitioning = false, manualPause = false, checkingSession = true;
+  let acceptedSession = false, unconfirmedCode = null;
+  const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+  const destination = new URL('./pagina.html', location.href).href;
+  let client = null;
+  try {
+    const url = import.meta.env.VITE_SUPABASE_URL, key = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    if (url && key) client = createClient(url, key, {
+      global: { fetch: (url, options = {}) => fetch(url, {
+        ...options, signal: options.signal || (typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(20000) : undefined)
+      }) }
+    });
+  } catch { /* Los errores de configuración se muestran en el formulario. */ }
+
+  function motion() {
+    document.body.dataset.paused = String(manualPause || reduce.matches);
+    const b = $('motionToggle');
+    b.disabled = reduce.matches;
+    b.setAttribute('aria-pressed', String(manualPause || reduce.matches));
+    b.setAttribute('aria-label', reduce.matches ? 'Movimiento reducido del sistema activado' : manualPause ? 'Reanudar movimiento del paisaje' : 'Pausar movimiento del paisaje');
+    b.title = reduce.matches ? 'Movimiento reducido' : manualPause ? 'Reanudar paisaje' : 'Pausar paisaje';
+    $('pauseIcon').toggleAttribute('hidden', manualPause || reduce.matches);
+    $('playIcon').toggleAttribute('hidden', !(manualPause || reduce.matches));
+    const background = $('landscape');
+    if (background instanceof HTMLVideoElement) {
+      if (manualPause || reduce.matches) background.pause();
+      else background.play().catch(() => {});
+    }
+  }
+  motion();
+  reduce.addEventListener('change', motion);
+  $('motionToggle').addEventListener('click', () => { manualPause = !manualPause; motion(); });
+
+  async function show(id, animate = true) {
+    const old = screens.find(el => !el.hidden), next = $(id);
+    if (old === next || transitioning) return;
+    transitioning = true;
+    if (old && animate && !reduce.matches) { old.classList.add('screen-exit'); await delay(320); }
+    screens.forEach(el => { el.hidden = el !== next; el.classList.remove('entrance', 'screen-exit'); });
+    if (animate && !reduce.matches) next.classList.add('entrance');
+    document.body.dataset.state = id;
+    transitioning = false;
+  }
+  function message(text, kind = 'info') {
+    const el = $('formMessage');
+    el.textContent = text; el.dataset.kind = kind; el.hidden = !text;
+    el.setAttribute('role', kind === 'error' ? 'alert' : 'status');
+    el.setAttribute('aria-live', kind === 'error' ? 'assertive' : 'polite');
+    el.closest('.panel').classList.toggle('has-message', !!text);
+  }
+  function setBusy(value, label = 'Ingresando…') {
+    busy = value;
+    $('loginForm').setAttribute('aria-busy', String(value));
+    for (const id of ['studentCode', 'password', 'passwordToggle', 'submit', 'forgot', 'resendConfirmation', 'replay']) $(id).disabled = value;
+    $('submit').firstChild.textContent = value ? label : recovering ? 'Guardar y entrar' : 'Ingresar';
+  }
+  function clearPassword() {
+    $('password').value = ''; $('password').type = 'password';
+    $('passwordToggle').setAttribute('aria-pressed', 'false');
+    $('passwordToggle').setAttribute('aria-label', 'Mostrar contraseña'); $('eyeSlash').hidden = true;
+  }
+  function validCode() {
+    const code = $('studentCode').value.trim();
+    if (!/^\d{8}$/.test(code)) {
+      message('Revisa tu código universitario.', 'error');
+      $('studentCode').setAttribute('aria-invalid', 'true'); $('studentCode').focus(); return null;
+    }
+    return code;
+  }
+  async function authByCode(action, payload) {
+    const { data, error } = await client.functions.invoke('auth-by-code', { body: { action, ...payload } });
+    if (error || !data || typeof data !== 'object') throw new Error('auth_request_failed');
+    return data;
+  }
+  async function enterHome() {
+    acceptedSession = true;
+    clearPassword();
+    if (recovering) $('studentCode').value = '';
+    await show('complete');
+    $('completeTitle').focus({ preventScroll: true });
+    await delay(reduce.matches ? 0 : 350);
+    location.replace(destination);
+  }
+  async function recoveryForm() {
+    revision++; recovering = true;
+    await show('loginScreen', false);
+    $('loginTitle').textContent = 'Nueva contraseña.';
+    $('loginScreen').querySelector('.subtitle').textContent = 'Elige una contraseña para volver a tu espacio.';
+    document.querySelector('label[for="studentCode"]').textContent = 'Nueva contraseña';
+    document.querySelector('label[for="password"]').textContent = 'Repite la contraseña';
+    const first = $('studentCode');
+    first.type = 'password'; first.inputMode = 'text'; first.autocomplete = 'new-password';
+    first.removeAttribute('maxlength'); first.placeholder = 'Mínimo 6 caracteres'; first.value = '';
+    $('password').autocomplete = 'new-password'; clearPassword();
+    $('forgot').hidden = true; $('resendConfirmation').hidden = true;
+    $('accessHint').textContent = 'Guarda tu nueva contraseña para continuar a Inicio.';
+    message(''); setBusy(false); first.focus({ preventScroll: true });
+  }
+
+  const background = $('landscape');
+  const backgroundReady = background instanceof HTMLVideoElement
+    ? (background.readyState >= 2 ? Promise.resolve() : new Promise(resolve => {
+      background.addEventListener('loadeddata', resolve, { once: true });
+      background.addEventListener('error', resolve, { once: true });
+    })) : Promise.resolve();
+  const assets = Promise.allSettled([backgroundReady, document.fonts ? document.fonts.ready : Promise.resolve()]);
+  async function startup() {
+    if (busy || transitioning) return;
+    const current = ++revision;
+    message(''); $('studentCode').removeAttribute('aria-invalid'); $('password').removeAttribute('aria-invalid');
+    await show('startup', false); $('replay').disabled = true;
+    $('loadFill').style.width = '12%'; $('loadingCopy').textContent = 'Preparando tu espacio…';
+    await Promise.race([assets, delay(4000)]);
+    if (current !== revision) return;
+    $('loadFill').style.width = '64%'; await delay(reduce.matches ? 100 : 850);
+    if (current !== revision) return;
+    $('loadFill').style.width = '100%'; $('loadingCopy').textContent = 'Tu espacio está listo.';
+    await delay(reduce.matches ? 100 : 750);
+    if (current !== revision) return;
+    await show('loginScreen'); $('replay').disabled = false;
+  }
+  $('skipStartup').addEventListener('click', async () => {
+    if (transitioning) return;
+    revision++; await show('loginScreen'); $('replay').disabled = false;
+  });
+  $('replay').addEventListener('click', startup);
+  $('passwordToggle').addEventListener('click', () => {
+    const visible = $('password').type === 'password';
+    $('password').type = visible ? 'text' : 'password';
+    $('passwordToggle').setAttribute('aria-pressed', String(visible));
+    $('passwordToggle').setAttribute('aria-label', visible ? 'Ocultar contraseña' : 'Mostrar contraseña');
+    $('eyeSlash').toggleAttribute('hidden', !visible);
+  });
+  for (const id of ['studentCode', 'password']) {
+    $(id).addEventListener('input', () => {
+      $(id).removeAttribute('aria-invalid'); message('');
+      if (id === 'studentCode' && !recovering) { unconfirmedCode = null; $('resendConfirmation').hidden = true; }
+    });
+  }
+  $('forgot').addEventListener('click', async () => {
+    if (busy || checkingSession || recovering) return;
+    const code = validCode(); if (!code) return;
+    if (!client) { message('El acceso no está disponible en este momento. Inténtalo más tarde.', 'error'); return; }
+    setBusy(true, 'Enviando enlace…'); message('');
+    try {
+      const res = await authByCode('recover', { code, origin: new URL('./login.html', location.href).href });
+      if (!res.ok && res.error !== 'code_not_found') throw new Error('recover_failed');
+      message(res.ok ? `Te enviamos un enlace de recuperación${res.masked ? ' a ' + res.masked : ''}. Revisa tu bandeja y spam.` : 'Si el código está registrado, recibirás un enlace de recuperación. Revisa tu bandeja y spam.');
+    } catch { message('No pudimos enviar el enlace. Revisa tu conexión y reintenta.', 'error'); }
+    finally { setBusy(false); }
+  });
+  $('resendConfirmation').addEventListener('click', async () => {
+    if (busy || checkingSession || !unconfirmedCode || !client) return;
+    setBusy(true, 'Reenviando enlace…'); message('');
+    try {
+      const res = await authByCode('resend', { code: unconfirmedCode });
+      if (!res.ok) throw new Error('resend_failed');
+      message(`Te reenviamos el enlace de confirmación${res.masked ? ' a ' + res.masked : ''}. Revisa tu bandeja y spam.`);
+    } catch { message('No pudimos reenviar el enlace. Revisa tu conexión y reintenta.', 'error'); }
+    finally { setBusy(false); }
+  });
+  $('loginForm').addEventListener('submit', async event => {
+    event.preventDefault();
+    if (busy || transitioning || checkingSession) return;
+    if (!client) { message('El acceso no está disponible en este momento. Inténtalo más tarde.', 'error'); return; }
+    const code = recovering ? null : validCode(); if (!recovering && !code) return;
+    const pass = $('password').value;
+    if (!pass.length) { message('Escribe tu contraseña.', 'error'); $('password').setAttribute('aria-invalid', 'true'); $('password').focus(); return; }
+    if (recovering && ($('studentCode').value.length < 6 || $('studentCode').value !== pass)) {
+      message($('studentCode').value.length < 6 ? 'La nueva contraseña debe tener al menos 6 caracteres.' : 'Las contraseñas no coinciden.', 'error');
+      $('studentCode').setAttribute('aria-invalid', 'true'); $('studentCode').focus(); return;
+    }
+    setBusy(true, recovering ? 'Guardando…' : 'Ingresando…'); message('');
+    try {
+      if (recovering) {
+        // El enlace de recuperación debe tener una sesión válida antes de actualizar.
+        const verified = await client.auth.getUser();
+        if (verified.error || !verified.data.user) throw new Error('recovery_session_failed');
+        const updated = await client.auth.updateUser({ password: $('studentCode').value });
+        if (updated.error || !updated.data.user) throw new Error('password_update_failed');
+      } else {
+        const res = await authByCode('login', { code, password: pass });
+        if (res.error === 'email_not_confirmed') {
+          unconfirmedCode = code; $('resendConfirmation').hidden = false;
+          message('Confirma tu correo antes de ingresar. Revisa tu bandeja y spam o reenvía el enlace.', 'error'); return;
         }
+        if (!res.ok) { message('No pudimos iniciar sesión con esos datos. Revisa tu código y contraseña.', 'error'); return; }
+        if (!res.session?.access_token || !res.session?.refresh_token) throw new Error('session_missing');
+        const result = await client.auth.setSession(res.session);
+        if (result.error || !result.data.session || !result.data.user) throw new Error('session_failed');
       }
+      await enterHome();
+    } catch { message(recovering ? 'No pudimos guardar la contraseña. Reintenta o solicita un nuevo enlace.' : 'No pudimos conectar para iniciar sesión. Revisa tu conexión y reintenta.', 'error'); }
+    finally { if (!acceptedSession) { setBusy(false); $('password').focus({ preventScroll: true }); } }
+  });
+  $('backToLogin').addEventListener('click', () => { if (acceptedSession) location.replace(destination); });
 
-      motion();
-      reduce.addEventListener('change', motion);
-      $('motionToggle').addEventListener('click', () => { manualPause = !manualPause; motion() });
-
-      async function show(id, animate = true) {
-        const old = screens.find(el => !el.hidden), next = $(id);
-        if (old === next) return;
-        if (transitioning) return;
-        transitioning = true;
-        if (old && animate && !reduce.matches) { old.classList.add('screen-exit'); await delay(320) }
-        screens.forEach(el => { el.hidden = el !== next; el.classList.remove('entrance', 'screen-exit') });
-        if (animate && !reduce.matches) next.classList.add('entrance');
-        document.body.dataset.state = id;
-        transitioning = false;
+  if (client) client.auth.onAuthStateChange(event => {
+    if (event === 'PASSWORD_RECOVERY') recovering = true;
+  });
+  async function initialize() {
+    $('submit').disabled = true; $('forgot').disabled = true;
+    await startup();
+    try {
+      if (!client) { message('El acceso no está disponible en este momento. Inténtalo más tarde.', 'error'); return; }
+      const { data, error } = await client.auth.getSession();
+      if (error) throw error;
+      if (!data.session) {
+        if (recovering) { recovering = false; message('El enlace no es válido o ha caducado. Solicita uno nuevo con tu código universitario.', 'error'); }
+        return;
       }
-
-      function message(text, kind = 'info') {
-        const el = $('formMessage');
-        el.textContent = text;
-        el.dataset.kind = kind;
-        el.hidden = !text;
-        el.closest('.panel').classList.toggle('has-message', !!text);
+      const verified = await client.auth.getUser();
+      if (verified.error || !verified.data.user) {
+        if (verified.error && [401, 403].includes(verified.error.status)) await client.auth.signOut({ scope: 'local' });
+        throw new Error('session_failed');
       }
-
-      const background = $('landscape');
-      const backgroundReady = background instanceof HTMLVideoElement
-        ? (background.readyState >= 2 ? Promise.resolve() : new Promise(resolve => {
-          background.addEventListener('loadeddata', resolve, { once: true });
-          background.addEventListener('error', resolve, { once: true });
-        }))
-        : Promise.resolve();
-
-      const assets = Promise.allSettled([backgroundReady, document.fonts ? document.fonts.ready : Promise.resolve()]);
-
-      async function startup() {
-        if (busy || transitioning) return;
-        const current = ++revision;
-        message('');
-        $('studentCode').removeAttribute('aria-invalid');
-        $('password').removeAttribute('aria-invalid');
-        await show('startup', false);
-        $('replay').disabled = true;
-        $('loadFill').style.width = '12%';
-        $('loadingCopy').textContent = 'Preparando la vista previa…';
-        await Promise.race([assets, delay(4000)]);
-        if (current !== revision) return;
-        $('loadFill').style.width = '64%';
-        await delay(reduce.matches ? 100 : 850);
-        if (current !== revision) return;
-        $('loadFill').style.width = '100%';
-        $('loadingCopy').textContent = 'Tu espacio está listo.';
-        await delay(reduce.matches ? 100 : 750);
-        if (current !== revision) return;
-        await show('loginScreen');
-        $('replay').disabled = false;
-      }
-
-      $('skipStartup').addEventListener('click', async () => {
-        if (transitioning) return;
-        revision++;
-        await show('loginScreen');
-        $('replay').disabled = false;
-      });
-
-      $('replay').addEventListener('click', startup);
-
-      $('passwordToggle').addEventListener('click', () => {
-        const visible = $('password').type === 'password';
-        $('password').type = visible ? 'text' : 'password';
-        $('passwordToggle').setAttribute('aria-pressed', String(visible));
-        $('passwordToggle').setAttribute('aria-label', visible ? 'Ocultar contraseña' : 'Mostrar contraseña');
-        $('eyeSlash').toggleAttribute('hidden', !visible);
-      });
-
-      $('forgot').addEventListener('click', () => message('La recuperación de cuentas no está disponible en esta vista previa.'));
-
-      for (const id of ['studentCode', 'password']) {
-        $(id).addEventListener('input', () => {
-          $(id).removeAttribute('aria-invalid');
-          message('');
-        });
-      }
-
-      $('loginForm').addEventListener('submit', async event => {
-        event.preventDefault();
-        if (busy || transitioning) return;
-        const code = $('studentCode').value.trim(), pass = $('password').value;
-        if (!/^\d{8}$/.test(code)) {
-          message('Escribe un código ficticio de 8 dígitos para probar el acceso.', 'error');
-          $('studentCode').setAttribute('aria-invalid', 'true');
-          $('studentCode').focus();
-          return;
-        }
-        if (!pass.trim()) {
-          message('Escribe una contraseña ficticia para probar el acceso.', 'error');
-          $('password').setAttribute('aria-invalid', 'true');
-          $('password').focus();
-          return;
-        }
-        busy = true;
-        $('submit').disabled = true;
-        $('replay').disabled = true;
-        $('submit').firstChild.textContent = 'Preparando…';
-        message('');
-        await delay(reduce.matches ? 100 : 650);
-        $('password').value = '';
-        $('password').type = 'password';
-        $('passwordToggle').setAttribute('aria-pressed', 'false');
-        $('passwordToggle').setAttribute('aria-label', 'Mostrar contraseña');
-        $('eyeSlash').hidden = true;
-        await show('complete');
-        $('completeTitle').focus({ preventScroll: true });
-        $('submit').disabled = false;
-        $('submit').firstChild.textContent = 'Ingresar';
-        $('replay').disabled = false;
-        busy = false;
-      });
-
-      $('backToLogin').addEventListener('click', async () => {
-        if (transitioning) return;
-        await show('loginScreen');
-        $('studentCode').focus({ preventScroll: true });
-      });
-
-      startup();
-    })();
+      if (recovering) await recoveryForm();
+      else location.replace(destination);
+    } catch { recovering = false; message('No pudimos comprobar tu sesión. Reintenta el acceso o solicita un nuevo enlace.', 'error'); }
+    finally { checkingSession = false; if (!acceptedSession) setBusy(false); }
+  }
+  initialize();
+})();
   </script>
 </body>
 
