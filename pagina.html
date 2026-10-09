@@ -322,7 +322,7 @@ a{text-underline-offset:3px}.page button:not(.ck){min-height:36px}
 .m-row .rt small{margin-top:4px;line-height:1.45}.m-row .b-chip{max-width:100%;white-space:normal}
 :root{--nav-ease:cubic-bezier(.22,.7,.25,1)}
 #nav{position:relative;isolation:isolate}.nav-flow{position:absolute;z-index:-1;border-radius:22px;pointer-events:none;background:color-mix(in srgb,var(--ic) 14%,transparent);transform-origin:center}
-.view-surface{transform-origin:50% 15%;min-width:0}.sub{transition:grid-template-rows .56s var(--nav-ease)}.sub>div{transition:visibility 0s .56s}.sub.ex>div{transition-delay:0s}
+.view-surface{width:100%;max-width:1280px;margin-inline:auto;transform-origin:50% 15%;min-width:0}.sub{transition:grid-template-rows .56s var(--nav-ease)}.sub>div{transition:visibility 0s .56s}.sub.ex>div{transition-delay:0s}
 .drawer{transition:opacity .3s ease,transform .62s var(--nav-ease),filter .4s ease}.trig svg{transition:transform .62s var(--nav-ease)}
 @media(prefers-reduced-motion:reduce){.sub{transition:none}.sub>div{transition:none}.drawer,.trig svg{transition:opacity .14s ease}}
 @container page (max-width:480px){.blk{padding:16px 14px}.st{padding:14px}.s-grid,.b-grid{grid-template-columns:minmax(0,1fr)}.b-crow{flex-wrap:wrap}.b-crow .b-sel{margin-left:auto}.bt{flex-wrap:wrap}.a-hd{gap:8px}.a-sel{min-width:0;width:100%;max-width:none;flex-basis:100%}.rw{gap:8px}.chip{padding-inline:8px}.k-row{gap:8px}.z-fg{grid-template-columns:minmax(0,1fr)}.rt{overflow-wrap:anywhere}.it{font-size:14px}.page .hb{min-width:40px;min-height:40px}.page .ck{min-width:24px;min-height:24px}}
@@ -622,7 +622,7 @@ a{text-underline-offset:3px}.page button:not(.ck){min-height:36px}
 @media(prefers-reduced-motion:reduce){.gm-card-copy{transition:opacity .14s ease}.gm-auto{display:none!important}}
 
 /* Inicio académico: hereda las superficies, los controles y el tema original. */
-.h-home{max-width:1160px;min-width:0}
+.h-home{max-width:1160px;min-width:0;margin-inline:auto}
 .h-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:0 0 20px}
 .h-head h2{font-size:28px;line-height:1.18;font-weight:600;letter-spacing:-.025em;margin:0 0 6px;text-wrap:balance}
 .h-muted{color:color-mix(in srgb,var(--txt) 70%,var(--bg));font-size:13px;line-height:1.5}
