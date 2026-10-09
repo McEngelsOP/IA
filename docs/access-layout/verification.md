@@ -1,8 +1,22 @@
 # Verificación del acceso
 
-Se leyeron completos `login.html` y `src/lib/accessController.js` antes de editar. El desbordamiento provenía de alturas mínimas, márgenes acumulados y el override final `max-height: none`. `enterHome()` mostraba `#complete` antes de navegar a `pagina.html`.
+Se comparó el acceso actual con el PDF «I'ESAN · Sistema de acceso» y las capturas compartidas. El ajuste anterior imponía densidades pequeñas a todas las vistas por altura: a 1536×730, Recuperación quedaba con un título de 28 px y un panel de 348 px pese a disponer de espacio. A 1366×657, el título se reducía a 24 px. Eso comprimía innecesariamente el diseño.
 
-`src/styles/accessViewport.css` limita `html`/`body` al viewport (100vh con mejora 100dvh), fija `.entry`, limita `.panel` y comprime espacios y tamaños por altura. Conserva la fuente, colores, textos y animaciones restantes. El ajuste adicional mide el contenido real; no usa escala ni zoom. Solo `.stage` admite scroll cuando la altura es menor que 520 px o se abre el teclado virtual. El ambiente queda detrás del panel para que no intercepte enlaces en móvil.
+`src/styles/accessViewport.css` conserva la fuente, superficie, colores, textos, fondo de video y animaciones. `html`/`body` siguen limitados al viewport, `.entry` permanece fija y `.panel` tiene altura máxima. Las vistas breves recuperan la altura del panel y la marca original. `fitViewport()` ahora prueba primero la composición original, después amplía la altura disponible y reduce espacios, y solo finalmente ajusta tamaños si el contenido activo todavía desborda. No fuerza una densidad según la altura de la ventana ni utiliza escala o zoom. Un error visible se vuelve a medir; el formulario recupera su distribución amplia al desaparecer el mensaje. Solo `.stage` permite desplazarse por debajo de 520 px o con el teclado virtual. En escritorio bajo se conserva un ancho mínimo de 420 px para evitar líneas adicionales en errores y la nota del pie.
+
+## Proporciones recuperadas
+
+Medidas de las vistas normales, sin mensaje de error:
+
+| Vista | Viewport | Título | Logo | Alto del panel |
+| --- | --- | ---: | ---: | ---: |
+| Crear cuenta | 1920×947 | 42 px | 68 px | 863 px |
+| Crear cuenta | 1536×730 | 34 px | 48 px | 697 px |
+| Crear cuenta | 1366×657 | 32 px | 40 px | 622 px |
+| Recuperación | 1536×730 | 38,4 px | 63 px | 604 px |
+| Recuperación | 1366×657 | 34,15 px | 56 px | 625 px |
+
+La suite comprueba también estas proporciones para impedir que un resultado sin scroll vuelva a aprobar una interfaz innecesariamente reducida.
 
 Se eliminaron el HTML, los estilos y las referencias exclusivas de `#complete`. Login, registro con sesión y nueva contraseña navegan directamente a `pagina.html`; el botón permanece deshabilitado durante la solicitud. `#accessStatus` anuncia el éxito sin contenido visual. Los errores conservan el formulario y usan `#formMessage`. Un registro sin sesión sigue solicitando la confirmación real de correo.
 
@@ -32,7 +46,9 @@ También pasaron navegación directa de login/registro con sesión/reset sin nin
 - [1536×730](crear-cuenta-1536x730.png)
 - [1366×657](crear-cuenta-1366x657.png)
 
-Las capturas muestran los cinco campos, botón, enlace y nota completos. La marca de foco en el ojo de contraseña procede de la prueba con Tab.
+Las capturas actuales muestran los cinco campos, botón, enlace y nota completos con el tamaño recuperado.
+
+Recuperación: [1536×730](recuperar-1536x730.png).
 
 ## Reproducir
 

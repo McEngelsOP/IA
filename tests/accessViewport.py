@@ -69,12 +69,20 @@ CHECK_JS='''() => {
  const elements=[document.querySelector('.brand'),screen.querySelector('h1,h2'),...screen.querySelectorAll('label,input,select,.primary,.secondary,.back-link,.message:not([hidden]),.inline-error:not([hidden])'),document.querySelector('.panel-foot')].filter(Boolean);
  const bad=elements.map(inView).filter(r=>r.top<-.1||r.bottom>innerHeight+.1||r.left<-.1||r.right>innerWidth+.1);
  const stage=document.querySelector('.stage');
- return {height:innerHeight,width:innerWidth,scrollH:document.documentElement.scrollHeight,scrollW:document.documentElement.scrollWidth,y:scrollY,x:scrollX,density:document.body.dataset.fit,stageH:stage.clientHeight,stageScrollH:stage.scrollHeight,stageTop:stage.scrollTop,bad};
+ return {height:innerHeight,width:innerWidth,scrollH:document.documentElement.scrollHeight,scrollW:document.documentElement.scrollWidth,y:scrollY,x:scrollX,density:document.body.dataset.fit,headingSize:parseFloat(getComputedStyle(screen.querySelector('h1,h2')).fontSize),logoSize:document.querySelector('.compass').getBoundingClientRect().height,panelHeight:document.querySelector('.panel').getBoundingClientRect().height,stageH:stage.clientHeight,stageScrollH:stage.scrollHeight,stageTop:stage.scrollTop,bad};
 }'''
 
 def inspect(page,label):
     page.wait_for_timeout(100)
     before=page.evaluate(CHECK_JS)
+    if label=='forgot' and page.viewport_size['width']>=1366:
+        assert before['headingSize']>=min(42,page.viewport_size['width']*.025)-.1, before
+        assert before['logoSize']>=52, before
+        assert before['panelHeight']>=page.viewport_size['height']*.8, before
+    if label=='register' and list(page.viewport_size.values())==[1536,730]:
+        assert before['headingSize']>=34 and before['logoSize']>=48, before
+    if label=='register' and list(page.viewport_size.values())==[1366,657]:
+        assert before['headingSize']>=32, before
     # Actual wheel / keyboard / focus inputs. Space is sent with no button focus.
     page.mouse.move(page.viewport_size['width']-4, page.viewport_size['height']//2);page.mouse.wheel(100,1000)
     page.locator('.stage > :not([hidden]) h1,.stage > :not([hidden]) h2').focus()

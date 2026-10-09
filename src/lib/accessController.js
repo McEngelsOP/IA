@@ -32,12 +32,11 @@ function fitViewport() {
   document.documentElement.style.setProperty('--access-top', `${viewport?.offsetTop || 0}px`)
   const extreme = height < 520 || height < window.innerHeight - 100
   document.body.dataset.extreme = String(extreme)
-  const minimum = height <= 580 ? 4 : height <= 660 ? 3 : height <= 740 ? 2 : height <= 820 ? 1 : 0
-  const levels = minimum === 0 ? [0, 'spacious', 1, 2, 3, 4] : [1, 2, 3, 4].filter(level => level >= minimum)
+  const levels = extreme ? ['minimal'] : ['0', 'expanded', 'spacing', 'cozy', 'compact', 'tight', 'minimal']
   const stage = document.querySelector('.stage')
   for (const level of levels) {
     document.body.dataset.fit = String(level)
-    if (stage.scrollHeight <= stage.clientHeight || level === 4) break
+    if (stage.scrollHeight <= stage.clientHeight || level === 'minimal') break
   }
   if (!extreme) stage.scrollTop = 0
 }
