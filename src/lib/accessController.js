@@ -23,6 +23,7 @@ try {
 
 let fitFrame = 0
 function scheduleFit() {
+  if (document.querySelector('.stage .entrance')) return
   if (!fitFrame) fitFrame = requestAnimationFrame(() => { fitFrame = 0; fitViewport() })
 }
 function fitViewport() {
@@ -32,11 +33,16 @@ function fitViewport() {
   document.documentElement.style.setProperty('--access-top', `${viewport?.offsetTop || 0}px`)
   const extreme = height < 520 || height < window.innerHeight - 100
   document.body.dataset.extreme = String(extreme)
-  const levels = extreme ? ['minimal'] : ['0', 'expanded', 'spacing', 'cozy', 'compact', 'tight', 'minimal']
+  // Start with the original control sizes and the tighter panel rhythm. The
+  // older full-height stage made the fitter collapse even short views merely
+  // to occupy empty panel space.
+  const levels = extreme ? ['minimal'] : ['spacing', 'cozy', 'compact', 'tight', 'minimal']
   const stage = document.querySelector('.stage')
   for (const level of levels) {
     document.body.dataset.fit = String(level)
-    if (stage.scrollHeight <= stage.clientHeight || level === 'minimal') break
+    // Ignore subpixel/line-box rounding; it should not collapse a full-size
+    // form to the tightest density when the panel already fits the viewport.
+    if (stage.scrollHeight <= stage.clientHeight + 2 || level === 'minimal') break
   }
   if (!extreme) stage.scrollTop = 0
 }
@@ -48,7 +54,7 @@ new ResizeObserver(scheduleFit).observe(panel)
 fitViewport()
 
 function state() { return document.body.dataset.state }
-function feedback(text, kind = 'info') {
+function feedback(text, kind = 'info', shouldFit = true) {
   const screen = $(state())
   const container = screen.querySelector('form') || screen
   const el = $('formMessage')
@@ -57,7 +63,7 @@ function feedback(text, kind = 'info') {
   el.setAttribute('role', kind === 'error' ? 'alert' : 'status')
   el.setAttribute('aria-live', kind === 'error' ? 'assertive' : 'polite')
   panel.classList.toggle('has-message', !!text)
-  scheduleFit()
+  if (shouldFit) scheduleFit()
 }
 function foot() {
   const help = `<a href="mailto:${support}">${support}</a>`
@@ -75,11 +81,19 @@ async function show(id, animate = true) {
   transitioning = true
   if (old && animate && !reduce.matches) { old.classList.add('screen-exit'); await delay(320) }
   screens.forEach(el => { el.hidden = el !== next; el.classList.remove('entrance', 'screen-exit') })
-  if (animate && !reduce.matches) next.classList.add('entrance')
+  const shouldAnimate = animate && !reduce.matches
+  if (shouldAnimate) {
+    next.classList.add('entrance')
+    next.addEventListener('animationend', event => {
+      if (event.target !== next) return
+      next.classList.remove('entrance')
+      scheduleFit()
+    }, { once: true })
+  }
   document.body.dataset.state = id; foot(); panel.classList.remove('has-message')
   transitioning = false
-  feedback('')
-  fitViewport()
+  feedback('', 'info', false)
+  if (!shouldAnimate) fitViewport()
   next.querySelector('h1, h2')?.focus({ preventScroll: true })
 }
 function updateResend() {

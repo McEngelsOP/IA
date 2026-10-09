@@ -2,7 +2,7 @@
 
 Se comparó el acceso actual con el PDF «I'ESAN · Sistema de acceso» y las capturas compartidas. El ajuste anterior imponía densidades pequeñas a todas las vistas por altura: a 1536×730, Recuperación quedaba con un título de 28 px y un panel de 348 px pese a disponer de espacio. A 1366×657, el título se reducía a 24 px. Eso comprimía innecesariamente el diseño.
 
-`src/styles/accessViewport.css` conserva la fuente, superficie, colores, textos, fondo de video y animaciones. `html`/`body` siguen limitados al viewport, `.entry` permanece fija y `.panel` tiene altura máxima. Las vistas breves recuperan la altura del panel y la marca original. `fitViewport()` ahora prueba primero la composición original, después amplía la altura disponible y reduce espacios, y solo finalmente ajusta tamaños si el contenido activo todavía desborda. No fuerza una densidad según la altura de la ventana ni utiliza escala o zoom. Un error visible se vuelve a medir; el formulario recupera su distribución amplia al desaparecer el mensaje. Solo `.stage` permite desplazarse por debajo de 520 px o con el teclado virtual. En escritorio bajo se conserva un ancho mínimo de 420 px para evitar líneas adicionales en errores y la nota del pie.
+`src/styles/accessViewport.css` conserva la fuente, superficie, colores, textos, fondo de video y animaciones. `html`/`body` siguen limitados al viewport, `.entry` permanece fija y `.panel` ahora toma la altura del contenido activo dentro del máximo disponible. El pie fluye después del formulario y sus enlaces, en vez de anclarse al fondo de una tarjeta alta. La medición espera a que termine la transición de entrada para que su desplazamiento no active una compactación innecesaria. `fitViewport()` conserva primero los tamaños de campos y títulos; solo reduce más cuando el contenido activo todavía desborda. No utiliza escala ni zoom. Un error visible se vuelve a medir; el formulario recupera su distribución amplia al desaparecer el mensaje. Solo `.stage` permite desplazarse por debajo de 520 px o con el teclado virtual. En escritorio bajo se conserva un ancho mínimo de 420 px para evitar líneas adicionales en errores y la nota del pie.
 
 ## Proporciones recuperadas
 
@@ -10,19 +10,20 @@ Medidas de las vistas normales, sin mensaje de error:
 
 | Vista | Viewport | Título | Logo | Alto del panel |
 | --- | --- | ---: | ---: | ---: |
-| Crear cuenta | 1920×947 | 42 px | 68 px | 863 px |
+| Inicio de sesión | 1536×730 | 38,4 px | 63 px | 654 px |
 | Crear cuenta | 1536×730 | 34 px | 48 px | 697 px |
+| Inicio de sesión | 1366×657 | 34 px | 48 px | 548 px |
 | Crear cuenta | 1366×657 | 32 px | 40 px | 622 px |
-| Recuperación | 1536×730 | 38,4 px | 63 px | 604 px |
-| Recuperación | 1366×657 | 34,15 px | 56 px | 625 px |
 
-La suite comprueba también estas proporciones para impedir que un resultado sin scroll vuelva a aprobar una interfaz innecesariamente reducida.
+Estas medidas registran las proporciones visibles en las capturas actualizadas; los controles de los formularios conservan al menos 44 px de alto.
 
 Se eliminaron el HTML, los estilos y las referencias exclusivas de `#complete`. Login, registro con sesión y nueva contraseña navegan directamente a `pagina.html`; el botón permanece deshabilitado durante la solicitud. `#accessStatus` anuncia el éxito sin contenido visual. Los errores conservan el formulario y usan `#formMessage`. Un registro sin sesión sigue solicitando la confirmación real de correo.
 
 `#replay` sigue reiniciando la carga previa. No hay `#previewHint` ni un modo de acceso simulado en esta versión. El antiguo botón «Abrir Inicio» ejecutaba `location.replace(destination)`, con destino `./pagina.html`; se conserva ese destino.
 
-## Matriz de Chromium / Playwright
+## Matriz de Chromium / Playwright (revisión previa)
+
+La matriz siguiente corresponde a la revisión completa anterior a este ajuste del flujo vertical. En este cambio se hizo una inspección visual de inicio de sesión y registro en 1536×730, 1366×657 y 390×844; no se volvió a ejecutar toda la matriz.
 
 Cada casilla incluye la vista normal y un mensaje de error visible: 10 estados por tamaño, 80 combinaciones. Todos los requests de autenticación se interceptan; no se crean cuentas reales.
 
@@ -45,6 +46,8 @@ También pasaron navegación directa de login/registro con sesión/reset sin nin
 
 - [1536×730](crear-cuenta-1536x730.png)
 - [1366×657](crear-cuenta-1366x657.png)
+
+Inicio de sesión: [1536×730](inicio-sesion-1536x730.png).
 
 Las capturas actuales muestran los cinco campos, botón, enlace y nota completos con el tamaño recuperado.
 

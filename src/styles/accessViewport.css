@@ -11,12 +11,14 @@ html, body {
 body {
   position: fixed;
   inset: 0;
-  --frame-gap: clamp(16px, calc(var(--access-unit) * 8.608), 82px);
-  --panel-top: clamp(28px, calc(var(--access-unit) * 4.75), 45px);
-  --panel-bottom: clamp(24px, calc(var(--access-unit) * 4.6), 44px);
+  --frame-gap: 16px;
+  --panel-top: 24px;
+  --panel-bottom: 20px;
   --panel-side: 2.87vw;
+  --brand-gap: 24px;
+  --foot-gap: 14px;
 }
-body[data-state="registerScreen"] { --frame-gap: 30px; --panel-top: 30px; --panel-bottom: 30px; }
+body[data-state="registerScreen"] { --frame-gap: 16px; --panel-top: 24px; --panel-bottom: 20px; }
 body[data-state] .entry {
   position: fixed;
   inset: 0;
@@ -32,7 +34,7 @@ body[data-state] .entry {
 }
 body[data-state] .panel {
   min-height: 0;
-  height: var(--panel-height, min(900px, calc(var(--access-height) * .82678)));
+  height: auto;
   max-height: calc(var(--access-height) - 2 * var(--frame-gap));
   padding: var(--panel-top) var(--panel-side) var(--panel-bottom);
   overflow: hidden;
@@ -44,7 +46,7 @@ body[data-state="registerScreen"] .panel { height: auto; }
 body[data-state] .brand {
   height: var(--logo-height, clamp(52px, 4.1vw, 68px));
   min-height: 0;
-  margin-bottom: var(--brand-gap, calc(var(--access-unit) * 8.3));
+  margin-bottom: var(--brand-gap, 24px);
 }
 body[data-state="registerScreen"] .brand { margin-bottom: var(--brand-gap, 26px); }
 body:is([data-state="forgotScreen"], [data-state="mailScreen"], [data-state="resetScreen"]) .brand { margin-bottom: var(--brand-gap, 32px); }
@@ -104,15 +106,15 @@ body[data-state] .scene-caption { position: fixed; z-index: 0; }
 }
 
 /* Ordered by content fit, never selected simply because the window is short. */
-body[data-fit="expanded"] { --frame-gap: 16px; --panel-height: calc(var(--access-height) - 32px); }
+body[data-fit="expanded"] { --frame-gap: 16px; }
 body[data-fit="spacing"] {
-  --frame-gap: 16px; --panel-height: calc(var(--access-height) - 32px);
+  --frame-gap: 16px;
   --panel-top: 20px; --panel-bottom: 20px;
   --brand-gap: 20px; --form-gap: 16px; --field-gap: 10px; --label-gap: 5px;
   --button-gap: 16px; --back-gap: 8px; --foot-gap: 12px;
 }
 body[data-fit="cozy"] {
-  --frame-gap: 16px; --panel-height: calc(var(--access-height) - 32px);
+  --frame-gap: 16px;
   --panel-top: 16px; --panel-bottom: 14px;
   --logo-height: 48px; --logo-size: 48px; --brand-size: 31px; --brand-gap: 12px;
   --heading-size: 34px; --subtitle-size: 18px;
@@ -122,7 +124,7 @@ body[data-fit="cozy"] {
   --button-gap: 10px; --back-gap: 4px; --foot-gap: 8px; --foot-line: 1.4;
 }
 body[data-fit="compact"] {
-  --frame-gap: 16px; --panel-height: calc(var(--access-height) - 32px);
+  --frame-gap: 16px;
   --panel-top: 10px; --panel-bottom: 10px;
   --logo-height: 40px; --logo-size: 40px; --brand-size: 29px; --brand-gap: 6px;
   --heading-size: 32px; --subtitle-size: 18px; --subtitle-line: 1.3; --subtitle-gap: 4px;
@@ -133,7 +135,7 @@ body[data-fit="compact"] {
   --error-pad: 6px; --error-gap: 6px;
 }
 body[data-fit="tight"] {
-  --frame-gap: 16px; --panel-height: calc(var(--access-height) - 32px);
+  --frame-gap: 16px;
   --panel-top: 8px; --panel-bottom: 8px;
   --logo-height: 32px; --logo-size: 32px; --brand-size: 28px; --brand-gap: 4px;
   --heading-size: 28px; --subtitle-size: 16px; --subtitle-line: 1.3; --subtitle-gap: 3px;
@@ -144,7 +146,7 @@ body[data-fit="tight"] {
   --error-pad: 4px; --error-gap: 4px; --error-line: 1.3; --preparation-gap: 20px;
 }
 body[data-fit="minimal"] {
-  --frame-gap: 8px; --panel-height: calc(var(--access-height) - 16px);
+  --frame-gap: 8px;
   --panel-top: 6px; --panel-bottom: 6px;
   --logo-height: 24px; --logo-size: 24px; --brand-size: 26px; --brand-gap: 2px;
   --heading-size: 26px; --subtitle-size: 15px; --subtitle-line: 1.2; --subtitle-gap: 2px;
