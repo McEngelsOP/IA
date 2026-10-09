@@ -57,3 +57,9 @@ PGLITE_MODULE=/tmp/ia-sql-tests/node_modules/@electric-sql/pglite/dist/index.js 
 ```
 
 La prueba SQL crea una base local efímera con perfiles ficticios, ejecuta dos veces la migración y verifica aislamiento, privacidad de columnas, autor del servidor, códigos, límites, reintentos, paginación y cierre. No usa `SUPABASE_DB_URL` ni toca producción. Las pruebas de navegador también se ejecutaron con respuestas Supabase simuladas: flujos de sala, fallos, recarga, teclado, móvil y temas claro/oscuro. La aplicación con cuentas reales debe comprobarse después de ejecutar el SQL.
+
+## Error `42703: column "room_id" does not exist`
+
+Antes de cambiar columnas o reintentar, ejecutar `migration_diagnostics.sql` en una consulta nueva del SQL Editor y guardar su resultado junto al detalle completo del error. La consulta devuelve en un único resultado las columnas existentes, los event triggers y los nombres de funciones públicas que hacen referencia a `room_id`; no lee registros personales.
+
+`sync_features.sql` no contiene `room_id`. Si Calendario y Grupos fallan con esa columna, revisar el contexto de ejecución y los event triggers: una función que intenta crear políticas para `room_id` en cualquier tabla también puede bloquear una migración de calendario. Si falla únicamente Grupos, comprobar si `study_room_members` o `study_messages` ya existían con otro esquema: `CREATE TABLE IF NOT EXISTS` no actualiza sus columnas. No añadir IDs inventados ni eliminar tablas o desactivar triggers para ocultar el error; la corrección depende del objeto que señale el diagnóstico.
