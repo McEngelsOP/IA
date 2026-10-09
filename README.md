@@ -69,7 +69,13 @@ Ejecuta en el **SQL Editor** los scripts de la carpeta [`supabase/`](supabase/),
 
 ## Oficial: información real por usuario
 
+La rama `Oficial` corresponde a producción en `https://l-esan.vercel.app`. La arquitectura SPA de `App.jsx` pertenece a la aplicación original `index.html`.
+
 `login.html` abre `pagina.html` en Inicio. Calendario/Horarios permite crear, editar y eliminar eventos y tareas de la cuenta, con vistas Día/Semana/Mes, horarios semanales, filtros y agenda accesible. Los cambios fallidos conservan los registros anteriores y el borrador. Inicio y Malla usan el mismo progreso privado.
+
+El acceso incluye registro, recuperación por código, aviso de correo y cambio de contraseña dentro del mismo diseño. `src/lib/accessController.js` registra con `auth.signUp` y metadatos `student_code`/`carrera`, que consume el trigger existente del perfil. Con confirmación de correo activa, hay que abrir el enlace antes de entrar. Recuperación y reenvío usan la Edge Function `auth-by-code`; el contador de 45 segundos se calcula con una fecha límite del cliente y no es un límite de seguridad del servidor. La nueva contraseña se guarda con `auth.updateUser` después de verificar la sesión mediante `auth.getUser`.
+
+En Supabase → Authentication → URL Configuration, permite `https://l-esan.vercel.app/login.html` como URL de redirección de correo; el acceso completado continúa a `pagina.html` en Inicio. Estas pantallas no requieren SQL nuevo ni redesplegar `auth-by-code`. Se verificaron el build y siete grupos de pruebas de navegador con Supabase simulado; no se crearon cuentas reales ni se comprobó el envío de correo o el despliegue en producción.
 
 Se retiraron las notas, horarios, conversaciones, menciones y enlaces de muestra. Asesor y Brújula reutilizan las herramientas reales; Recursos consulta los enlaces compartidos en Supabase. Grupos de estudio permite crear salas públicas o privadas por curso, entrar por código, consultar participantes y conversar con mensajes persistentes. Empieza vacío hasta que alguien cree una sala. Buzón sigue pendiente, sin simular envíos.
 

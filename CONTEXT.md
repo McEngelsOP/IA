@@ -1,6 +1,6 @@
 ## Qué es
 
-Malla curricular interactiva para cuatro carreras: **Ingeniería en IA**, **Ingeniería Industrial y Comercial** y **Comunicación Empresarial y Marketing Digital** (ESAN) e **Ingeniería Mecatrónica** (PUCP, sistema separado). React 18 + Vite, Supabase (auth + Postgres con RLS + una Edge Function), desplegada en Vercel: **push a `main` = deploy a producción**. Todo el texto de la interfaz y los mensajes de commit van en español.
+Malla curricular interactiva para cuatro carreras: **Ingeniería en IA**, **Ingeniería Industrial y Comercial** y **Comunicación Empresarial y Marketing Digital** (ESAN) e **Ingeniería Mecatrónica** (PUCP, sistema separado). React 18 + Vite, Supabase (auth + Postgres con RLS + una Edge Function), desplegada en Vercel: **`Oficial` es la rama de producción de `https://l-esan.vercel.app`**. Todo el texto de la interfaz y los mensajes de commit van en español.
 
 ## Comandos
 
@@ -9,7 +9,7 @@ Malla curricular interactiva para cuatro carreras: **Ingeniería en IA**, **Inge
 - `node --test tests/calendarModel.test.mjs` — pruebas del modelo de calendario
 - Requiere `.env.local` con `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`
 
-## Arquitectura
+## Arquitectura original: index.html
 
 `App.jsx` decide la pantalla según la sesión de Supabase: `LoginPage` (login/registro/recuperación), `UpdatePassword` (llega del enlace del correo), `CareerSelect` o `MallaCurricular`. La malla recibe `user` y `carrera` — si `user` es `null` es **modo visitante**: puede explorar (y alternar de carrera con `onSwitchCarrera`) pero nada persiste, y las funciones sociales (profesores, panel lateral) ni se renderizan. El bloqueo real del visitante no es la UI: las tablas nuevas tienen políticas RLS solo para `authenticated`, el rol `anon` no tiene ninguna.
 
@@ -41,7 +41,7 @@ Toda la app (login, carreras, malla y paneles) tiene modo oscuro: `src/lib/theme
 
 ## Autenticación — reglas no negociables
 
-- **Todo flujo de auth pasa por la Edge Function `auth-by-code`** (`supabase.functions.invoke`, acciones `login`/`recover`/`resend`/`exists`). La RPC vieja `email_for_student_code` está **revocada en producción** — cualquier código que la llame falla. El navegador nunca debe recibir el correo completo de otro usuario (solo enmascarado `ju•••@gmail.com`).
+- **Las operaciones por código pasan por la Edge Function `auth-by-code`** (`supabase.functions.invoke`, acciones `login`/`recover`/`resend`/`exists`). El registro usa `auth.signUp` y el cambio de contraseña usa `auth.updateUser` con sesión verificada. La RPC vieja `email_for_student_code` está **revocada en producción** — cualquier código que la llame falla. El navegador nunca debe recibir el correo completo de otro usuario (solo enmascarado `ju•••@gmail.com`).
 - La Edge Function vive en `supabase/functions/auth-by-code/index.ts` pero **se despliega a mano en el dashboard de Supabase** (Edge Functions → editor); el push a Vercel NO la actualiza. Si se edita ese archivo, avisar al usuario que debe redesplegarla.
 - Código de alumno: exactamente 8 dígitos y la regla depende de la carrera elegida — ESAN: los dos primeros (promoción) van de 25 hasta el año en curso; PUCP: empieza en 20 (año de ingreso 20xx). Los rangos no se cruzan. Se valida en `LoginPage` (según la carrera del desplegable) y en la base (CHECK `NOT VALID` + trigger `handle_new_user`, que valida por carrera). **Los mensajes de error no deben revelar la regla** (decisión deliberada para no ayudar a colados); el placeholder tampoco muestra ejemplos con "25" ni "20".
 - Con confirmación de correo activa, Supabase devuelve un usuario sin identidades (`data.user.identities.length === 0`) al registrar un correo repetido, en vez de error — `LoginPage` ya lo maneja; no quitar ese check.
@@ -67,6 +67,14 @@ Decisiones que no hay que re-proponer:
 ## Rama Oficial: pagina.html
 
 `login.html` usa `auth-by-code`, verifica la sesión y abre `pagina.html` en Inicio. El documento monta componentes React de forma diferida y los desmonta al navegar o cambiar de cuenta. Inicio y OfficialCurriculum comparten las tablas privadas de avance/notas/estados/logros. No hay notas, logros ni conversaciones de muestra.
+
+El acceso se controla en `src/lib/accessController.js`: conserva la entrada animada, el inicio de sesión y la transición final, y añade registro, recuperación por código, aviso de correo y nueva contraseña. Estas pantallas prolongan el diseño existente: panel oscuro redondeado con contorno, texto crema/acento salmón, brújula circular I'ESAN, fuente Entry embebida y el video `270983.mp4`.
+
+El registro envía `student_code` y `carrera` en los metadatos de `auth.signUp`; el trigger existente crea el perfil con la carrera. Si Supabase exige confirmar el correo, muestra el aviso y espera el enlace; si devuelve una sesión, entra directamente. Conserva la detección de correo duplicado mediante identidades vacías. Recuperación y reenvío usan `auth-by-code`; el aviso muestra solo el correo enmascarado o una respuesta genérica para códigos desconocidos. El contador de 45 segundos usa una fecha límite (`Date.now()`), se actualiza al volver a la pestaña y limita solicitudes en el cliente; no sustituye los límites del servidor.
+
+Los enlaces de correo regresan a `login.html`. En Supabase → Authentication → URL Configuration, permitir **`https://l-esan.vercel.app/login.html`** como URL de redirección. Para guardar la nueva contraseña se exige una sesión real y `auth.getUser` válido antes de `auth.updateUser`; un enlace inválido/caducado vuelve a recuperación. Al cancelar se cierra solo la sesión local de recuperación. Una sesión aceptada abre `pagina.html` en Inicio. Esta extensión de UI no requiere SQL nuevo ni redesplegar la Edge Function existente.
+
+Validación de este acceso: `npm run build` y siete grupos de pruebas de navegador con Supabase simulado (validación/duplicados/errores de registro, recuperación y contador, cambio de contraseña, cancelación, login y destino, vistas móviles y ausencia de errores JavaScript). No se crearon cuentas reales ni se verificó el envío de correo o el despliegue en producción.
 
 `OfficialCalendar.jsx` administra eventos y tareas reales de la cuenta: `calendar_events` y `calendar_tasks`, consultas paginadas filtradas por `student_id`, verificación de sesión antes de escribir y RLS de propietario. Soporta Día/Semana/Mes, horarios semanales, rangos del calendario anterior, filtros, eventos simultáneos, agenda y CRUD con confirmación de eliminación. Las fechas civiles y horarios usan Lima (UTC−5); `calendarModel.js` evita desplazamientos por zona horaria. No usa almacenamiento local ni muestras como sustituto de Supabase. Un fallo conserva registros y borradores; un guardado bloquea navegación/cierre de sesión hasta terminar.
 
