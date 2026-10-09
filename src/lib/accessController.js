@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 
 const $ = id => document.getElementById(id)
 const panel = document.querySelector('.panel')
-const screens = ['startup', 'loginScreen', 'registerScreen', 'forgotScreen', 'mailScreen', 'resetScreen', 'complete'].map($)
+const screens = ['startup', 'loginScreen', 'registerScreen', 'forgotScreen', 'mailScreen', 'resetScreen'].map($)
 const reduce = matchMedia('(prefers-reduced-motion: reduce)')
 const destination = new URL('./pagina.html', location.href).href
 const callback = new URL('./login.html', location.href).href
@@ -24,14 +24,44 @@ try {
   })
 } catch { /* Configuration failures are shown without exposing credentials. */ }
 
+let fitFrame = 0
+function scheduleFit() {
+  if (!fitFrame) fitFrame = requestAnimationFrame(() => { fitFrame = 0; fitViewport() })
+}
+function fitViewport() {
+  const viewport = window.visualViewport
+  const height = Math.min(window.innerHeight, viewport?.height || window.innerHeight)
+  document.documentElement.style.setProperty('--access-height', `${height}px`)
+  document.documentElement.style.setProperty('--access-top', `${viewport?.offsetTop || 0}px`)
+  const extreme = height < 520 || height < window.innerHeight - 100
+  document.body.dataset.extreme = String(extreme)
+  const minimum = height <= 580 ? 4 : height <= 660 ? 3 : height <= 740 ? 2 : height <= 820 ? 1 : 0
+  const levels = minimum === 0 ? [0, 'spacious', 1, 2, 3, 4] : [1, 2, 3, 4].filter(level => level >= minimum)
+  const stage = document.querySelector('.stage')
+  for (const level of levels) {
+    document.body.dataset.fit = String(level)
+    if (stage.scrollHeight <= stage.clientHeight || level === 4) break
+  }
+  if (!extreme) stage.scrollTop = 0
+}
+window.addEventListener('resize', scheduleFit)
+window.visualViewport?.addEventListener('resize', scheduleFit)
+window.visualViewport?.addEventListener('scroll', scheduleFit)
+document.fonts?.ready.then(scheduleFit)
+new ResizeObserver(scheduleFit).observe(panel)
+fitViewport()
+
 function state() { return document.body.dataset.state }
-function feedback(text, kind = 'info', id) {
-  const target = id || ({ registerScreen: 'registerMessage', forgotScreen: 'forgotMessage', mailScreen: 'mailMessage', resetScreen: 'resetMessage' }[state()] || 'formMessage')
-  const el = $(target)
+function feedback(text, kind = 'info') {
+  const screen = $(state())
+  const container = screen.querySelector('form') || screen
+  const el = $('formMessage')
+  container.insertBefore(el, container.querySelector('.primary, .secondary'))
   el.textContent = text; el.dataset.kind = kind; el.hidden = !text
   el.setAttribute('role', kind === 'error' ? 'alert' : 'status')
   el.setAttribute('aria-live', kind === 'error' ? 'assertive' : 'polite')
-  panel.classList.toggle('has-message', screens.some(screen => !screen.hidden && screen.querySelector('.message:not([hidden])')))
+  panel.classList.toggle('has-message', !!text)
+  scheduleFit()
 }
 function foot() {
   const help = `<a href="mailto:${support}">${support}</a>`
@@ -40,8 +70,7 @@ function foot() {
     registerScreen: `¿Escribiste mal tu correo? Avisa a ${help} para liberarlo y volver a registrarte.`,
     forgotScreen: `¿Ya no tienes acceso a ese correo? Escribe a ${help}.`,
     mailScreen: '¿No llega? Revisa spam o correo no deseado.',
-    resetScreen: 'Tu contraseña anterior dejará de funcionar.',
-    complete: 'Sesión iniciada. Ya puedes consultar tu avance académico.'
+    resetScreen: 'Tu contraseña anterior dejará de funcionar.'
   })[state()] || 'Inicia sesión con tu cuenta universitaria.'
 }
 async function show(id, animate = true) {
@@ -53,6 +82,8 @@ async function show(id, animate = true) {
   if (animate && !reduce.matches) next.classList.add('entrance')
   document.body.dataset.state = id; foot(); panel.classList.remove('has-message')
   transitioning = false
+  feedback('')
+  fitViewport()
   next.querySelector('h1, h2')?.focus({ preventScroll: true })
 }
 function updateResend() {
@@ -96,8 +127,8 @@ function cleanCallback() {
 }
 async function enterHome() {
   acceptedSession = true; clearPasswords(); cleanCallback()
-  await show('complete'); $('completeTitle').focus({ preventScroll: true })
-  await delay(reduce.matches ? 0 : 350)
+  $('accessStatus').textContent = 'Sesión iniciada. Ya puedes consultar tu avance académico.'
+  await new Promise(resolve => requestAnimationFrame(resolve))
   location.replace(destination)
 }
 async function mailScreen(kind, code, masked) {
@@ -105,7 +136,7 @@ async function mailScreen(kind, code, masked) {
   $('mailCopy').textContent = kind === 'confirmation'
     ? `Cuenta creada. Confirma tu correo con el enlace que enviamos${masked ? ' a ' + masked : ''} antes de iniciar sesión.`
     : masked ? `Te enviamos un enlace de recuperación a ${masked}.` : 'Si el código está registrado, recibirás un enlace para recuperar tu contraseña.'
-  feedback('', 'info', 'mailMessage'); await show('mailScreen'); updateResend()
+  feedback('', 'info'); await show('mailScreen'); updateResend()
 }
 async function sendRecovery(code) {
   const result = await authByCode('recover', { code, origin: callback })
@@ -122,6 +153,7 @@ function passwordGuide() {
   const mismatch = !!confirm && value !== confirm
   $('passwordMismatch').hidden = !mismatch
   $('newConfirm').setAttribute('aria-invalid', String(mismatch))
+  scheduleFit()
 }
 
 $('passwordToggle').dataset.password = 'password'
@@ -131,12 +163,15 @@ panel.querySelectorAll('[data-password]').forEach(button => button.addEventListe
   button.setAttribute('aria-pressed', String(visible)); button.setAttribute('aria-label', visible ? 'Ocultar contraseña' : 'Mostrar contraseña')
   button.querySelector('.eye-slash, #eyeSlash')?.toggleAttribute('hidden', !visible)
 }))
-panel.querySelectorAll('input, select').forEach(input => input.addEventListener('input', () => {
+panel.querySelectorAll('input, select').forEach(input => {
+  if (!input.hasAttribute('aria-describedby')) input.setAttribute('aria-describedby', 'formMessage')
+  input.addEventListener('input', () => {
   input.removeAttribute('aria-invalid'); feedback('')
   if (input.id === 'studentCode') { unconfirmedCode = null; $('resendConfirmation').hidden = true }
   if (input.id === 'registerCode') input.value = input.value.replace(/\D/g, '').slice(0, 8)
   if (['newPassword', 'newConfirm'].includes(input.id)) passwordGuide()
-}))
+  })
+})
 panel.querySelectorAll('[data-view]').forEach(button => button.addEventListener('click', async () => {
   if (busy || checkingSession || transitioning || acceptedSession) return
   if (recovering && state() === 'resetScreen') {
@@ -249,7 +284,6 @@ $('resetForm').addEventListener('submit', async event => {
   } catch { feedback('No pudimos guardar la contraseña. Reintenta o solicita un nuevo enlace.', 'error') }
   finally { if (!acceptedSession) setBusy(false) }
 })
-$('backToLogin').addEventListener('click', () => { if (acceptedSession) location.replace(destination) })
 
 function motion() {
   document.body.dataset.paused = String(manualPause || reduce.matches)
@@ -309,7 +343,7 @@ async function initialize() {
     }
     cleanCallback()
     if (recovering) { clearPasswords(); await show('resetScreen', false) }
-    else { acceptedSession = true; location.replace(destination) }
+    else await enterHome()
   } catch { recovering = false; feedback('No pudimos comprobar tu sesión. Reintenta el acceso o solicita un nuevo enlace.', 'error') }
   finally { checkingSession = false; if (!acceptedSession) setBusy(false) }
 }

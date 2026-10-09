@@ -472,8 +472,7 @@
       gap: 8px
     }
 
-    .startup,
-    .complete {
+    .startup {
       padding-top: 1px
     }
 
@@ -519,24 +518,6 @@
     .load-skip {
       margin-top: 28px;
       font-size: 14px
-    }
-
-    .loading-mark {
-      width: 30px;
-      height: 30px;
-      margin-bottom: 20px;
-      color: var(--accent)
-    }
-
-    .complete .subtitle {
-      font-size: 18px;
-      max-width: 28ch;
-      margin-top: 18px;
-      color: var(--soft)
-    }
-
-    .complete .primary {
-      margin-top: 34px
     }
 
     .entrance {
@@ -796,14 +777,6 @@
         min-height: 345px
       }
 
-      .complete {
-        min-height: 345px
-      }
-
-      .complete .subtitle {
-        font-size: 18px
-      }
-
       .preparation {
         margin-top: 36px
       }
@@ -909,7 +882,7 @@
     .inline-error { margin-top: 8px; font-size: 14px; color: #ffb497; }
     .panel-foot p { margin: 0; font-size: 12px; }
     .panel-foot a { color: inherit; text-underline-offset: 3px; }
-    body:not([data-state="loginScreen"]):not([data-state="startup"]):not([data-state="complete"]) .panel-foot { text-align: center; }
+    body:not([data-state="loginScreen"]):not([data-state="startup"]) .panel-foot { text-align: center; }
     body:is([data-state="registerScreen"], [data-state="forgotScreen"], [data-state="mailScreen"], [data-state="resetScreen"]) .subtitle { font-size: clamp(17px, 1.25vw, 20px); color: var(--soft); }
     body:is([data-state="forgotScreen"], [data-state="mailScreen"], [data-state="resetScreen"]) .brand { margin-bottom: 32px; }
     body:is([data-state="registerScreen"], [data-state="forgotScreen"], [data-state="resetScreen"]) input { height: 52px; }
@@ -924,6 +897,7 @@
     @media(min-width:761px) { .panel { width: 34vw; min-width: 360px; max-width: 560px; max-height: none; height: auto; } body[data-state="registerScreen"] .panel { padding-top: 30px; padding-bottom: 30px; } }
     @media(max-width:760px) { .entry, body[data-state="registerScreen"] .entry { padding: 32px 16px 120px; } .panel { max-width: 464px; padding: 28px 24px; } .brand { margin-bottom: 30px; } .subtitle { font-size: 18px; } input, select { font-size: 16px; height: 52px; } .access-form { margin-top: 24px; } .field + .field { margin-top: 18px; } .scene-caption { bottom: 20px; } }
   </style>
+  <link rel="stylesheet" href="./src/styles/accessViewport.css">
 </head>
 
 <body data-video-background="true" data-state="loginScreen">
@@ -932,6 +906,7 @@
     <video class="landscape" id="landscape" src="270983.mp4" autoplay muted loop playsinline preload="auto"></video>
   </div>
 
+  <p class="sr-only" id="accessStatus" role="status" aria-live="polite" aria-atomic="true"></p>
   <main class="entry">
     <section class="panel" aria-label="Acceso ESAN">
       <div class="brand" aria-label="ESAN">
@@ -1007,7 +982,6 @@
             <div class="field"><label for="registerEmail">Correo de recuperación</label><input id="registerEmail" type="email" autocomplete="email" placeholder="tucorreo@gmail.com" required></div>
             <div class="field"><label for="registerPassword">Nueva contraseña</label><div class="password-wrap"><input id="registerPassword" type="password" autocomplete="new-password" placeholder="Mínimo 6 caracteres" minlength="6" required><button class="eye" type="button" data-password="registerPassword" aria-label="Mostrar contraseña" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2 12s3.7-7 10-7 10 7 10 7-3.7 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/><path class="eye-slash" d="m3 3 18 18" hidden/></svg></button></div></div>
             <div class="field"><label for="registerConfirm">Confirmar contraseña</label><div class="password-wrap"><input id="registerConfirm" type="password" autocomplete="new-password" placeholder="Repite tu contraseña" minlength="6" required><button class="eye" type="button" data-password="registerConfirm" aria-label="Mostrar contraseña" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2 12s3.7-7 10-7 10 7 10 7-3.7 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/><path class="eye-slash" d="m3 3 18 18" hidden/></svg></button></div></div>
-            <p class="message" id="registerMessage" role="status" aria-live="polite" hidden></p>
             <button type="submit" class="primary" data-label="Crear cuenta y entrar">Crear cuenta y entrar <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h15m-6-6 6 6-6 6"/></svg></button>
           </form>
           <button class="text-button back-link" type="button" data-view="loginScreen">← Volver a iniciar sesión</button>
@@ -1018,7 +992,6 @@
           <p class="subtitle">Ingresa tu código y te enviaremos un enlace al correo con el que te registraste.</p>
           <form class="access-form" id="forgotForm" novalidate>
             <div class="field"><label for="recoveryCode">Código universitario</label><input id="recoveryCode" type="text" inputmode="numeric" maxlength="8" autocomplete="username" placeholder="Tu código" required></div>
-            <p class="message" id="forgotMessage" role="status" aria-live="polite" hidden></p>
             <button type="submit" class="primary" data-label="Enviarme el enlace">Enviarme el enlace <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h15m-6-6 6 6-6 6"/></svg></button>
           </form>
           <button class="text-button back-link" type="button" data-view="loginScreen">← Volver a iniciar sesión</button>
@@ -1028,7 +1001,6 @@
           <svg class="mail-mark" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="28" height="22" rx="4"/><path d="m3 8 13 10L29 8"/></svg>
           <h1 id="mailTitle" tabindex="-1">Revisa tu correo.</h1>
           <p class="subtitle" id="mailCopy" role="status" aria-live="polite"></p>
-          <p class="message" id="mailMessage" role="status" aria-live="polite" hidden></p>
           <button type="button" class="secondary" id="resendLink" disabled>Reenviar enlace en 0:45</button>
           <button class="text-button back-link" type="button" data-view="loginScreen">← Volver a iniciar sesión</button>
         </div>
@@ -1041,30 +1013,11 @@
             <div class="password-guide"><div class="strength-track" id="passwordStrength" role="meter" aria-label="Longitud y variedad de la contraseña" aria-valuemin="0" aria-valuemax="4" aria-valuenow="0"><i></i><i></i><i></i><i></i></div><p id="passwordMinimum"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" hidden><path d="m3 10 4 4 10-10"/></svg>Mínimo 6 caracteres</p></div>
             <div class="field"><label for="newConfirm">Confirmar contraseña</label><div class="password-wrap"><input id="newConfirm" type="password" autocomplete="new-password" placeholder="Repite tu contraseña" minlength="6" required><button class="eye" type="button" data-password="newConfirm" aria-label="Mostrar contraseña" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2 12s3.7-7 10-7 10 7 10 7-3.7 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/><path class="eye-slash" d="m3 3 18 18" hidden/></svg></button></div></div>
             <p class="inline-error" id="passwordMismatch" hidden>Las contraseñas no coinciden.</p>
-            <p class="message" id="resetMessage" role="status" aria-live="polite" hidden></p>
             <button type="submit" class="primary" data-label="Guardar y entrar">Guardar y entrar <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h15m-6-6 6 6-6 6"/></svg></button>
           </form>
           <button class="text-button back-link" type="button" data-view="loginScreen">← Volver a iniciar sesión</button>
         </div>
 
-        <!-- Pantalla de confirmación tras ingresar -->
-        <div class="complete" id="complete" hidden aria-labelledby="completeTitle">
-          <svg class="loading-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"
-            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="10" />
-            <path d="m7 12 3 3 7-7" />
-          </svg>
-          <h2 id="completeTitle" tabindex="-1">Tu espacio está listo.</h2>
-          <p class="subtitle">Te llevamos a Inicio.</p>
-          <p class="message">Sesión iniciada. Ya puedes consultar tu avance académico.</p>
-          <button class="primary" type="button" id="backToLogin">
-            Abrir Inicio
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
-              stroke-linejoin="round" aria-hidden="true">
-              <path d="M20 12H5m6-6-6 6 6 6" />
-            </svg>
-          </button>
-        </div>
       </div>
 
       <footer class="panel-foot">
