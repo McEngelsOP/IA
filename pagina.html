@@ -224,6 +224,17 @@ button:focus-visible{outline:2px solid var(--ic);outline-offset:2px}
 .k-opt.on{background:var(--sel);box-shadow:0 0 0 2px var(--ic)}
 .k-opt .pet{width:54px}.k-mi{font-size:15px;font-weight:600;height:30px;display:grid;place-items:center}
 .k-sel{width:100%;box-sizing:border-box;height:42px;padding:0 14px;border:0;border-radius:21px;background:var(--tile);color:var(--ic);font:inherit;font-size:14px}
+.k-sel{color-scheme:inherit}.k-sel option{background:#fbfbfb;color:#111113}
+:root[data-theme="dark"] .k-sel option{background:#18181a;color:#f5f5f7}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .k-sel option{background:#18181a;color:#f5f5f7}}
+.k-settings{border:0;padding:0;margin:0;min-width:0}.k-settings:disabled{opacity:.7}.k-go:disabled{cursor:default;opacity:.65}
+.k-course-label{display:block;margin:0 0 8px;font-size:13px;font-weight:600}.k-history{max-width:1100px;box-sizing:border-box;margin:18px auto 0}
+.k-history-head{display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap}.k-history-head label{display:flex;gap:10px;align-items:center;font-size:13px}.k-history input{font:inherit;background:var(--tile);color:var(--txt);border:1px solid var(--bar-b);border-radius:14px;padding:9px 12px;caret-color:var(--ic)}
+.k-history-list{list-style:none;padding:0;margin:20px 0 0}.k-history-list li{display:flex;justify-content:space-between;gap:18px;padding:12px 0;border-top:1px solid var(--bar-b)}.k-history-list div{min-width:0}.k-history-list b{font-weight:500;overflow-wrap:anywhere}.k-history-list small{display:block;color:color-mix(in srgb,var(--txt) 74%,var(--bg));margin-top:3px}.k-history-list span{flex:none;font-variant-numeric:tabular-nums}
+.k-encourage{max-width:65ch;font-size:16px;line-height:1.5}.k-error{margin:12px 0;padding:12px 14px;border:1px solid var(--ic);border-radius:14px;font-size:14px;max-width:65ch;overflow-wrap:anywhere}.page .k-hint,.page .k-stat,.page .k-msg{opacity:1;color:color-mix(in srgb,var(--txt) 74%,var(--bg))}.k-prev .k-hint{max-width:40ch;text-align:center}
+.k-wh:focus-visible,.k-sel:focus-visible,.k-history input:focus-visible{outline:2px solid var(--ic);outline-offset:3px}.k-wh{cursor:ns-resize}.k-history ::selection{background:var(--on);color:var(--on-t)}
+@media(pointer:coarse){.k-sel,.k-history input{font-size:16px}}
+
 .k-ws{display:flex;gap:18px;justify-content:center}
 .k-w{text-align:center}.k-w small{font-size:12px;opacity:.6}
 .k-wh{width:90px;height:150px;overflow:auto;scroll-snap-type:y mandatory;padding:55px 0;box-sizing:border-box;scrollbar-width:none;-webkit-mask-image:linear-gradient(transparent,#000 30%,#000 70%,transparent);mask-image:linear-gradient(transparent,#000 30%,#000 70%,transparent)}
@@ -673,6 +684,7 @@ a{text-underline-offset:3px}.page button:not(.ck){min-height:36px}
 <section class="arc" id="arc" role="dialog" aria-modal="true" aria-label="Arcade" aria-hidden="true" hidden></section>
 
 <script type="module">
+import { FOCUS_PRESETS, enrolledFocusCourses, focusRemaining, focusDuration, focusMotivation, focusError, todayLima } from './src/lib/focusModel.js';
 import { createClient } from '@supabase/supabase-js';
 import { CARRERAS } from './src/data/carreras.js';
 import { LOGROS } from './src/lib/logros.js';
@@ -760,9 +772,9 @@ function homeModel(){
 function homeReset(mode='guest',clearFocus=true){
  HOME.revision++;HOME.mode=mode;HOME.user=null;HOME.career='ia';HOME.profile=null;
  HOME.done=new Set();HOME.plan=new Set();HOME.grades={};HOME.drafts={};HOME.feedback={};HOME.statuses={};HOME.achievements={};HOME.error='';HOME.saving=new Set();
- if(clearFocus){kBack();fx.course='';fx.log=[];}
+ if(clearFocus)kReset();
 }
-function homeRender(){if(['Inicio','Malla Curricular','Calendario/Horarios','Grupos de estudio','Herramientas'].includes(cur))renderPage()}
+function homeRender(){if(['Inicio','Malla Curricular','Calendario/Horarios','Grupos de estudio','Mod Focus','Herramientas'].includes(cur))renderPage()}
 async function homeLoad(user){
  homeReset('loading',HOME.user?.id!==user.id);HOME.user=user;
  const revision=HOME.revision;
@@ -812,6 +824,7 @@ async function homeInit(){
 }
 async function homeSignOut(){
  if(HOME.saving.size){toast('Espera a que termine el guardado');return}
+ if(!await kBeforeSignOut())return;
  if(homeClient){const {error}=await homeClient.auth.signOut();if(error){toast('No se pudo cerrar la sesión. Reintenta.');return}}
  homeReset();setMenu(false);location.replace(new URL('./login.html',location.href).href);
 }
@@ -938,6 +951,7 @@ function renderPage(){
  if($('official-calendar'))mountCalendar();
  if($('official-tool'))mountTool();
  if($('official-study-groups'))mountStudyGroups();
+ if(cur==='Mod Focus'){if(fx.st==='run')kPaint(fx.left);kLoad()}
 }
 const esc=value=>homeEsc(value);
 function cal2(){
@@ -955,15 +969,118 @@ async function mountCalendar(){
  }catch{if(render===curriculumRender&&container.isConnected)container.innerHTML=homeEmpty('No se pudo abrir el calendario','Reintenta para consultar tu información.',false)+'<button class="h-btn" data-a="hretry">Reintentar</button>'}
 }
 /* Mod Focus (reloj + compañero) */
-const PRE=[['test','Prueba · 10 s',10],['p25','Pomodoro · 25 min',1500],['p45','Estudio · 45 min',2700],['p90','Profundo · 90 min',5400],['custom','Personalizado',0]];
-const HINT={test:'Solo para ver cómo funciona: dura 10 segundos.',p25:'Ideal para arrancar o cuando cuesta concentrarse.',p45:'Buen equilibrio para lecturas y ejercicios largos.',p90:'Trabajo profundo: proyectos, casos o repaso de parcial.',custom:'Elige las horas y los minutos con las ruedas.'};
+const PRE=FOCUS_PRESETS;
+const HINT={p25:'Ideal para arrancar o cuando cuesta concentrarse.',p45:'Buen equilibrio para lecturas y ejercicios largos.',p90:'Trabajo profundo: proyectos, casos o repaso de parcial.',custom:'Elige las horas y los minutos con las ruedas. Mínimo: 5 minutos.'};
 const STY=[['digital','Digital'],['ring','Anillo'],['arc','Arco'],['dots','Puntos']];
 const PN={cat:['Gato','Miso'],rabbit:['Conejo','Nube'],owl:['Búho','Sabio']};
 const MI={digital:'<span class="k-mi">25:00</span>',
 ring:'<svg viewBox="0 0 24 24" width="30" height="30"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="1.2 1.76"/></svg>',
 arc:'<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><circle cx="12" cy="12" r="9" opacity=".25"/><path d="M12 3a9 9 0 0 1 9 9"/></svg>',
 dots:'<svg viewBox="0 0 24 24" width="30" height="30" fill="currentColor">'+[5,12,19].flatMap(x=>[5,12,19].map(y=>`<circle cx="${x}" cy="${y}" r="2.2"/>`)).join('')+'</svg>'};
-const fx={st:'setup',pre:'p45',h:0,m:30,style:'ring',pet:'cat',course:'',total:0,left:0,end:0,paused:false,cq:false,log:[],iv:0};
+const fx={st:'setup',pre:'p45',h:0,m:30,style:'ring',pet:'cat',course:'',total:0,left:0,end:0,paused:false,cq:false,iv:0,session:null,busy:false,error:'',save:'idle',load:'idle',owner:null,generation:0,nonce:null,day:todayLima(),history:null,historyState:'idle',historyError:'',historyRead:0,syncing:false,lastSync:0};
+function kReset(){clearInterval(fx.iv);Object.assign(fx,{st:'setup',course:'',session:null,busy:false,error:'',save:'idle',load:'idle',owner:null,paused:false,cq:false,nonce:null,day:todayLima(),history:null,historyState:'idle',historyError:'',historyRead:fx.historyRead+1,generation:fx.generation+1})}
+function kRender(){if(cur==='Mod Focus')renderPage()}
+const kCourseName=id=>homeCareer().cursos.find(c=>c.id===id)?.n||'Estudio general';
+async function kRpc(name,args){const result=await homeClient.rpc(name,args);if(result.error)throw result.error;return result.data}
+function kApply(session){
+ clearInterval(fx.iv);fx.session=session;fx.course=session.course_id||'';fx.pre=session.method;fx.style=session.clock_style;fx.pet=session.companion;fx.total=session.planned_seconds;fx.left=session.remaining_seconds;fx.end=Date.now()+fx.left*1000;fx.paused=session.status==='paused';fx.cq=false;
+ fx.h=Math.floor(fx.total/3600);fx.m=Math.floor((fx.total%3600)/300)*5;
+ fx.st=['completed','interrupted'].includes(session.status)||!fx.left?'done':'run';fx.save=session.status==='completed'?'saved':session.status==='interrupted'?'interrupted':'pending';
+ if(fx.st==='run')fx.iv=setInterval(kTick,250);
+}
+async function kMutate(action){
+ if(fx.busy)return false;
+ const user=HOME.user,gen=fx.generation;fx.busy=true;fx.error='';HOME.saving.add('focus');kRender();
+ try{
+  if(user){const verified=await homeClient.auth.getUser();if(verified.error||verified.data.user?.id!==user.id||HOME.user?.id!==user.id)throw {message:'NO_AUTH'}}
+  const result=await action();if(gen!==fx.generation||HOME.user?.id!==user?.id)return false;
+  if(!result?.id)throw {message:'FOCUS_UNAVAILABLE'};kApply(result);return true;
+ }catch(e){if(gen===fx.generation)fx.error=focusError(e);return false}
+ finally{if(gen===fx.generation){fx.busy=false;HOME.saving.delete('focus');kRender()}}
+}
+async function kLoadHistory(){
+ if(HOME.mode!=='live')return;
+ const day=fx.day,user=HOME.user.id,gen=fx.generation,read=++fx.historyRead;
+ fx.historyState='loading';fx.historyError='';kRender();
+ try{const data=await kRpc('focus_daily_summary',{day});if(gen!==fx.generation||read!==fx.historyRead||user!==HOME.user?.id)return;fx.history=data;fx.historyState='ready'}
+ catch(e){if(gen===fx.generation&&read===fx.historyRead){fx.historyState='error';fx.historyError=focusError(e)}}
+ if(gen===fx.generation&&read===fx.historyRead)kRender();
+}
+async function kLoad(){
+ if(HOME.mode!=='live'||fx.load!=='idle')return;
+ const gen=fx.generation,user=HOME.user.id;fx.owner=user;fx.load='loading';kRender();
+ try{const session=await kRpc('focus_active_session');if(gen!==fx.generation||user!==HOME.user?.id)return;if(session)kApply(session);fx.load='ready';kRender();kLoadHistory();if(fx.st==='done'&&fx.save==='pending')kComplete()}
+ catch(e){if(gen===fx.generation){fx.load='error';fx.error=focusError(e);kRender()}}
+}
+async function kSync(){
+ if(fx.syncing||fx.busy||!fx.session||HOME.mode!=='live')return;
+ const gen=fx.generation,sid=fx.session.id,confirming=fx.cq;fx.syncing=true;fx.lastSync=Date.now();
+ try{const row=await kRpc('focus_session_snapshot',{sid});if(gen!==fx.generation||fx.busy||fx.session?.id!==sid)return;if(row.status==='interrupted'){kBack();kLoadHistory();kRender();return}kApply(row);if(fx.st==='run')fx.cq=confirming;fx.error='';kRender();if(fx.st==='done'&&fx.save==='pending')kComplete()}
+ catch(e){if(gen===fx.generation){fx.error=focusError(e);kRender()}}
+ finally{if(gen===fx.generation)fx.syncing=false}
+}
+async function kStart(){
+ if(fx.busy||HOME.mode==='loading'||(HOME.user&&fx.load!=='ready'))return;
+ if(fx.course&&!focusCourses().some(c=>c.id===fx.course)){fx.error=focusError({message:'COURSE_NOT_ENROLLED'});kRender();return}
+ const args={cid:fx.course||null,seconds:kSecs(),chosen_method:fx.pre,chosen_style:fx.style,chosen_pet:fx.pet};
+ if(!HOME.user){fx.total=fx.left=args.seconds;fx.end=Date.now()+fx.total*1000;fx.st='run';fx.paused=false;fx.cq=false;fx.save='guest';clearInterval(fx.iv);fx.iv=setInterval(kTick,250);kRender();$('k-focus-label')?.focus({preventScroll:true});return}
+ const key=JSON.stringify(args);if(fx.nonce?.key!==key)fx.nonce={key,id:crypto.randomUUID()};
+ const ok=await kMutate(()=>kRpc('start_focus_session',{...args,request_id:fx.nonce.id}));
+ if(ok){fx.nonce=null;fx.lastSync=Date.now();$('k-focus-label')?.focus({preventScroll:true});if(fx.st==='done'&&fx.save==='pending')kComplete()}
+}
+async function kComplete(){
+ if(fx.busy||fx.save==='saved')return false;
+ if(!fx.session){fx.save='guest';kRender();return true}
+ const ok=await kMutate(()=>kRpc('update_focus_session',{sid:fx.session.id,action:'finish'}));
+ if(ok){if(fx.save==='interrupted')kBack();kLoadHistory();if(cur!=='Mod Focus')toast('Sesión de enfoque guardada.')}
+ else if(fx.error.includes('Aún queda tiempo'))kSync();
+ return ok;
+}
+async function kChange(action){
+ if(fx.busy)return false;
+ if(!fx.session){if(action==='pause'){fx.left=focusRemaining(fx.end);fx.paused=true}else if(action==='resume'){fx.end=Date.now()+fx.left*1000;fx.paused=false}else if(action==='interrupt')kBack();kRender();return true}
+ const ok=await kMutate(()=>kRpc('update_focus_session',{sid:fx.session.id,action}));
+ if(ok&&action==='interrupt'){kBack();kLoadHistory();toast('Tiempo de estudio registrado.')}
+ else if(ok&&fx.st==='done'&&fx.save==='pending')kComplete();
+ return ok;
+}
+async function kBeforeSignOut(){
+ if(!fx.session)return true;
+ if(fx.st==='run'&&!fx.paused)return kChange('pause');
+ if(fx.st==='done'&&fx.save==='pending')return kComplete();
+ return true;
+}
+function kBack(){clearInterval(fx.iv);fx.st='setup';fx.session=null;fx.save='idle';fx.error='';fx.cq=false;fx.paused=false}
+function kFeedback(){return `${fx.error?`<p class="k-error" role="alert">${esc(fx.error)}</p>`:''}<p class="k-hint" role="status">${fx.busy?'Guardando…':''}</p>`}
+function kHistory(){
+ const head=`<div class="k-history-head"><h2 class="bt">${svg('cal',18)}Tu estudio, día a día</h2><label>Fecha<input type="date" id="k-day" aria-label="Fecha del historial" value="${fx.day}" max="${todayLima()}"></label></div>`;
+ let body='';
+ if(!HOME.user)body='<p>Inicia sesión para guardar tus sesiones y consultar tu historial.</p><a class="h-btn" href="./login.html">Iniciar sesión</a>';
+ else if(fx.historyState==='error')body=`<p class="k-error" role="alert">${esc(fx.historyError)}</p><button class="h-btn" data-a="khistory">Reintentar historial</button>`;
+ else if(fx.historyState!=='ready')body='<p class="k-hint" role="status">Consultando tu tiempo de estudio…</p>';
+ else{
+  const summary=fx.history;
+  body=`<p class="k-encourage">${esc(focusMotivation(summary,fx.day))}</p><p class="k-hint">${summary.completed_count} ${summary.completed_count===1?'sesión completada':'sesiones completadas'}${summary.interrupted_count?` · ${summary.interrupted_count} ${summary.interrupted_count===1?'sesión terminada antes':'sesiones terminadas antes'}`:''}. Se agrupan por la fecha de término en Lima.</p>`;
+  if(summary.sessions?.length)body+=`<ul class="k-history-list">${summary.sessions.map(s=>`<li><div><b>${esc(kCourseName(s.course_id))}</b><small>${s.status==='completed'?'Completada':'Terminada antes'} · ${new Date(s.finished_at).toLocaleTimeString('es-PE',{timeZone:'America/Lima',hour:'2-digit',minute:'2-digit'})}</small></div><span>${focusDuration(s.seconds)}</span></li>`).join('')}</ul>${summary.completed_count+summary.interrupted_count>30?'<p class="k-hint">Se muestran las últimas 30 sesiones; el resumen incluye todas.</p>':''}`;
+ }
+ return `<section class="blk k-history">${head}${body}</section>`;
+}
+async function kAction(a,D,b){
+ if(fx.busy)return;
+ if(a==='kgo'){await kStart();return}
+ if(a==='kp'){await kChange(fx.paused?'resume':'pause');return}
+ if(a==='kqy'){await kChange('interrupt');return}
+ if(a==='ksave'){await kComplete();return}
+ if(a==='kretry'){fx.load='idle';fx.error='';kLoad();return}
+ if(a==='khistory'){kLoadHistory();return}
+ if(a==='kf'){if(fx.save==='pending'){if(!await kComplete())return}kBack();kRender();return}
+ if(a==='kpre'&&PRE.some(x=>x[0]===D.v))fx.pre=D.v;
+ else if(a==='kst'&&STY.some(x=>x[0]===D.v))fx.style=D.v;
+ else if(a==='kpt'&&PN[D.v])fx.pet=D.v;
+ else if(a==='kq')fx.cq=true;
+ else if(a==='kqn')fx.cq=false;
+ kRender();$('page').querySelector(selQ(b))?.focus({preventScroll:true});
+}
 const kSecs=()=>fx.pre==='custom'?Math.max(300,fx.h*3600+fx.m*60):PRE.find(p=>p[0]===fx.pre)[2];
 const fmt=t=>{const h=t/3600|0,m=(t%3600)/60|0,s=t%60,p=n=>String(n).padStart(2,'0');return (h?h+':':'')+p(m)+':'+p(s)};
 function pet(k,m){
@@ -972,7 +1089,7 @@ function pet(k,m){
   const r=k==='owl'?10:8;
   return `<svg class="pet ${m}" viewBox="0 0 170 150" aria-hidden="true"><ellipse cx="80" cy="144" rx="46" ry="5" opacity=".15"/><g class="all">${tail}<ellipse cx="80" cy="104" rx="42" ry="34"/><g class="hd">${ears}<circle cx="80" cy="54" r="30"/><g class="eyes"><circle class="ew" cx="67" cy="52" r="${r}"/><circle class="ew" cx="93" cy="52" r="${r}"/><circle class="pp" cx="69" cy="52" r="3.6"/><circle class="pp" cx="95" cy="52" r="3.6"/></g><g class="hp"><path d="M58 54q9-11 18 0M84 54q9-11 18 0"/></g>${k==='owl'?'<path class="bk" d="M76 62h8l-4 9z"/>':'<path class="mo" d="M74 66q6 6 12 0"/>'}</g><g class="bo"><rect x="52" y="108" width="56" height="28" rx="5"/><path d="M80 108v28"/><path class="pgf" d="M80 108h28v28H80z"/></g><circle cx="64" cy="112" r="7"/><circle cx="96" cy="112" r="7"/></g></svg>`}
 function clockHTML(st,t){
-  const tm=`<div class="k-time" id="kt">${fmt(t)}</div>`;
+  const tm=`<div class="k-time" id="kt" role="timer" aria-live="off" aria-label="Tiempo restante">${fmt(t)}</div>`;
   if(st==='ring'){let l='';for(let i=0;i<60;i++)l+=`<line x1="100" y1="12" x2="100" y2="${i%5?22:30}" transform="rotate(${i*6} 100 100)"/>`;return `<div class="k-c ring"><svg viewBox="0 0 200 200" aria-hidden="true">${l}</svg>${tm}</div>`}
   if(st==='arc')return `<div class="k-c arc"><svg viewBox="0 0 200 200" aria-hidden="true"><circle class="tr" cx="100" cy="100" r="88"/><circle class="pg" id="karc" cx="100" cy="100" r="88" pathLength="100" stroke-dasharray="100 100" stroke-dashoffset="0" transform="rotate(-90 100 100)"/></svg>${tm}</div>`;
   if(st==='dots')return `<div class="k-c dots">${tm}<div class="dg" id="kdg">${'<i></i>'.repeat(96)}</div></div>`;
@@ -982,36 +1099,37 @@ function kPaint(L){
   if(fx.style==='ring'){const n=Math.round(f*60);document.querySelectorAll('.k-c.ring line').forEach((e,i)=>e.classList.toggle('e',i<n))}
   else if(fx.style==='arc'){const a=$('karc');if(a)a.setAttribute('stroke-dashoffset',f*100)}
   else if(fx.style==='dots'){const n=Math.floor(f*96);document.querySelectorAll('#kdg i').forEach((e,i)=>e.classList.toggle('x',i<n))}}
-function kTick(){if(fx.st!=='run'||fx.paused)return;const L=Math.max(0,Math.ceil((fx.end-Date.now())/1000));fx.left=L;kPaint(L);if(L<=0){fx.st='done';clearInterval(fx.iv);if(cur==='Mod Focus')renderPage();else toast('Tu sesión de enfoque terminó')}}
-const wheel=(id,vals,sel,lb)=>`<div class="k-w"><div class="k-wh" id="${id}" role="listbox" aria-label="${lb}">${vals.map((v,i)=>`<div class="k-wi${v===sel?' on':''}" role="option" data-a="wi" data-v="${v}">${String(v).padStart(2,'0')}</div>`).join('')}</div><small>${lb.toLowerCase()}</small></div>`;
+function kTick(){if(fx.st!=='run'||fx.paused)return;fx.left=focusRemaining(fx.end);if(cur==='Mod Focus')kPaint(fx.left);if(!fx.left){fx.st='done';clearInterval(fx.iv);kRender();if(!fx.busy)kComplete()}else if(fx.session&&Date.now()-fx.lastSync>30000&&!document.hidden)kSync()}
+const wheel=(id,vals,sel,lb)=>`<div class="k-w"><div class="k-wh" id="${id}" role="spinbutton" tabindex="0" aria-label="${lb}" aria-valuemin="0" aria-valuemax="${id==='wh'?3:55}" aria-valuenow="${sel}">${vals.map(v=>`<div class="k-wi${v===sel?' on':''}" aria-hidden="true" data-a="wi" data-v="${v}">${String(v).padStart(2,'0')}</div>`).join('')}</div><small>${lb.toLowerCase()}</small></div>`;
 function kWheels(){$('wh').scrollTop=fx.h*40;$('wm').scrollTop=fx.m/5*40}
-function prevHTML(){const p=PN[fx.pet];return `${pet(fx.pet,'idle')}${clockHTML(fx.style,kSecs())}<p class="k-hint">${p[1]} te acompañará${fx.course?' mientras estudias '+esc(fx.course):''}.</p>`}
+function prevHTML(){const p=PN[fx.pet];return `${pet(fx.pet,'idle')}${clockHTML(fx.style,kSecs())}<p class="k-hint">${p[1]} te acompañará${fx.course?' mientras estudias '+esc(kCourseName(fx.course)):''}.</p>`}
 function kPrev(){const p=$('kprev');if(p)p.innerHTML=prevHTML()}
 function kSetup(){
-  const tm=fx.log.reduce((a,x)=>a+x.s,0)/60,tot=tm<1?'menos de 1':Math.round(tm);
-  return `<div class="k-grid"><section class="blk"><h2 class="bt">${svg('target',18)}Vista previa</h2><div class="k-prev" id="kprev">${prevHTML()}</div><p class="k-stat">${fx.log.length?`Hoy: ${fx.log.length} ${fx.log.length>1?'sesiones':'sesión'} · ${tot} min de enfoque`:'Aún no has completado sesiones hoy.'}</p></section>
-  <section class="blk"><div class="k-sec"><h3>Método</h3><div class="k-row">${PRE.map(p=>`<button class="k-chip${fx.pre===p[0]?' on':''}" aria-pressed="${fx.pre===p[0]}" data-a="kpre" data-v="${p[0]}">${p[1]}${p[0]==='p45'?'<em>Sugerido</em>':''}</button>`).join('')}</div><p class="k-hint">${HINT[fx.pre]}</p>${fx.pre==='custom'?`<div class="k-ws">${wheel('wh',[0,1,2,3],fx.h,'Horas')}${wheel('wm',Array.from({length:12},(_,i)=>i*5),fx.m,'Minutos')}</div>`:''}</div>
+  if(fx.course&&!focusCourses().some(c=>c.id===fx.course))fx.course='';
+  const disabled=fx.busy||(HOME.user&&fx.load!=='ready');
+  return `<div class="k-grid"><section class="blk"><h2 class="bt">${svg('target',18)}Vista previa</h2><div class="k-prev" id="kprev">${prevHTML()}</div><p class="k-stat">${HOME.user?'Tu tiempo de estudio se guarda en tu cuenta.':'Puedes usar el reloj sin cuenta; el historial requiere iniciar sesión.'}</p></section>
+  <section class="blk"><fieldset class="k-settings"${fx.busy?' disabled':''}><div class="k-sec"><h3>Método</h3><div class="k-row">${PRE.map(p=>`<button class="k-chip${fx.pre===p[0]?' on':''}" aria-pressed="${fx.pre===p[0]}" data-a="kpre" data-v="${p[0]}">${p[1]}${p[0]==='p45'?'<em>Sugerido</em>':''}</button>`).join('')}</div><p class="k-hint">${HINT[fx.pre]}</p>${fx.pre==='custom'?`<div class="k-ws">${wheel('wh',[0,1,2,3],fx.h,'Horas')}${wheel('wm',Array.from({length:12},(_,i)=>i*5),fx.m,'Minutos')}</div>`:''}</div>
   <div class="k-sec"><h3>Estilo de reloj</h3><div class="k-row">${STY.map(x=>`<button class="k-opt${fx.style===x[0]?' on':''}" aria-pressed="${fx.style===x[0]}" data-a="kst" data-v="${x[0]}">${MI[x[0]]}${x[1]}</button>`).join('')}</div></div>
   <div class="k-sec"><h3>Tu compañero</h3><div class="k-row">${Object.keys(PN).map(k=>`<button class="k-opt${fx.pet===k?' on':''}" aria-pressed="${fx.pet===k}" data-a="kpt" data-v="${k}">${pet(k,'idle')}${PN[k][0]}</button>`).join('')}</div></div>
-  <div class="k-sec"><h3>Curso (opcional)</h3><select class="k-sel" id="kcs" aria-label="Curso"><option value="">Sin curso</option>${focusCourses().map(c=>`<option${fx.course===c.n?' selected':''}>${esc(c.n)}</option>`).join('')}</select></div>
-  <button class="k-go" data-a="kgo">Comenzar</button></section></div>`}
+  <div class="k-sec"><label for="kcs" class="k-course-label">Curso (opcional)</label><select class="k-sel" id="kcs" aria-describedby="k-course-help"><option value="">Sin curso</option>${focusCourses().map(c=>`<option value="${esc(c.id)}"${fx.course===c.id?' selected':''}>${esc(c.n)}</option>`).join('')}</select><p class="k-hint" id="k-course-help">${focusCourses().length?'Solo los cursos marcados como Matriculado en tu carrera, en orden alfabético.':HOME.user?'Aún no tienes cursos marcados como Matriculado. Actualízalos en la ficha del curso; mientras tanto puedes estudiar sin elegir uno.':'Inicia sesión para elegir tus cursos matriculados.'}</p></div>
+  ${kFeedback()}${fx.load==='error'?'<button class="h-btn" data-a="kretry">Reintentar carga</button>':''}<button class="k-go" data-a="kgo"${disabled?' disabled':''}>${fx.busy?'Guardando…':fx.load==='loading'?'Recuperando tu sesión…':'Comenzar'}</button></fieldset></section></div>${kHistory()}`}
 function kStage(){
-  const P=PN[fx.pet],lbl=`<div class="k-lbl">${fx.course?esc(fx.course):'Sesión de enfoque'} · ${fmt(fx.total)}</div>`;
-  if(fx.st==='done'||fx.st==='leave'){const lv=fx.st==='leave';
-    return `<div class="blk k-stage">${lbl}${lv?'':`<div class="k-bub">${P[1]}: ¡Gracias por enfocarte conmigo! Lo lograste.</div>`}<div class="k-petw">${lv?'':'<div class="k-fx">'+['-80px:.1s:✦','-40px:.5s:♥','0:.9s:✦','40px:.3s:♥','80px:.7s:✦'].map(x=>{const a=x.split(':');return `<i style="left:calc(50% + ${a[0]});top:30px;--d:${a[1]}">${a[2]}</i>`}).join('')+'</div>'}${pet(fx.pet,lv?'bye':'joy')}</div>${lv?`<p class="k-msg">${P[1]} se despide…</p>`:`<p class="k-msg"><b>Sesión completada · ${fmt(fx.total)}</b><br>Sugerencia: descansa unos minutos antes de volver.</p><div class="k-act"><button class="k-btn d" data-a="kf">Terminar sesión</button></div>`}</div>`}
-  const q=fx.cq?`<p class="k-msg">¿Seguro? ${P[1]} se quedará esperando.</p><div class="k-act"><button class="k-btn d" data-a="kqy">Sí, rendirme</button><button class="k-btn" data-a="kqn">Continuar</button></div>`
-    :`<p class="k-msg">${fx.paused?'En pausa.':P[1]+' está estudiando contigo. Salir antes lo dejará esperando.'}</p><div class="k-act"><button class="k-btn d" data-a="kp">${fx.paused?'Reanudar':'Pausa'}</button><button class="k-btn" data-a="kq">Rendirme</button></div>`;
-  return `<div class="blk k-stage${fx.paused?' pz':''}">${lbl}${pet(fx.pet,'study in')}<div>${clockHTML(fx.style,fx.left)}</div>${q}</div>`}
-function focus(){return fx.st==='setup'?kSetup():kStage()}
-function kStart(){fx.total=fx.left=kSecs();fx.end=Date.now()+fx.total*1000;fx.st='run';fx.paused=false;fx.cq=false;clearInterval(fx.iv);fx.iv=setInterval(kTick,250)}
-function kBack(){fx.st='setup';clearInterval(fx.iv)}
+ const P=PN[fx.pet],disabled=fx.busy?' disabled':'',lbl=`<div class="k-lbl" id="k-focus-label" tabindex="-1">${fx.course?esc(kCourseName(fx.course)):'Sesión de enfoque'} · ${fmt(fx.total)}</div>`;
+ if(fx.st==='done')return `<div class="blk k-stage">${lbl}<div class="k-bub">${P[1]}: ¡Buen trabajo! Un paso más en tu estudio.</div>${pet(fx.pet,'joy')}<p class="k-msg"><b>Sesión terminada · ${fmt(fx.total)}</b><br>Descansa unos minutos antes de volver.</p>${kFeedback()}<p class="k-msg" role="status">${fx.save==='saved'?'Sesión guardada en tu historial.':fx.save==='guest'?'Inicia sesión para guardar tu próximo momento de estudio.':fx.busy?'Guardando la sesión…':'El guardado está pendiente. Puedes reintentarlo.'}</p><div class="k-act">${fx.save==='pending'&&!fx.busy?'<button class="k-btn d" data-a="ksave">Reintentar guardado</button>':''}<button class="k-btn" data-a="kf"${disabled}>Volver a Mod Focus</button></div></div>`;
+ const q=fx.cq?`<p class="k-msg">¿Terminar antes? ${fx.session?'Se guardará el tiempo de estudio transcurrido.':'El historial requiere iniciar sesión.'}</p><div class="k-act"><button class="k-btn d" data-a="kqy"${disabled}>Terminar ahora</button><button class="k-btn" data-a="kqn"${disabled}>Continuar</button></div>`:`<p class="k-msg">${fx.paused?'En pausa. El descanso no suma tiempo de estudio.':P[1]+' está estudiando contigo. Una sesión a la vez.'}</p><div class="k-act"><button class="k-btn d" data-a="kp"${disabled}>${fx.paused?'Reanudar':'Pausa'}</button><button class="k-btn" data-a="kq"${disabled}>Terminar antes</button></div>`;
+ return `<div class="blk k-stage${fx.paused?' pz':''}">${lbl}${pet(fx.pet,'study in')}<div>${clockHTML(fx.style,fx.left)}</div>${q}${kFeedback()}</div>`;
+}
+function focus(){if(HOME.mode==='loading')return '<section class="blk" role="status">Comprobando tu sesión…</section>';if(HOME.user&&HOME.mode!=='live')return '<section class="blk">'+homeEmpty('Mod Focus','Carga tu perfil para consultar los cursos matriculados y el historial.',false)+'<button class="h-btn" data-a="hretry">Reintentar</button></section>';return fx.st==='setup'?kSetup():kStage()}
 $('page').addEventListener('scroll',e=>{const t=e.target;if(!t.classList||!t.classList.contains('k-wh'))return;
-  const i=Math.round(t.scrollTop/40);if(t.id==='wh')fx.h=Math.min(3,i);else fx.m=Math.min(11,i)*5;
-  [...t.children].forEach((c,j)=>c.classList.toggle('on',j===i));kPrev()},true);
-$('page').onchange=e=>{if(e.target.id==='kcs'){fx.course=e.target.value;kPrev()}};
+  if(fx.busy)return;const i=Math.max(0,Math.round(t.scrollTop/40));if(t.id==='wh')fx.h=Math.min(3,i);else fx.m=Math.min(11,i)*5;
+  t.setAttribute('aria-valuenow',t.id==='wh'?fx.h:fx.m);[...t.children].forEach((c,j)=>c.classList.toggle('on',j===i));kPrev()},true);
+$('page').onchange=e=>{if(fx.busy)return;if(e.target.id==='kcs'){fx.course=e.target.value;kPrev()}else if(e.target.id==='k-day'&&/^\d{4}-\d{2}-\d{2}$/.test(e.target.value)&&e.target.value<=todayLima()){fx.day=e.target.value;kLoadHistory()}};
+$('page').addEventListener('keydown',e=>{const w=e.target.closest('.k-wh');if(!w||fx.busy)return;const keys=['ArrowUp','ArrowDown','Home','End'];if(!keys.includes(e.key))return;e.preventDefault();const step=w.id==='wh'?1:5,max=w.id==='wh'?3:55,current=w.id==='wh'?fx.h:fx.m;const value=e.key==='Home'?0:e.key==='End'?max:Math.max(0,Math.min(max,current+(e.key==='ArrowUp'?step:-step)));w.scrollTop=value/step*40;if(w.id==='wh')fx.h=value;else fx.m=value;w.setAttribute('aria-valuenow',value);kPrev()});
+window.addEventListener('focus',()=>{if(fx.session&&!fx.busy)kSync()});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&fx.session&&!fx.busy){kTick();kSync()}});
 
 const selQ=b=>'[data-a="'+b.dataset.a+'"]'+['k','i','d','g','v'].filter(x=>b.dataset[x]!=null).map(x=>`[data-${x}="${b.dataset[x]}"]`).join('');
-const focusCourses=()=>HOME.mode==='live'?homeCareer().cursos:[];
+const focusCourses=()=>HOME.mode==='live'?enrolledFocusCourses(homeCareer().cursos,HOME.statuses,HOME.done):[];
 function salas(){
  if(HOME.mode==='loading')return '<section class="blk" role="status"><h2 class="bt">Comprobando tu sesión…</h2></section>';
  if(HOME.mode!=='live')return '<section class="blk">'+homeEmpty('Grupos de estudio',HOME.user?'Reintenta la carga de tu perfil para consultar las salas de tus cursos.':'Inicia sesión para crear una sala o estudiar con tus compañeros.')+(HOME.user?'<button class="h-btn" data-a="hretry">Reintentar</button>':'')+'</section>';
@@ -1041,18 +1159,7 @@ async function mountTool(){
  }catch{if(render===curriculumRender&&container.isConnected)container.innerHTML=homeEmpty('Herramienta no disponible','Reintenta para abrirla.',false)+'<button class="h-btn" data-a="hretry">Reintentar</button>'}
 }
 
-$('page').onclick=e=>{const b=e.target.closest('[data-a]');if(!b)return;if(b.dataset.a.startsWith('h')){homeAction(b);return}const a=b.dataset.a,D=b.dataset;
-  if(a==='wi'){const p=b.parentElement;p.scrollTo({top:[...p.children].indexOf(b)*40,behavior:'smooth'});return}
-  else if(a==='kpre')fx.pre=D.v;
-  else if(a==='kst')fx.style=D.v;
-  else if(a==='kpt')fx.pet=D.v;
-  else if(a==='kgo')kStart();
-  else if(a==='kp'){fx.paused=!fx.paused;if(fx.paused)fx.left=Math.max(0,Math.ceil((fx.end-Date.now())/1000));else fx.end=Date.now()+fx.left*1000}
-  else if(a==='kq')fx.cq=true;
-  else if(a==='kqn')fx.cq=false;
-  else if(a==='kqy'){kBack();toast('Sesión interrumpida')}
-  else if(a==='kf'){fx.st='leave';fx.log.push({s:fx.total});setTimeout(()=>{kBack();toast('Sesión completada');if(cur==='Mod Focus')renderPage()},1500)}
-  renderPage();(a==='er'&&$('code')?$('code'):$('page').querySelector(selQ(b)))?.focus({preventScroll:true})};
+$('page').onclick=e=>{const b=e.target.closest('[data-a]');if(!b)return;if(b.dataset.a.startsWith('h')){homeAction(b);return}const a=b.dataset.a,D=b.dataset;if(a==='wi'){if(fx.busy)return;const p=b.parentElement;p.scrollTo({top:[...p.children].indexOf(b)*40,behavior:'smooth'});return}if(a.startsWith('k'))kAction(a,D,b)};
 function malla(){
  if(HOME.mode==='loading')return `<section class="blk" role="status"><h2 class="bt">Cargando tu malla…</h2><p class="h-muted">Estamos consultando tu carrera y tu avance.</p></section>`;
  if(HOME.mode==='error')return `<section class="blk">${homeEmpty('Tu malla no está disponible',HOME.error||'No pudimos cargar tu avance. Reintenta sin modificar tus datos.',false)}<div class="h-state-actions"><button class="h-btn primary" data-a="hretry">Reintentar</button><a class="h-btn" href="./login.html">Iniciar sesión</a></div></section>`;

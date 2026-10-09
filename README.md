@@ -52,6 +52,7 @@ Ejecuta en el **SQL Editor** los scripts de la carpeta [`supabase/`](supabase/),
 - `setup.sql` — perfiles y triggers de autenticación
 - `progress.sql` — avance de malla
 - `sync_features.sql` — plan, eventos con horarios/repetición semanal y tareas privadas; ejecutar antes de publicar `pagina.html`
+- `focus_sessions.sql` — temporizador persistente e historial privado de Mod Focus; [guía de activación](supabase/FOCUS_SETUP.md)
 - `study_groups.sql` — salas públicas/privadas, participantes, mensajes (`study_room_messages`) y funciones con permisos de membresía; conserva el chat anterior `study_messages`
 - [`STUDY_GROUPS_SETUP.md`](supabase/STUDY_GROUPS_SETUP.md) — activación y pruebas de Grupos de estudio
 - [`CALENDAR_SETUP.md`](supabase/CALENDAR_SETUP.md) — migración, revisión de RLS y orden de instalación de los scripts consolidados
@@ -63,7 +64,7 @@ Ejecuta en el **SQL Editor** los scripts de la carpeta [`supabase/`](supabase/),
 - `npm run dev` — servidor de desarrollo
 - `npm run build` — build de producción
 - `npm run preview` — previsualizar el build
-- `node --test tests/calendarModel.test.mjs tests/studyGroups.test.mjs` — calendario, conversación y validación de salas
+- `node --test tests/calendarModel.test.mjs tests/studyGroups.test.mjs tests/focusModel.test.mjs` — calendario, conversación y validación de salas
 
 
 ## Oficial: información real por usuario
@@ -73,3 +74,5 @@ Ejecuta en el **SQL Editor** los scripts de la carpeta [`supabase/`](supabase/),
 Se retiraron las notas, horarios, conversaciones, menciones y enlaces de muestra. Asesor y Brújula reutilizan las herramientas reales; Recursos consulta los enlaces compartidos en Supabase. Grupos de estudio permite crear salas públicas o privadas por curso, entrar por código, consultar participantes y conversar con mensajes persistentes. Empieza vacío hasta que alguien cree una sala. Buzón sigue pendiente, sin simular envíos.
 
 Para activar Calendario y Grupos en la base existente, ejecuta `supabase/sync_features.sql` y después `supabase/study_groups.sql` en el SQL Editor. Las migraciones no se aplicaron a producción desde este entorno: su proxy rechaza la conexión PostgreSQL. Consulta [la guía de Grupos de estudio](supabase/STUDY_GROUPS_SETUP.md). La variable administrativa `SUPABASE_DB_URL` nunca se incluye en el frontend.
+
+Mod Focus ofrece sesiones persistentes con pausa y recuperación al recargar, historial por fecha y mensajes según el tiempo registrado. El selector muestra únicamente los cursos marcados como Matriculado de la carrera, en orden alfabético. Para activar esta versión, ejecutar `supabase/focus_sessions.sql` completo y recargar; no incluye sesiones de muestra.
