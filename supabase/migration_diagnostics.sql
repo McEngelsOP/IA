@@ -2,7 +2,7 @@
 -- No consulta registros de usuarios ni cambia tablas, permisos o triggers.
 with targets(name) as (
   values ('profiles'),('progress'),('calendar_events'),('calendar_tasks'),
-         ('study_rooms'),('study_room_members'),('study_messages')
+         ('study_rooms'),('study_room_members'),('study_messages'),('study_room_messages')
 ), functions as (
   select p.oid, n.nspname, p.proname,
          case when p.prokind in ('f','p') then pg_get_functiondef(p.oid) else '' end as definition

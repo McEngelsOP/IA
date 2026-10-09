@@ -7,8 +7,8 @@ La pantalla utiliza la sesión de `login.html` y el mismo cliente Supabase de `p
 En el proyecto Supabase que corresponde a `VITE_SUPABASE_URL`:
 
 1. Ejecutar **`sync_features.sql`**, si aún está pendiente la actualización de Calendario/Horarios. Es transaccional e idempotente y conserva los eventos anteriores.
-2. Ejecutar **`study_groups.sql`** completo. Requiere la tabla existente `profiles` y los roles estándar de Supabase. Puede ejecutarse nuevamente: no inserta registros de muestra ni borra salas existentes.
-3. Comprobar que las tres tablas `study_rooms`, `study_room_members` y `study_messages` tienen RLS activa y los permisos indicados abajo. La migración solicita recargar el esquema de PostgREST.
+2. Ejecutar **`study_groups.sql`** completo. Requiere la tabla existente `profiles` y los roles estándar de Supabase. Puede ejecutarse nuevamente: no inserta registros de muestra ni borra salas existentes. Usa `study_room_messages` para conservar la tabla anterior `study_messages` y sus permisos.
+3. Comprobar que las tres tablas `study_rooms`, `study_room_members` y `study_room_messages` tienen RLS activa y los permisos indicados abajo. La migración solicita recargar el esquema de PostgREST.
 4. Con dos cuentas de prueba, crear una sala privada, compartir su código y comprobar que la segunda cuenta solo entra con ese código. Enviar un mensaje desde cada cuenta, recargar y comprobar que ambos siguen guardados. Salir de la sala debe retirar el acceso a su conversación.
 5. Publicar el frontend después de aplicar las migraciones. Sin las funciones, la pantalla informa que falta configuración en el servidor y ofrece reintentar; no muestra datos inventados.
 
@@ -31,17 +31,17 @@ Consulta sin datos personales para revisar políticas y permisos efectivos:
 select tablename, policyname, roles, cmd, qual, with_check
 from pg_policies
 where schemaname = 'public'
-  and tablename in ('study_rooms', 'study_room_members', 'study_messages');
+  and tablename in ('study_rooms', 'study_room_members', 'study_room_messages');
 
 select c.relname, c.relrowsecurity
 from pg_class c join pg_namespace n on n.oid = c.relnamespace
 where n.nspname = 'public'
-  and c.relname in ('study_rooms', 'study_room_members', 'study_messages');
+  and c.relname in ('study_rooms', 'study_room_members', 'study_room_messages');
 
 select table_name, column_name, grantee, privilege_type
 from information_schema.column_privileges
 where table_schema = 'public'
-  and table_name in ('study_rooms', 'study_room_members', 'study_messages')
+  and table_name in ('study_rooms', 'study_room_members', 'study_room_messages')
   and grantee in ('anon', 'authenticated');
 ```
 
@@ -56,10 +56,14 @@ npm install --prefix /tmp/ia-sql-tests --no-save @electric-sql/pglite
 PGLITE_MODULE=/tmp/ia-sql-tests/node_modules/@electric-sql/pglite/dist/index.js node tests/studyGroups.sql.test.mjs
 ```
 
-La prueba SQL crea una base local efímera con perfiles ficticios, ejecuta dos veces la migración y verifica aislamiento, privacidad de columnas, autor del servidor, códigos, límites, reintentos, paginación y cierre. No usa `SUPABASE_DB_URL` ni toca producción. Las pruebas de navegador también se ejecutaron con respuestas Supabase simuladas: flujos de sala, fallos, recarga, teclado, móvil y temas claro/oscuro. La aplicación con cuentas reales debe comprobarse después de ejecutar el SQL.
+La prueba SQL crea una base local efímera con perfiles ficticios, ejecuta dos veces la migración y verifica aislamiento, privacidad de columnas, autor del servidor, códigos, límites, reintentos, paginación y cierre; también reproduce la tabla anterior de chat por curso y comprueba que sus registros, columnas y permisos se conservan. No usa `SUPABASE_DB_URL` ni toca producción. Las pruebas de navegador también se ejecutaron con respuestas Supabase simuladas: flujos de sala, fallos, recarga, teclado, móvil y temas claro/oscuro. La aplicación con cuentas reales debe comprobarse después de ejecutar el SQL.
 
-## Error `42703: column "room_id" does not exist`
+## Corrección de `42703: column "room_id" does not exist`
 
-Antes de cambiar columnas o reintentar, ejecutar `migration_diagnostics.sql` en una consulta nueva del SQL Editor y guardar su resultado junto al detalle completo del error. La consulta devuelve en un único resultado las columnas existentes, los event triggers y los nombres de funciones públicas que hacen referencia a `room_id`; no lee registros personales.
+El diagnóstico de la base activa mostró una tabla anterior `study_messages` con las columnas `id`, `course_id`, `author_id`, `alias`, `carrera`, `ciclo`, `body` y `created_at`. Esa tabla corresponde a un chat por curso y no tiene `room_id`. La primera versión de `study_groups.sql` reutilizaba el nombre con `CREATE TABLE IF NOT EXISTS`; PostgreSQL conservaba la tabla anterior y luego fallaba al crear el índice que necesitaba `room_id`.
 
-`sync_features.sql` no contiene `room_id`. Si Calendario y Grupos fallan con esa columna, revisar el contexto de ejecución y los event triggers: una función que intenta crear políticas para `room_id` en cualquier tabla también puede bloquear una migración de calendario. Si falla únicamente Grupos, comprobar si `study_room_members` o `study_messages` ya existían con otro esquema: `CREATE TABLE IF NOT EXISTS` no actualiza sus columnas. No añadir IDs inventados ni eliminar tablas o desactivar triggers para ocultar el error; la corrección depende del objeto que señale el diagnóstico.
+La versión corregida crea **`study_room_messages`**, mantiene los mismos RPC usados por el frontend y conserva la estructura, los registros, los índices y los permisos de `study_messages`. No mueve mensajes entre conversaciones ni modifica los event triggers del proyecto. Ejecutar el archivo actualizado **completo en una consulta nueva** del SQL Editor. No reutilizar el texto guardado de la primera versión.
+
+El diagnóstico también mostró `calendar_tasks` y las columnas nuevas de `calendar_events`: la estructura de Calendario ya estaba actualizada. `sync_features.sql` sigue siendo idempotente; su revisión de permisos se encuentra en `calendar_audit.sql`.
+
+`migration_diagnostics.sql` devuelve las columnas, los event triggers y los nombres de funciones públicas que mencionan `room_id` en un único resultado, sin leer registros personales. Incluye ambas tablas de mensajes para comprobar esta separación.

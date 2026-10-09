@@ -1,4 +1,5 @@
 -- Salas, participantes y conversaciones reales. No crea salas ni usuarios de muestra.
+-- study_messages pertenece al chat por curso existente; esta migración no la modifica.
 -- Idempotente y transaccional. Aplicar antes de publicar el frontend de Grupos de estudio.
 begin;
 create table if not exists public.study_rooms (
@@ -19,7 +20,7 @@ create table if not exists public.study_room_members (
   joined_at timestamptz not null default now(),
   primary key(room_id,student_id)
 );
-create table if not exists public.study_messages (
+create table if not exists public.study_room_messages (
   id uuid primary key default gen_random_uuid(),
   room_id uuid not null references public.study_rooms(id) on delete cascade,
   author_id uuid not null references public.profiles(id) on delete cascade,
@@ -30,8 +31,8 @@ create table if not exists public.study_messages (
 create index if not exists study_rooms_course_created on public.study_rooms(course_id,created_at desc,id);
 create index if not exists study_rooms_owner on public.study_rooms(owner_id);
 create index if not exists study_members_student on public.study_room_members(student_id,room_id);
-create index if not exists study_messages_room_created on public.study_messages(room_id,created_at desc,id desc);
-create index if not exists study_messages_author_created on public.study_messages(author_id,created_at desc);
+create index if not exists study_room_messages_room_created on public.study_room_messages(room_id,created_at desc,id desc);
+create index if not exists study_room_messages_author_created on public.study_room_messages(author_id,created_at desc);
 
 create or replace function public.study_is_member(rid uuid)
 returns boolean language sql stable security definer set search_path = public as $$
@@ -39,18 +40,18 @@ returns boolean language sql stable security definer set search_path = public as
 $$;
 alter table public.study_rooms enable row level security;
 alter table public.study_room_members enable row level security;
-alter table public.study_messages enable row level security;
+alter table public.study_room_messages enable row level security;
 drop policy if exists "Study rooms visible to authenticated" on public.study_rooms;
 create policy "Study rooms visible to authenticated" on public.study_rooms for select to authenticated using (not is_private or public.study_is_member(id));
 drop policy if exists "Study members visible to members" on public.study_room_members;
 create policy "Study members visible to members" on public.study_room_members for select to authenticated using (public.study_is_member(room_id));
-drop policy if exists "Study messages visible to members" on public.study_messages;
-create policy "Study messages visible to members" on public.study_messages for select to authenticated using (public.study_is_member(room_id));
+drop policy if exists "Study room messages visible to members" on public.study_room_messages;
+create policy "Study room messages visible to members" on public.study_room_messages for select to authenticated using (public.study_is_member(room_id));
 -- Mutaciones únicamente mediante funciones verificadas; tampoco se publican códigos ni UUID de autores.
-revoke all on public.study_rooms,public.study_room_members,public.study_messages from public,anon,authenticated;
+revoke all on public.study_rooms,public.study_room_members,public.study_room_messages from public,anon,authenticated;
 grant select(id,course_id,name,description,is_private,created_at,updated_at) on public.study_rooms to authenticated;
 grant select(room_id,nickname,joined_at) on public.study_room_members to authenticated;
-grant select(id,room_id,nickname,body,created_at) on public.study_messages to authenticated;
+grant select(id,room_id,nickname,body,created_at) on public.study_room_messages to authenticated;
 revoke all on function public.study_is_member(uuid) from public,anon;
 grant execute on function public.study_is_member(uuid) to authenticated;
 
@@ -136,7 +137,7 @@ returns table(id uuid,body text,nickname text,created_at timestamptz,is_mine boo
 language plpgsql stable security definer set search_path = public as $$
 begin
  if not public.study_is_member(rid) then raise exception 'ROOM_UNAVAILABLE'; end if;
- return query select m.id,m.body,m.nickname,m.created_at,m.author_id=auth.uid() from public.study_messages m
+ return query select m.id,m.body,m.nickname,m.created_at,m.author_id=auth.uid() from public.study_room_messages m
  where m.room_id=rid and (before_time is null or (m.created_at,m.id)<(before_time,coalesce(before_id,'ffffffff-ffff-ffff-ffff-ffffffffffff'::uuid)))
  order by m.created_at desc,m.id desc limit 50;
 end;
@@ -154,12 +155,12 @@ begin
  select m.nickname into display from public.study_room_members m where m.room_id=rid and m.student_id=uid;
  if display is null then raise exception 'ROOM_UNAVAILABLE'; end if;
  if message_body is null or char_length(trim(message_body)) not between 1 and 1200 then raise exception 'INVALID_MESSAGE'; end if;
- if exists(select 1 from public.study_messages m where m.id=request_id and m.author_id=uid and m.room_id=rid and m.body=trim(message_body)) then
-  return query select m.id,m.body,m.nickname,m.created_at,true from public.study_messages m where m.id=request_id and m.author_id=uid and m.room_id=rid; return;
+ if exists(select 1 from public.study_room_messages m where m.id=request_id and m.author_id=uid and m.room_id=rid and m.body=trim(message_body)) then
+  return query select m.id,m.body,m.nickname,m.created_at,true from public.study_room_messages m where m.id=request_id and m.author_id=uid and m.room_id=rid; return;
  end if;
- if (select count(*) from public.study_messages m where m.author_id=uid and m.created_at>now()-interval '1 minute')>=10 then raise exception 'MESSAGE_LIMIT'; end if;
- insert into public.study_messages(id,room_id,author_id,nickname,body) values(request_id,rid,uid,display,trim(message_body)) returning study_messages.id into mid;
- return query select m.id,m.body,m.nickname,m.created_at,true from public.study_messages m where m.id=mid;
+ if (select count(*) from public.study_room_messages m where m.author_id=uid and m.created_at>now()-interval '1 minute')>=10 then raise exception 'MESSAGE_LIMIT'; end if;
+ insert into public.study_room_messages(id,room_id,author_id,nickname,body) values(request_id,rid,uid,display,trim(message_body)) returning study_room_messages.id into mid;
+ return query select m.id,m.body,m.nickname,m.created_at,true from public.study_room_messages m where m.id=mid;
 end;
 $$;
 

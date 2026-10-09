@@ -1,10 +1,40 @@
 const { PGlite } = await import(process.env.PGLITE_MODULE || '@electric-sql/pglite')
 import {readFileSync} from 'node:fs'
 import assert from 'node:assert/strict'
-const db=new PGlite(), root=new URL('../supabase/', import.meta.url)
+const root=new URL('../supabase/', import.meta.url)
+async function runSuite(withLegacy) {
+const db=new PGlite()
 await db.exec(`create role anon;create role authenticated;create schema auth;create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;grant usage on schema auth,public to anon,authenticated;grant execute on function auth.uid() to anon,authenticated;create table public.profiles(id uuid primary key);`)
 const A='11111111-1111-4111-8111-111111111111',B='22222222-2222-4222-8222-222222222222',C='33333333-3333-4333-8333-333333333333'
 await db.exec(`insert into profiles values('${A}'),('${B}'),('${C}');`)
+// Reproduce the reported legacy columns and verify representative existing grants/indexes survive.
+if (withLegacy) await db.exec(`
+ create table public.study_messages (
+   id uuid primary key default gen_random_uuid(),
+   course_id text not null,
+   author_id uuid not null references profiles(id) on delete cascade,
+   alias text not null,
+   carrera text not null,
+   ciclo integer,
+   body text not null,
+   created_at timestamptz default now()
+ );
+ insert into study_messages(id,course_id,author_id,alias,carrera,ciclo,body,created_at)
+ values('99999999-9999-4999-8999-999999999999','calc1','${A}','Nombre antiguo','ia',2,'Conversación anterior',null);
+ create index study_messages_author_created on study_messages(author_id,created_at desc);
+ alter table study_messages enable row level security;
+ create policy "Existing course chat" on study_messages for select to authenticated using(auth.uid()=author_id);
+ grant select(id,course_id,alias,carrera,ciclo,body,created_at) on study_messages to authenticated;
+`)
+const legacySnapshot=async()=>({
+ data:(await db.query('select * from study_messages order by id')).rows,
+ table:(await db.query("select oid,relrowsecurity,relacl::text from pg_class where oid='public.study_messages'::regclass")).rows,
+ columns:(await db.query("select column_name,udt_name,is_nullable,column_default from information_schema.columns where table_schema='public' and table_name='study_messages' order by ordinal_position")).rows,
+ indexes:(await db.query("select indexname,indexdef from pg_indexes where schemaname='public' and tablename='study_messages' order by indexname")).rows,
+ policies:(await db.query("select policyname,roles,cmd,qual,with_check from pg_policies where schemaname='public' and tablename='study_messages' order by policyname")).rows,
+ grants:(await db.query("select grantee,column_name,privilege_type from information_schema.column_privileges where table_schema='public' and table_name='study_messages' order by grantee,column_name,privilege_type")).rows
+})
+const legacyBefore=withLegacy ? await legacySnapshot() : null
 const run=async name=>{try{await db.exec(readFileSync(new URL(name, root),'utf8'))}catch(e){throw new Error(name+': '+e.message)}}
 await run('study_groups.sql');await run('study_groups.sql')
 const own=async uid=>db.exec(`reset role;select set_config('request.jwt.claim.sub','${uid}',false);set role authenticated;`)
@@ -35,7 +65,7 @@ const message=(await rows(`select * from send_study_message('${privateId}','Mens
 assert.equal(message.nickname,'Nombre B');assert.equal(message.body,'Mensaje real');assert.equal(message.is_mine,true)
 assert.equal((await rows(`select * from send_study_message('${privateId}','Mensaje real','${msgId}')`))[0].id,msgId)
 assert.equal((await rows(`select * from read_study_messages('${privateId}')`)).length,1)
-await rejects('select author_id from study_messages',/permission denied/)
+await rejects('select author_id from study_room_messages',/permission denied/)
 await rejects('select student_id from study_room_members',/permission denied/)
 await own(A)
 const seen=(await rows(`select * from read_study_messages('${privateId}')`))[0]
@@ -60,13 +90,13 @@ await db.exec('reset role;set role anon;')
 await rejects("select * from list_study_rooms(array['calc1'])",/permission denied/)
 await rejects('select id from study_rooms',/permission denied/)
 await db.exec('reset role;')
-assert.equal((await rows(`select count(*) as n from study_messages where room_id='${privateId}'`))[0].n,0)
+assert.equal((await rows(`select count(*) as n from study_room_messages where room_id='${privateId}'`))[0].n,0)
 // Rate limits cannot be bypassed by retrying or choosing another room.
 await own(A)
 for (let i=0;i<10;i++) await db.exec(`select send_study_message('${publicId}','Mensaje ${i}')`)
 await rejects(`select send_study_message('${publicId}','Undécimo mensaje')`,/MESSAGE_LIMIT/)
 await db.exec('reset role;')
-await db.exec(`update study_messages set created_at=now()-interval '2 minutes'`)
+await db.exec(`update study_room_messages set created_at=now()-interval '2 minutes'`)
 await own(A)
 await db.exec(`select send_study_message('${publicId}','Tras la pausa')`)
 // Six owned rooms are rejected; the first five remain available.
@@ -74,7 +104,7 @@ for (let i=0;i<4;i++) await db.exec(`select create_study_room('calc1','Sala ${i}
 await rejects("select create_study_room('calc1','Sexta sala','',false,'Nombre A')",/ROOM_LIMIT/)
 // Seed only this disposable database to exercise message cursor boundaries.
 await db.exec('reset role;')
-await db.exec(`delete from study_messages where room_id='${publicId}';insert into study_messages(room_id,author_id,nickname,body,created_at) select '${publicId}','${A}','Nombre A','Histórico '||i,'2026-10-01T12:00:00Z'::timestamptz from generate_series(1,110) i;`)
+await db.exec(`delete from study_room_messages where room_id='${publicId}';insert into study_room_messages(room_id,author_id,nickname,body,created_at) select '${publicId}','${A}','Nombre A','Histórico '||i,'2026-10-01T12:00:00Z'::timestamptz from generate_series(1,110) i;`)
 await own(A)
 const first=await rows(`select * from read_study_messages('${publicId}')`)
 assert.equal(first.length,50)
@@ -102,5 +132,14 @@ await db.exec('reset role;')
 const available=(await rows(`select id from study_rooms where not exists(select 1 from study_room_members where room_id=study_rooms.id and student_id='${C}') and id<>'${publicId}' limit 1`))[0].id
 await own(C)
 await rejects(`select join_study_room('${available}',null,'Nombre C')`,/MEMBERSHIP_LIMIT/)
-console.log('PASS groups SQL: idempotent migration, empty state, public discovery, private code access, owner-only code rotation/close, members-only messages, server nickname, hidden authors/IDs, retry idempotence, leave revokes access, cascade close, anonymous denial, rate/room/membership/capacity limits, 110-message cursor pagination')
+await db.exec('reset role;')
+if (withLegacy) assert.deepEqual(await legacySnapshot(),legacyBefore)
+const diagnostic=(await db.query(readFileSync(new URL('migration_diagnostics.sql',root),'utf8'))).rows
+assert.equal(diagnostic.find(r=>r.object_name==='public.study_room_messages').details.exists,true)
+assert.equal(diagnostic.find(r=>r.object_name==='public.study_messages').details.exists,withLegacy)
+console.log((withLegacy ? 'PASS with existing course chat preserved: ' : 'PASS fresh schema: ')+'groups SQL: idempotent migration, empty state, public discovery, private code access, owner-only code rotation/close, members-only messages, server nickname, hidden authors/IDs, retry idempotence, leave revokes access, cascade close, anonymous denial, rate/room/membership/capacity limits, 110-message cursor pagination')
 await db.close()
+
+}
+await runSuite(false)
+await runSuite(true)

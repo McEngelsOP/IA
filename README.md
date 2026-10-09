@@ -52,7 +52,7 @@ Ejecuta en el **SQL Editor** los scripts de la carpeta [`supabase/`](supabase/),
 - `setup.sql` — perfiles y triggers de autenticación
 - `progress.sql` — avance de malla
 - `sync_features.sql` — plan, eventos con horarios/repetición semanal y tareas privadas; ejecutar antes de publicar `pagina.html`
-- `study_groups.sql` — salas públicas/privadas, participantes, mensajes y funciones con permisos de membresía
+- `study_groups.sql` — salas públicas/privadas, participantes, mensajes (`study_room_messages`) y funciones con permisos de membresía; conserva el chat anterior `study_messages`
 - [`STUDY_GROUPS_SETUP.md`](supabase/STUDY_GROUPS_SETUP.md) — activación y pruebas de Grupos de estudio
 - [`CALENDAR_SETUP.md`](supabase/CALENDAR_SETUP.md) — migración, revisión de RLS y orden de instalación de los scripts consolidados
 - `course_detail.sql`, `arcade.sql`, `logros.sql` — ficha de curso, rankings de arcade y sistema de logros
