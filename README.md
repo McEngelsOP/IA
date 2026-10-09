@@ -13,7 +13,7 @@ Aplicación web de la malla de **Ingeniería en IA (ESAN)**: cada alumno inicia 
 - ✅ Modo **"Marcar llevados"**: requisitos previos en cascada y persistencia en Supabase
 - 📅 **Planificador de ciclo y Calendario Académico** (eventos oficiales + personales sincronizados en la nube)
 - 📝 **Ficha del curso**: notas, veces llevado, comentarios personales, reseñas anónimas y estrellas de dificultad
-- 🤖 **Asesor académico Gemini**: estima la carga del plan con créditos y dificultad agregada
+- 🤖 **Asesor académico Gemini, Groq y OpenRouter**: estima la carga del plan con créditos y dificultad agregada
 - 🧭 **Proyección de ciclos**: compara rutas ligeras, equilibradas e intensivas respetando prerrequisitos
 - 👨‍🏫 **Directorio de profesores**: likes/dislikes y etiquetas comunitarias
 - 📊 **Mi Panel**: estadísticas, histogramas y línea de tiempo con logros desbloqueables
@@ -57,7 +57,7 @@ Ejecuta en el **SQL Editor** los scripts de la carpeta [`supabase/`](supabase/),
 - [`STUDY_GROUPS_SETUP.md`](supabase/STUDY_GROUPS_SETUP.md) — activación y pruebas de Grupos de estudio
 - [`CALENDAR_SETUP.md`](supabase/CALENDAR_SETUP.md) — migración, revisión de RLS y orden de instalación de los scripts consolidados
 - `course_detail.sql`, `arcade.sql`, `logros.sql` — ficha de curso, rankings de arcade y sistema de logros
-- `GEMINI_ADVISOR.md` — configuración segura del asesor académico con una clave privada de Gemini
+- `GEMINI_ADVISOR.md` — configuración del asesor académico y respaldo automático Gemini → Groq → OpenRouter
 
 ## Scripts
 

@@ -1,6 +1,6 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
 
-const DEFAULT_GEMINI_MODEL = 'gemini-3.5-flash-lite'
+import { askProviders } from './providers.mjs'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -34,9 +34,6 @@ Deno.serve(async req => {
   const { data: { user }, error: authError } = await userClient.auth.getUser()
   if (authError || !user) return json({ error: 'unauthorized' }, 401)
 
-  const apiKey = Deno.env.get('GEMINI_API_KEY')
-  if (!apiKey) return json({ error: 'configuration_missing' }, 503)
-
   let body: Record<string, unknown>
   try {
     const parsed = await req.json()
@@ -64,9 +61,9 @@ Deno.serve(async req => {
 
   const history = Array.isArray(body.history)
     ? body.history.slice(-6).flatMap((item: Record<string, unknown>) => {
-        const role = item?.role === 'assistant' ? 'model' : item?.role === 'user' ? 'user' : null
+        const role = item?.role === 'assistant' ? 'assistant' : item?.role === 'user' ? 'user' : null
         const content = cleanText(item?.content, 1800)
-        return role && content ? [{ role, parts: [{ text: content }] }] : []
+        return role && content ? [{ role, content }] : []
       })
     : []
 
@@ -90,56 +87,14 @@ Deno.serve(async req => {
     `Pregunta: ${question}`
   ].join('\n')
 
-  const model = cleanText(Deno.env.get('GEMINI_MODEL'), 80).replace(/^models\//, '') || DEFAULT_GEMINI_MODEL
-  if (!/^[a-zA-Z0-9._-]+$/.test(model)) return json({ error: 'invalid_model' }, 500)
-
-  try {
-    const requestModel = (activeModel: string) => fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${activeModel}:generateContent`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-        body: JSON.stringify({
-          systemInstruction: { parts: [{ text: systemInstruction }] },
-          contents: [...history, { role: 'user', parts: [{ text: context }] }],
-          generationConfig: { temperature: 0.25, maxOutputTokens: 700 }
-        }),
-        signal: AbortSignal.timeout(20000)
-      }
-    )
-
-    let activeModel = model
-    let response = await requestModel(activeModel)
-    // A 404 can mean an obsolete model or a model unavailable to this Google project.
-    // Retry once with the current Flash-Lite model; don't retry quota or authentication errors.
-    if (response.status === 404 && activeModel !== DEFAULT_GEMINI_MODEL) {
-      console.warn('[study-advisor] Configured model unavailable:', activeModel)
-      activeModel = DEFAULT_GEMINI_MODEL
-      response = await requestModel(activeModel)
-    }
-
-    if (!response.ok) {
-      console.error('[study-advisor] Gemini request rejected:', { model: activeModel, status: response.status })
-      if (response.status === 404) return json({ error: 'model_unavailable' }, 502)
-      if (response.status === 429) return json({ error: 'rate_limited' }, 429)
-      if (response.status === 400 || response.status === 401 || response.status === 403) return json({ error: 'provider_configuration' }, 502)
-      return json({ error: 'provider_unavailable' }, 502)
-    }
-
-    const result = await response.json()
-    const answer = result?.candidates?.[0]?.content?.parts
-      ?.filter((part: { thought?: boolean }) => !part?.thought)
-      .map((part: { text?: string }) => cleanText(part?.text, 8000))
-      .filter(Boolean)
-      .join('\n')
-
-    if (!answer) return json({ error: 'empty_response' }, 502)
-    console.info('[study-advisor] Gemini request completed:', activeModel)
-    return json({ answer })
-  } catch (error) {
-    console.error('[study-advisor] request failed:', error instanceof Error ? error.name : 'unknown')
-    return json({ error: error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError')
-      ? 'provider_timeout'
-      : 'provider_unavailable' }, 502)
-  }
+  const result = await askProviders({
+    env: (name: string) => Deno.env.get(name),
+    system: systemInstruction,
+    context,
+    history,
+    onFailure: (details: Record<string, unknown>) => console.warn('[study-advisor] Provider rejected:', details)
+  })
+  if ('error' in result) return json({ error: result.error }, result.status)
+  console.info('[study-advisor] Request completed:', { provider: result.provider, model: result.model })
+  return json({ answer: result.answer })
 })

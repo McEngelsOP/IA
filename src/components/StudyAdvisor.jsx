@@ -13,10 +13,10 @@ const ERROR_MESSAGES = {
   function_missing: 'El asesor aún no está disponible. Contacta al administrador.',
   model_unavailable: 'El modelo de IA del asesor no está disponible. Contacta al administrador.',
   invalid_model: 'El modelo de IA del asesor no está configurado correctamente.',
-  provider_configuration: 'Google rechazó la configuración del asesor. Contacta al administrador.',
+  provider_configuration: 'Los proveedores de IA rechazaron la configuración del asesor. Contacta al administrador.',
   rate_limited: 'Se alcanzó el límite de consultas del asesor. Inténtalo más tarde.',
-  provider_timeout: 'Google tardó demasiado en responder. Inténtalo de nuevo.',
-  empty_response: 'Google no devolvió una respuesta. Prueba reformular tu pregunta.'
+  provider_timeout: 'Los servicios de IA tardaron demasiado en responder. Inténtalo de nuevo.',
+  empty_response: 'Los servicios de IA no devolvieron una respuesta. Prueba reformular tu pregunta.'
 }
 
 export default function StudyAdvisor({ planCourses, careerName, onClose, embedded = false }) {
@@ -170,7 +170,7 @@ export default function StudyAdvisor({ planCourses, careerName, onClose, embedde
         <form className="study-advisor-form" onSubmit={sendMessage}>
           {errorMessage && <div className="study-advisor-error" role="alert">{errorMessage}</div>}
           <label className="study-advisor-privacy">
-            Al enviar, Google Gemini recibe tu pregunta y los cursos de este plan con sus estrellas agregadas. No enviamos tus notas ni tu código.
+            Al enviar, Gemini, Groq u OpenRouter pueden recibir tu pregunta, el historial reciente y los cursos de este plan con sus estrellas agregadas. No enviamos tus notas ni tu código.
           </label>
           <div className="study-advisor-compose">
             <textarea
