@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import { CAREER_KEYS, careerLabel } from '../data/careerOptions.js'
 import '../styles/AdminPanel.css'
 
 export default function AdminPanel({ onClose }) {
@@ -245,11 +246,7 @@ export default function AdminPanel({ onClose }) {
                           <td style={{ color: '#64748b' }}>{u.email}</td>
                           <td>
                             <span className={`admin-badge ${u.carrera || 'none'}`}>
-                              {u.carrera === 'ia' ? '🤖 IA'
-                               : u.carrera === 'industrial' ? '⚙️ Industrial'
-                               : u.carrera === 'marketing' ? '📈 Marketing'
-                               : u.carrera === 'pucp-mecatronica' ? '🤖 PUCP Mecatrónica'
-                               : 'Sin elegir'}
+                              {careerLabel(u.carrera)}
                             </span>
                           </td>
                           <td style={{ fontStyle: u.alias ? 'italic' : 'normal', opacity: u.alias ? 1 : 0.4 }}>
@@ -403,11 +400,7 @@ export default function AdminPanel({ onClose }) {
                   {Object.entries(stats.students_by_carrera || {}).map(([key, count]) => (
                     <div key={key} className="admin-carrera-item">
                       <span className={`admin-badge ${key}`}>
-                        {key === 'ia' ? '🤖 Ingeniería IA'
-                         : key === 'industrial' ? '⚙️ Ind. y Comercial'
-                         : key === 'marketing' ? '📈 Marketing'
-                         : key === 'pucp-mecatronica' ? '🤖 PUCP Mecatrónica'
-                         : 'Sin elegir'}
+                        {careerLabel(key)}
                       </span>
                       <strong style={{ fontSize: '1.1rem', fontFamily: 'JetBrains Mono, monospace' }}>{count}</strong>
                     </div>
@@ -433,10 +426,7 @@ export default function AdminPanel({ onClose }) {
               onChange={e => setSelectedCarrera(e.target.value)}
             >
               <option value="">Sin elegir (pantalla de selección)</option>
-              <option value="ia">Ingeniería en IA (ESAN)</option>
-              <option value="industrial">Ingeniería Industrial y Comercial (ESAN)</option>
-              <option value="marketing">Ingeniería en Marketing (ESAN)</option>
-              <option value="pucp-mecatronica">Ingeniería Mecatrónica (PUCP)</option>
+              {CAREER_KEYS.map(key => <option key={key} value={key}>{careerLabel(key)}</option>)}
             </select>
             <div className="admin-dialog-actions">
               <button className="admin-action-btn" onClick={() => setCarreraModalUser(null)}>Cancelar</button>

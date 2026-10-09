@@ -32,6 +32,9 @@
   z-index: 1;
   width: 100%;
   max-width: 520px;
+  max-height: calc(100dvh - 48px);
+  display: flex;
+  flex-direction: column;
   padding: 40px 44px;
   background: rgba(254, 253, 251, 0.88);
   border: 1px solid rgba(2, 47, 66, 0.12);
@@ -67,7 +70,12 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
+
+.cs-card > :not(.cs-options), .cs-option { flex-shrink: 0; }
 
 .cs-option {
   display: flex;

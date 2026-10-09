@@ -1,4 +1,5 @@
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseClient } from './getSupabaseClient.js'
+import { CAREER_OPTIONS, CAREER_KEYS, careerLabel } from '../data/careerOptions.js'
 
 const $ = id => document.getElementById(id)
 const panel = document.querySelector('.panel')
@@ -14,14 +15,10 @@ let recovering = params.get('type') === 'recovery' || query.get('type') === 'rec
 let busy = false, transitioning = false, checkingSession = true, acceptedSession = false
 let revision = 0, manualPause = false, unconfirmedCode = null, mailCode = '', mailKind = 'recovery', resendAt = 0
 let client = null
+for (const key of CAREER_KEYS) $('registerCareer').add(new Option(careerLabel(key), key))
 
 try {
-  const url = import.meta.env.VITE_SUPABASE_URL, key = import.meta.env.VITE_SUPABASE_ANON_KEY
-  if (url && key) client = createClient(url, key, {
-    global: { fetch: (url, options = {}) => fetch(url, {
-      ...options, signal: options.signal || (typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(20000) : undefined)
-    }) }
-  })
+  client = getSupabaseClient()
 } catch { /* Configuration failures are shown without exposing credentials. */ }
 
 let fitFrame = 0
@@ -212,7 +209,7 @@ $('registerForm').addEventListener('submit', async event => {
   if (busy || checkingSession || transitioning || acceptedSession) return
   if (!available() || !validCode('registerCode')) return
   const career = $('registerCareer').value, code = $('registerCode').value.trim(), email = $('registerEmail').value.trim().toLowerCase()
-  if (!career) { invalid('registerCareer', 'Elige tu carrera.'); return }
+  if (!Object.hasOwn(CAREER_OPTIONS, career)) { invalid('registerCareer', 'Elige tu carrera.'); return }
   const year = Number(new Intl.DateTimeFormat('en', { timeZone: 'America/Lima', year: 'numeric' }).format(new Date())) % 100
   const promotion = Number(code.slice(0, 2))
   if (career === 'pucp-mecatronica' ? !code.startsWith('20') : promotion < 25 || promotion > year) { invalid('registerCode', 'Ese código no corresponde a la universidad seleccionada.'); return }

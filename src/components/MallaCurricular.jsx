@@ -24,12 +24,15 @@ const norm = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
 
 
 const MALLAS = {}
-Object.values(CARRERAS).forEach(ca => (MALLAS[ca.key] = buildMalla(ca)))
+function getMalla(key) {
+  const career = CARRERAS[key] || CARRERAS.ia
+  return MALLAS[career.key] ||= buildMalla(career)
+}
 
 // ---------- Componente ----------
 export default function MallaCurricular({ user, carrera, onSwitchCarrera, onLogout }) {
   // Malla activa según la carrera del alumno (o la elegida por el visitante)
-  const M = MALLAS[carrera] || MALLAS.ia
+  const M = getMalla(carrera)
   const { byId, unlocks, edges } = M
 
   const [mode, setMode] = useState('open') // 'open' | 'req' | 'noreq' | 'done' | 'ficha'

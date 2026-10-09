@@ -6,6 +6,7 @@ Aplicación web de la malla de **Ingeniería en IA (ESAN)**: cada alumno inicia 
 
 ## Características
 
+- 🎓 Registro con las **18 carreras ESAN** de `Mallas curriculares/` y Mecatrónica PUCP; [fuentes, generación y activación](docs/careers.md)
 - 🔐 Login con **código de alumno** (ESAN / PUCP) y contraseña
 - ✉️ Registro con correo real: confirmación de cuenta y recuperación de contraseña
 - 🗺️ Malla interactiva con cálculo heurístico de cruces mínimos y **filtro por áreas formativas**
@@ -50,6 +51,7 @@ npm run dev
 
 Ejecuta en el **SQL Editor** los scripts de la carpeta [`supabase/`](supabase/), según corresponda:
 - `setup.sql` — perfiles y triggers de autenticación
+- `careers_catalog.sql` — ampliación a todas las carreras; ejecutar antes de publicar el registro actualizado, sin repetir los scripts históricos
 - `progress.sql` — avance de malla
 - `sync_features.sql` — plan, eventos con horarios/repetición semanal y tareas privadas; ejecutar antes de publicar `pagina.html`
 - `focus_sessions.sql` — temporizador persistente e historial privado de Mod Focus; [guía de activación](supabase/FOCUS_SETUP.md)

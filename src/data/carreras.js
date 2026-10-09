@@ -2,12 +2,15 @@
 // que la interfaz muestra según la carrera del alumno.
 // La PUCP es un sistema separado: sus ids llevan prefijo 'pucp-' para que
 // profesores, votos y reseñas nunca se crucen con los cursos de ESAN.
-import { CURSOS, CICLOS, TOTAL_CRED } from './cursos'
-import { CURSOS_INDUSTRIAL, CICLOS_INDUSTRIAL, TOTAL_CRED_INDUSTRIAL } from './cursosIndustrial'
-import { CURSOS_MARKETING, CICLOS_MARKETING, TOTAL_CRED_MARKETING } from './cursosMarketing'
-import { CURSOS_PUCP, CICLOS_PUCP, TOTAL_CRED_PUCP, ELECTIVOS_PUCP } from './cursosPucp'
+import { CURSOS, CICLOS, TOTAL_CRED } from './cursos.js'
+import { CURSOS_INDUSTRIAL, CICLOS_INDUSTRIAL, TOTAL_CRED_INDUSTRIAL } from './cursosIndustrial.js'
+import { CURSOS_MARKETING, CICLOS_MARKETING, TOTAL_CRED_MARKETING } from './cursosMarketing.js'
+import { CURSOS_PUCP, CICLOS_PUCP, TOTAL_CRED_PUCP, ELECTIVOS_PUCP } from './cursosPucp.js'
+import { CURRICULA_ESAN } from './curriculaEsan.js'
+import { CAREER_KEYS } from './careerOptions.js'
 
 export const CARRERAS = {
+  ...CURRICULA_ESAN,
   ia: {
     key: 'ia',
     uni: 'Universidad ESAN',
@@ -56,4 +59,4 @@ export const CARRERAS = {
   }
 }
 
-export const CARRERA_KEYS = Object.keys(CARRERAS)
+export const CARRERA_KEYS = CAREER_KEYS

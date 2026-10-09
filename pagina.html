@@ -685,8 +685,9 @@ a{text-underline-offset:3px}.page button:not(.ck){min-height:36px}
 
 <script type="module">
 import { FOCUS_PRESETS, enrolledFocusCourses, focusRemaining, focusDuration, focusMotivation, focusError, todayLima } from './src/lib/focusModel.js';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseClient } from './src/lib/getSupabaseClient.js';
 import { CARRERAS } from './src/data/carreras.js';
+import { CAREER_KEYS, careerLabel } from './src/data/careerOptions.js';
 import { LOGROS } from './src/lib/logros.js';
 
 const I={
@@ -743,11 +744,10 @@ const HOME_PASS=10.5;
 const homeEsc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const homeNum=(n,d=0)=>Number.isFinite(n)?n.toLocaleString('es-PE',{minimumFractionDigits:d,maximumFractionDigits:d}):'—';
 const homeDate=value=>{const date=new Date(value);return Number.isNaN(date.getTime())?'':date.toLocaleDateString('es-PE',{day:'numeric',month:'short',year:'numeric',timeZone:'America/Lima'})};
-const HOME={tab:'graficos',cycle:'1',mode:'loading',user:null,career:'ia',done:new Set(),plan:new Set(),grades:{},drafts:{},feedback:{},statuses:{},achievements:{},profile:null,error:'',saving:new Set(),revision:0};
+const HOME={tab:'graficos',cycle:'1',mode:'loading',user:null,career:'ia',careerDraft:'',done:new Set(),plan:new Set(),grades:{},drafts:{},feedback:{},statuses:{},achievements:{},profile:null,error:'',saving:new Set(),revision:0};
 let homeClient=null;
 try{
- const url=import.meta.env.VITE_SUPABASE_URL,key=import.meta.env.VITE_SUPABASE_ANON_KEY;
- if(url&&key)homeClient=createClient(url,key,{global:{fetch:(url,options={})=>fetch(url,{...options,signal:options.signal||(typeof AbortSignal.timeout==='function'?AbortSignal.timeout(20000):undefined)})}});
+ homeClient=getSupabaseClient();
 }catch{ /* La vista visitante sigue disponible sin configuración. */ }
 function homeCareer(){return CARRERAS[HOME.career]||CARRERAS.ia}
 function homeCounts(courses=homeCareer().cursos){
@@ -770,7 +770,7 @@ function homeModel(){
  return {career,courses,total,approvedCredits,done,cycles,perCycle,active,...all,grades,median,simple,passed,eligible,selected:homeCounts(selected)};
 }
 function homeReset(mode='guest',clearFocus=true){
- HOME.revision++;HOME.mode=mode;HOME.user=null;HOME.career='ia';HOME.profile=null;
+ HOME.revision++;HOME.mode=mode;HOME.user=null;HOME.career='ia';HOME.careerDraft='';HOME.profile=null;
  HOME.done=new Set();HOME.plan=new Set();HOME.grades={};HOME.drafts={};HOME.feedback={};HOME.statuses={};HOME.achievements={};HOME.error='';HOME.saving=new Set();
  if(clearFocus)kReset();
 }
@@ -832,7 +832,7 @@ function homeEmpty(title,message,action=true){return `<div class="h-state"><h3>$
 function homeReady(m){
  if(HOME.mode==='loading')return `<div class="h-state" role="status"><h3>Cargando tu avance…</h3><p>Estamos consultando tus notas y tu progreso académico.</p></div>`;
  if(HOME.mode==='error')return homeEmpty('Tu información no está disponible','Tus notas y tu progreso se conservan. Reintenta la carga para verlos.',false);
- if(HOME.mode==='profile')return homeEmpty('Completa tu perfil','Elige tu carrera en tu cuenta para consultar la malla y las estadísticas que te corresponden.',false)+`<a class="h-btn primary" href="./index.html" target="_blank" rel="noopener">Completar mi perfil</a>`;
+ if(HOME.mode==='profile')return homeEmpty('Completa tu perfil','Elige tu carrera en tu cuenta para consultar la malla y las estadísticas que te corresponden.',false)+(HOME.profile&&HOME.profile.carrera==null?`<div class="h-state-actions"><label class="h-cycle" for="h-career">Carrera<select id="h-career"${HOME.saving.size?' disabled':''}><option value="">Elige tu carrera</option>${CAREER_KEYS.map(key=>`<option value="${key}"${HOME.careerDraft===key?' selected':''}>${homeEsc(careerLabel(key))}</option>`).join('')}</select></label><button class="h-btn primary" data-a="hcareer"${HOME.saving.size?' disabled':''}>${HOME.saving.size?'Guardando…':'Guardar carrera'}</button></div>`:`<p class="h-muted">No pudimos identificar la carrera de tu perfil. Contacta al soporte para revisarla.</p>`);
  if(HOME.mode==='guest')return homeEmpty('Tu recorrido empieza aquí','Inicia sesión para reunir tus notas, ponderados y logros en Inicio.');
  return null;
 }
@@ -900,6 +900,20 @@ function homeAction(button){
  if(action==='htab')homeTab(button.dataset.tab);
  else if(action==='hreload'&&HOME.user){if(!HOME.saving.size)homeLoad(HOME.user)}
  else if(action==='hretry'){HOME.error='';HOME.mode='loading';homeRender();homeInit()}
+ else if(action==='hcareer')homeSaveCareer();
+}
+async function homeSaveCareer(){
+ const career=$('h-career')?.value;
+ if(HOME.mode!=='profile'||!HOME.user||!homeClient||HOME.saving.size)return;
+ if(!Object.hasOwn(CARRERAS,career)){toast('Elige tu carrera');$('h-career')?.focus();return}
+ const user=HOME.user,revision=HOME.revision;
+ HOME.careerDraft=career;HOME.saving.add('career');HOME.error='';homeRender();
+ try{
+  const verified=await homeClient.auth.getUser();if(verified.error||verified.data.user?.id!==user.id)throw new Error('session');
+  const result=await homeClient.from('profiles').update({carrera:career}).eq('id',user.id).is('carrera',null).select('carrera').maybeSingle();
+  if(result.error||result.data?.carrera!==career)throw new Error('career');
+  if(revision===HOME.revision){HOME.saving.delete('career');await homeLoad(user)}
+ }catch{if(revision===HOME.revision){HOME.saving.delete('career');HOME.error='No pudimos guardar tu carrera. Reintenta; si persiste, contacta al soporte.';homeRender()}}
 }
 async function homeSaveGrade(form){
  const id=form.dataset.homeGrade,input=form.elements.grade;

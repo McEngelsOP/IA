@@ -54,7 +54,7 @@ declare uid uuid:=auth.uid(); career_name text;
 begin
  if uid is null then raise exception 'NO_AUTH'; end if;
  select carrera into career_name from public.profiles where id=uid for update;
- if career_name is null or career_name not in ('ia','industrial','marketing','pucp-mecatronica') then raise exception 'PROFILE_REQUIRED'; end if;
+ if career_name is null or career_name not in ('ia', 'industrial', 'marketing', 'administracion', 'administracion-finanzas', 'administracion-marketing', 'administracion-negocios-internacionales', 'contabilidad', 'derecho', 'derecho-corporativo', 'economia', 'economia-finanzas', 'economia-negocios-internacionales', 'ambiental', 'ciencia-datos', 'software', 'sistemas', 'psicologia', 'pucp-mecatronica') then raise exception 'PROFILE_REQUIRED'; end if;
  if exists(select 1 from public.focus_study_sessions where id=request_id and student_id=uid) then return public.focus_session_snapshot(request_id); end if;
  if exists(select 1 from public.focus_study_sessions where student_id=uid and status in ('running','paused')) then raise exception 'FOCUS_ALREADY_ACTIVE'; end if;
  if seconds is null or seconds not between 300 and 14100 or chosen_method is null or chosen_method not in ('p25','p45','p90','custom') or chosen_style is null or chosen_style not in ('digital','ring','arc','dots') or chosen_pet is null or chosen_pet not in ('cat','rabbit','owl') then raise exception 'INVALID_FOCUS'; end if;

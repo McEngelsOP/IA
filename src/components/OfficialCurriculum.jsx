@@ -20,7 +20,12 @@ const HINTS = {
 const STATUS = { aprobado: 'Aprobado', convalidado: 'Convalidado', matriculado: 'Matriculado', desaprobado: 'Desaprobado' }
 const norm = text => text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
 const number = n => n.toLocaleString('es-PE', { maximumFractionDigits: 2 })
-const MALLAS = Object.fromEntries(Object.entries(CARRERAS).map(([key, career]) => [key, buildMalla(career)]))
+const MALLAS = new Map()
+function getMalla(key) {
+  const career = CARRERAS[key] || CARRERAS.ia
+  if (!MALLAS.has(career.key)) MALLAS.set(career.key, buildMalla(career))
+  return MALLAS.get(career.key)
+}
 
 function Icon({ name }) {
   const paths = { search: <><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></>, left: <path d="m14 6-6 6 6 6"/>, right: <path d="m10 6 6 6-6 6"/>, tick: <path d="m5 12 4 4 10-10"/>, close: <path d="m6 6 12 12M6 18 18 6"/> }
@@ -28,7 +33,7 @@ function Icon({ name }) {
 }
 
 function OfficialCurriculum({ career, user, client, sessionMode, initialDone, initialPlan, statuses, initialGrades, onProgressChange, onGradeChange, onBusy }) {
-  const M = MALLAS[career] || MALLAS.ia
+  const M = getMalla(career)
   const [mode, setMode] = useState('open'), [selected, setSelected] = useState(null)
   const [done, setDone] = useState(() => new Set(initialDone)), [plan, setPlan] = useState(() => new Set(initialPlan))
   const [grades, setGrades] = useState(initialGrades), [area, setArea] = useState(null)
@@ -226,7 +231,7 @@ function OfficialCurriculum({ career, user, client, sessionMode, initialDone, in
     {mode === 'ficha' && (course ? <section className="oc-details" ref={detail} tabIndex="-1" aria-label={`Ficha de ${course.n}`}>
       <div className="oc-detail-head"><h3>{course.n}</h3><button type="button" aria-label="Cerrar ficha del curso" onClick={() => { const id = selected; setSelected(null); scroller.current?.querySelector(`[data-course="${id}"]`)?.focus({ preventScroll: true }) }}><Icon name="close"/></button></div>
       <dl className="oc-facts"><div><dt>Ciclo</dt><dd>{M.ciclos[course.c].t}</dd></div><div><dt>Créditos</dt><dd>{number(course.cr)}</dd></div><div><dt>Área</dt><dd>{AREAS[course.a]?.label}</dd></div><div><dt>Estado</dt><dd>{STATUS[selectedStatus] || 'Pendiente'}</dd></div></dl>
-      <h4>¿Qué requiere?</h4><p className="oc-course-links">{course.r.length ? list(course.r) : 'Sin prerrequisitos de cursos.'}</p>{course.rc > 0 && <p>Requiere {course.rc} créditos aprobados previos. Tu avance: {number(credits)} créditos.</p>}
+      <h4>¿Qué requiere?</h4><p className="oc-course-links">{course.r.length ? list(course.r) : 'Sin prerrequisitos de cursos.'}</p>{course.rc > 0 && <p>Requiere {course.rc} créditos aprobados previos. Tu avance: {number(credits)} créditos.</p>}{course.requirementNote && <p>{course.requirementNote}</p>}
       <h4>¿Qué abre?</h4><p className="oc-course-links">{M.unlocks[course.id]?.length ? list(M.unlocks[course.id]) : 'No abre otros cursos directamente.'}</p>
       {statuses[course.id]?.times_taken && <p>Veces llevado: {statuses[course.id].times_taken}{statuses[course.id].passed_at ? ` · Fecha registrada: ${new Date(statuses[course.id].passed_at).toLocaleDateString('es-PE')}` : ''}</p>}
       <div className="oc-actions"><button type="button" disabled={busy} onClick={() => requestDone(course.id)}>{done.has(course.id) ? 'Desmarcar como llevado' : 'Marcar como llevado'}</button></div>

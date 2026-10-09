@@ -1,0 +1,20 @@
+export const curriculumSources = [
+  ['ia', 'Malla_Ingenieria_en_Inteligencia_Artificial.md', true],
+  ['industrial', 'Mallas_Pregrado_2024_xlsx_-_INGICO_2024.md', true],
+  ['marketing', 'COMUNICACION_EMPRESARIAL_Y_MARKETING_DIGITAL.md', true],
+  ['administracion', 'Mallas_Pregrado_2024_xlsx_-_ADM_2024_1.md'],
+  ['administracion-finanzas', 'ADMINISTRACION_Y_FINANZAS.md'],
+  ['administracion-marketing', 'Mallas_Pregrado_2024_xlsx_-_ADYMA_2024.md'],
+  ['administracion-negocios-internacionales', 'ADMINISTRACION_Y_NEGOCIOS_INTERNACIONALES.md'],
+  ['contabilidad', 'CONTABILIDAD.md'],
+  ['derecho', 'Mallas_2026_-_excel_-_DER_2026_1.md'],
+  ['derecho-corporativo', 'Mallas_Pregrado_2024_xlsx_-_DECO_2024_2.md'],
+  ['economia', 'ECONOMIA_-_ECO_.md'],
+  ['economia-finanzas', 'Mallas_Pregrado_2024_xlsx_-_ECOYFI_2024_5.md'],
+  ['economia-negocios-internacionales', 'Mallas_Pregrado_2024_xlsx_-_ECYNI_2024_2.md'],
+  ['ambiental', 'Mallas_2026_-_excel_-_INGAMB_2026.md'],
+  ['ciencia-datos', 'Mallas_2026_-_excel_-_INGCD_2026_2.md'],
+  ['software', 'Mallas_2026_-_excel_-_INGSO_2026_1.md'],
+  ['sistemas', 'Mallas_Pregrado_2024_xlsx_-_INGITIS_2024.md'],
+  ['psicologia', 'Mallas_2026_-_excel_-_PSIC_2026_1.md']
+]
