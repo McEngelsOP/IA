@@ -1,4 +1,10 @@
 ## Qué es
+## Limpieza de archivos de Oficial — 2026-10-11
+
+Las entradas activas de Vite siguen siendo `pagina.html`, `login.html` e `ios-android.html`. Los 44 archivos exclusivos de la SPA original (antes en `src/main.jsx`, `src/App.jsx` y sus dependencias) se conservan ahora en `Revisar para limpiar/src/`. Los juegos externos que solo importaba el arcade anterior se movieron completos a `Revisar para limpiar/public/juegos/`, con sus licencias. Los apartados históricos de este documento y `docs/superpowers/` sobre la aplicación original deben interpretarse con esas rutas archivadas; no reconstruir ni editar esa SPA como si fuera la web vigente. Las dependencias compartidas por los componentes oficiales permanecen en `src/`.
+
+Se eliminaron el prototipo independiente `Malla curricular · Ingeniería en IA · ESAN.html`, su hoja de fuentes `ESAN_files/css2` y la copia exacta de IA con sufijo `(1).md`. Los dos Markdown alternativos de Industrial y Sistemas se conservan en `Revisar para limpiar/Mallas curriculares/`; las 18 fuentes seleccionadas en `scripts/curriculumSources.mjs` permanecen en la carpeta original. El inventario de la carpeta nueva identifica rutas, motivos y SHA; ningún catálogo de cursos, script SQL, perfil o dato de usuario fue modificado. La página móvil conserva su contenido exacto.
+
 
 Malla curricular interactiva para cuatro carreras: **Ingeniería en IA**, **Ingeniería Industrial y Comercial** y **Comunicación Empresarial y Marketing Digital** (ESAN) e **Ingeniería Mecatrónica** (PUCP, sistema separado). React 18 + Vite, Supabase (auth + Postgres con RLS + una Edge Function), desplegada en Vercel: **`Oficial` es la rama de producción de `https://l-esan.vercel.app`**. Todo el texto de la interfaz y los mensajes de commit van en español.
 

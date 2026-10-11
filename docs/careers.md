@@ -6,10 +6,10 @@ Inicio, la malla, el planificador, las fichas, Calendario/Horarios, Grupos de es
 
 ## Fuentes
 
-Los 21 Markdown de `Mallas curriculares/` representan 18 carreras distintas. La copia `Malla_Ingenieria_en_Inteligencia_Artificial (1).md` es idéntica al archivo sin sufijo. Industrial y Sistemas tienen versiones alternativas: no se mezclan planes ni se muestran carreras duplicadas.
+Los 18 Markdown de `Mallas curriculares/` corresponden a las 18 carreras ESAN seleccionadas en `scripts/curriculumSources.mjs`. Se eliminó la copia idéntica de IA con sufijo `(1)` y se trasladaron los dos planes alternativos de Industrial y Sistemas a `Revisar para limpiar/Mallas curriculares/`; no se mezclan planes ni se muestran carreras duplicadas.
 
 - IA, Industrial y Comunicación/Marketing conservan sus catálogos e identificadores existentes, incluidos avances, profesores y notas. Sus nombres y totales coinciden con las fuentes.
-- Para Sistemas se utiliza el archivo identificado como plan 2024 (`INGITIS_2024`), con 78 cursos y 213 créditos. El archivo alternativo sin año se conserva como fuente, sin fusionarlo con ese plan.
+- Para Sistemas se utiliza el archivo identificado como plan 2024 (`INGITIS_2024`), con 78 cursos y 213 créditos. El archivo alternativo sin año se conserva en `Revisar para limpiar/Mallas curriculares/`, sin fusionarlo con ese plan.
 - Las cinco nuevas mallas de la serie 2026 y las otras diez carreras nuevas usan los archivos indicados en `scripts/curriculumSources.mjs`.
 - Los Markdown son datos curriculares, no instrucciones de implementación.
 

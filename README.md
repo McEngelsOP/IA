@@ -71,7 +71,7 @@ Ejecuta en el **SQL Editor** los scripts de la carpeta [`supabase/`](supabase/),
 
 ## Oficial: información real por usuario
 
-La rama `Oficial` corresponde a producción en `https://l-esan.vercel.app`. La arquitectura SPA de `App.jsx` pertenece a la aplicación original `index.html`.
+La rama `Oficial` corresponde a producción en `https://l-esan.vercel.app`. La arquitectura SPA anterior se conserva en `Revisar para limpiar/src/`; no se incluye en las entradas de Vite actuales.
 
 `login.html` abre `pagina.html` en Inicio. Calendario/Horarios permite crear, editar y eliminar eventos y tareas de la cuenta, con vistas Día/Semana/Mes, horarios semanales, filtros y agenda accesible. Los cambios fallidos conservan los registros anteriores y el borrador. Inicio y Malla usan el mismo progreso privado.
 
@@ -84,3 +84,7 @@ Se retiraron las notas, horarios, conversaciones, menciones y enlaces de muestra
 Para activar Calendario y Grupos en la base existente, ejecuta `supabase/sync_features.sql` y después `supabase/study_groups.sql` en el SQL Editor. Las migraciones no se aplicaron a producción desde este entorno: su proxy rechaza la conexión PostgreSQL. Consulta [la guía de Grupos de estudio](supabase/STUDY_GROUPS_SETUP.md). La variable administrativa `SUPABASE_DB_URL` nunca se incluye en el frontend.
 
 Mod Focus ofrece sesiones persistentes con pausa y recuperación al recargar, historial por fecha y mensajes según el tiempo registrado. El selector muestra únicamente los cursos marcados como Matriculado de la carrera, en orden alfabético. Para activar esta versión, ejecutar `supabase/focus_sessions.sql` completo y recargar; no incluye sesiones de muestra.
+
+## Material archivado
+
+`Revisar para limpiar/README.md` describe los componentes de la aplicación anterior, juegos externos y planes alternativos que se conservaron para revisión. `Revisar para limpiar/inventario.json` registra sus rutas originales y motivos. `Mallas curriculares/` conserva las 18 fuentes activas; el prototipo HTML de IA y su hoja de fuentes se eliminaron, junto con la copia idéntica del Markdown de IA.

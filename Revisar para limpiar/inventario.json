@@ -1,0 +1,484 @@
+{
+  "base": "472d1d11f3f4c2c8d9e2e7431dab31278083753e",
+  "moves": [
+    {
+      "from": "Mallas curriculares/Malla_Ingenieria_Industrial_y_Comercial.md",
+      "to": "Revisar para limpiar/Mallas curriculares/Malla_Ingenieria_Industrial_y_Comercial.md",
+      "sha": "eced98c39990528264757e6bf19f41d7fb22e004",
+      "mode": "100644",
+      "reason": "Plan alternativo no seleccionado en curriculumSources.mjs"
+    },
+    {
+      "from": "Mallas curriculares/Malla_Ingenieria__de_tecnologias_de_Informacion.md",
+      "to": "Revisar para limpiar/Mallas curriculares/Malla_Ingenieria__de_tecnologias_de_Informacion.md",
+      "sha": "34348e68068ea49fe125cd75cf02c0057e1f8c6c",
+      "mode": "100644",
+      "reason": "Plan alternativo no seleccionado en curriculumSources.mjs"
+    },
+    {
+      "from": "public/juegos/a-pure-css-gameyou-must-build-a-lighthouse/a-pure-css-gameyou-must-build-a-lighthouse/LICENSE.txt",
+      "to": "Revisar para limpiar/public/juegos/a-pure-css-gameyou-must-build-a-lighthouse/a-pure-css-gameyou-must-build-a-lighthouse/LICENSE.txt",
+      "sha": "cb2d8c5fa7e6868cac8264af979e91898311b9ae",
+      "mode": "100644",
+      "reason": "Juego externo de la aplicación React anterior, con fuentes y licencias"
+    },
+    {
+      "from": "public/juegos/a-pure-css-gameyou-must-build-a-lighthouse/a-pure-css-gameyou-must-build-a-lighthouse/README.md",
+      "to": "Revisar para limpiar/public/juegos/a-pure-css-gameyou-must-build-a-lighthouse/a-pure-css-gameyou-must-build-a-lighthouse/README.md",
+      "sha": "56eb0e9db10bbb146c0edc2595d99861b4a6ab0c",
+      "mode": "100644",
+      "reason": "Juego externo de la aplicación React anterior, con fuentes y licencias"
+    },
+    {
+      "from": "public/juegos/a-pure-css-gameyou-must-build-a-lighthouse/a-pure-css-gameyou-must-build-a-lighthouse/dist/index.html",
+      "to": "Revisar para limpiar/public/juegos/a-pure-css-gameyou-must-build-a-lighthouse/a-pure-css-gameyou-must-build-a-lighthouse/dist/index.html",
+      "sha": "16bafc2efe724002e4959b5a15744d1e6a9f4b79",
+      "mode": "100644",
+      "reason": "Juego externo de la aplicación React anterior, con fuentes y licencias"
+    },
+    {
+      "from": "public/juegos/a-pure-css-gameyou-must-build-a-lighthouse/a-pure-css-gameyou-must-build-a-lighthouse/dist/script.js",
+      "to": "Revisar para limpiar/public/juegos/a-pure-css-gameyou-must-build-a-lighthouse/a-pure-css-gameyou-must-build-a-lighthouse/dist/script.js",
+      "sha": "dde3155f837e56e838bf4cd2ae8a0a73fbdd96ee",
+      "mode": "100644",
+      "reason": "Juego externo de la aplicación React anterior, con fuentes y licencias"
+    },
+    {
+      "from": "public/juegos/a-pure-css-gameyou-must-build-a-lighthouse/a-pure-css-gameyou-must-build-a-lighthouse/dist/style.css",
+      "to": "Revisar para limpiar/public/juegos/a-pure-css-gameyou-must-build-a-lighthouse/a-pure-css-gameyou-must-build-a-lighthouse/dist/style.css",
+      "sha": "afec5a62b5c6d7fe21c41e1d3e32ef70fec11018",
+      "mode": "100644",
+      "reason": "Juego externo de la aplicación React anterior, con fuentes y licencias"
+    },
+    {
+      "from": "public/juegos/a-pure-css-gameyou-must-build-a-lighthouse/a-pure-css-gameyou-must-build-a-lighthouse/src/index.html",
+      "to": "Revisar para limpiar/public/juegos/a-pure-css-gameyou-must-build-a-lighthouse/a-pure-css-gameyou-must-build-a-lighthouse/src/index.html",
+      "sha": "3f1012601fc8a3b7f913f3e7f7ae225fa6632daa",
+      "mode": "100644",
+      "reason": "Juego externo de la aplicación React anterior, con fuentes y licencias"
+    },
+    {
+      "from": "public/juegos/a-pure-css-gameyou-must-build-a-lighthouse/a-pure-css-gameyou-must-build-a-lighthouse/src/script.js",
+      "to": "Revisar para limpiar/public/juegos/a-pure-css-gameyou-must-build-a-lighthouse/a-pure-css-gameyou-must-build-a-lighthouse/src/script.js",
+      "sha": "62370be445ca8bf61acd298f0157d4fe1eba7dac",
+      "mode": "100644",
+      "reason": "Juego externo de la aplicación React anterior, con fuentes y licencias"
+    },
+    {
+      "from": "public/juegos/a-pure-css-gameyou-must-build-a-lighthouse/a-pure-css-gameyou-must-build-a-lighthouse/src/style.scss",
+      "to": "Revisar para limpiar/public/juegos/a-pure-css-gameyou-must-build-a-lighthouse/a-pure-css-gameyou-must-build-a-lighthouse/src/style.scss",
+      "sha": "1dd0ba9e1344bff6a488f1f1e97853d83eecd8c3",
+      "mode": "100644",
+      "reason": "Juego externo de la aplicación React anterior, con fuentes y licencias"
+    },
+    {
+      "from": "public/juegos/block-ninja/block-ninja/LICENSE.txt",
+      "to": "Revisar para limpiar/public/juegos/block-ninja/block-ninja/LICENSE.txt",
+      "sha": "6b4d45f56def7cf34a3aeda5cbcc723862bfe973",
+      "mode": "100644",
+      "reason": "Juego externo de la aplicación React anterior, con fuentes y licencias"
+    },
+    {
+      "from": "public/juegos/block-ninja/block-ninja/README.md",
+      "to": "Revisar para limpiar/public/juegos/block-ninja/block-ninja/README.md",
+      "sha": "9d69c509aa742042fead5289ff0a85537f0596b8",
+      "mode": "100644",
+      "reason": "Juego externo de la aplicación React anterior, con fuentes y licencias"
+    },
+    {
+      "from": "public/juegos/block-ninja/block-ninja/dist/index.html",
+      "to": "Revisar para limpiar/public/juegos/block-ninja/block-ninja/dist/index.html",
+      "sha": "f6b4f75d09c3b1c78fa13951a97075887be68e95",
+      "mode": "100644",
+      "reason": "Juego externo de la aplicación React anterior, con fuentes y licencias"
+    },
+    {
+      "from": "public/juegos/block-ninja/block-ninja/dist/script.js",
+      "to": "Revisar para limpiar/public/juegos/block-ninja/block-ninja/dist/script.js",
+      "sha": "8e4bffdda3190cd62e5b6c8ecf8b5c03b22b9711",
+      "mode": "100644",
+      "reason": "Juego externo de la aplicación React anterior, con fuentes y licencias"
+    },
+    {
+      "from": "public/juegos/block-ninja/block-ninja/dist/style.css",
+      "to": "Revisar para limpiar/public/juegos/block-ninja/block-ninja/dist/style.css",
+      "sha": "c762c2b1d4d21cd11ef8b06b8dfba61c355ea7cf",
+      "mode": "100644",
+      "reason": "Juego externo de la aplicación React anterior, con fuentes y licencias"
+    },
+    {
+      "from": "public/juegos/block-ninja/block-ninja/src/index.html",
+      "to": "Revisar para limpiar/public/juegos/block-ninja/block-ninja/src/index.html",
+      "sha": "02730f5015a5891713e3f9fabbfedbd99a972c5d",
+      "mode": "100644",
+      "reason": "Juego externo de la aplicación React anterior, con fuentes y licencias"
+    },
+    {
+      "from": "public/juegos/block-ninja/block-ninja/src/script.js",
+      "to": "Revisar para limpiar/public/juegos/block-ninja/block-ninja/src/script.js",
+      "sha": "148fad6964a19dc517c8b4e92a8cc5224014be55",
+      "mode": "100644",
+      "reason": "Juego externo de la aplicación React anterior, con fuentes y licencias"
+    },
+    {
+      "from": "public/juegos/block-ninja/block-ninja/src/style.css",
+      "to": "Revisar para limpiar/public/juegos/block-ninja/block-ninja/src/style.css",
+      "sha": "d86b1c1eeec784ad95a4b242740e9891f6d9c53a",
+      "mode": "100644",
+      "reason": "Juego externo de la aplicación React anterior, con fuentes y licencias"
+    },
+    {
+      "from": "public/juegos/escape-roads/index.html",
+      "to": "Revisar para limpiar/public/juegos/escape-roads/index.html",
+      "sha": "b006998baa78b9daec3dd9acad3d7b94387f47b8",
+      "mode": "100644",
+      "reason": "Juego externo de la aplicación React anterior, con fuentes y licencias"
+    },
+    {
+      "from": "public/juegos/escape-roads/script.js",
+      "to": "Revisar para limpiar/public/juegos/escape-roads/script.js",
+      "sha": "908765008f8ae1f5d9fa620353ba38d74fb5ec31",
+      "mode": "100644",
+      "reason": "Juego externo de la aplicación React anterior, con fuentes y licencias"
+    },
+    {
+      "from": "public/juegos/escape-roads/style.css",
+      "to": "Revisar para limpiar/public/juegos/escape-roads/style.css",
+      "sha": "c227083464fb9af8955c90d2924774ee50abb547",
+      "mode": "100644",
+      "reason": "Juego externo de la aplicación React anterior, con fuentes y licencias"
+    },
+    {
+      "from": "public/juegos/void-runner/index.html",
+      "to": "Revisar para limpiar/public/juegos/void-runner/index.html",
+      "sha": "52b4a5b4df2940541040337126593ae1af6d7122",
+      "mode": "100644",
+      "reason": "Juego externo de la aplicación React anterior, con fuentes y licencias"
+    },
+    {
+      "from": "src/App.css",
+      "to": "Revisar para limpiar/src/App.css",
+      "sha": "e9343e26c4b2f48590cf480633431b7eac35a71e",
+      "mode": "100644",
+      "reason": "Dependencia exclusiva de src/main.jsx; no alcanza ninguna entrada de Vite"
+    },
+    {
+      "from": "src/App.jsx",
+      "to": "Revisar para limpiar/src/App.jsx",
+      "sha": "d6a4c0abd9f878e88a8adfd5f566b70ced2aae4d",
+      "mode": "100644",
+      "reason": "Dependencia exclusiva de src/main.jsx; no alcanza ninguna entrada de Vite"
+    },
+    {
+      "from": "src/components/AcademicCalendar.jsx",
+      "to": "Revisar para limpiar/src/components/AcademicCalendar.jsx",
+      "sha": "52e8207da32fa0a29636a29151f2e69d2f263a4d",
+      "mode": "100644",
+      "reason": "Dependencia exclusiva de src/main.jsx; no alcanza ninguna entrada de Vite"
+    },
+    {
+      "from": "src/components/AdminPanel.jsx",
+      "to": "Revisar para limpiar/src/components/AdminPanel.jsx",
+      "sha": "d58748faaf4ed378586b2c631fed1d72a357ec29",
+      "mode": "100644",
+      "reason": "Dependencia exclusiva de src/main.jsx; no alcanza ninguna entrada de Vite"
+    },
+    {
+      "from": "src/components/Arcade.jsx",
+      "to": "Revisar para limpiar/src/components/Arcade.jsx",
+      "sha": "c2e8dcf0721fd6ffbdff1f267cee54dd38e1a2f9",
+      "mode": "100644",
+      "reason": "Dependencia exclusiva de src/main.jsx; no alcanza ninguna entrada de Vite"
+    },
+    {
+      "from": "src/components/AstroDefensa.jsx",
+      "to": "Revisar para limpiar/src/components/AstroDefensa.jsx",
+      "sha": "5f3249e14b139a4f38fc43d58cbdc5e81dee6aa2",
+      "mode": "100644",
+      "reason": "Dependencia exclusiva de src/main.jsx; no alcanza ninguna entrada de Vite"
+    },
+    {
+      "from": "src/components/CareerFX.css",
+      "to": "Revisar para limpiar/src/components/CareerFX.css",
+      "sha": "e9823044ba462b22f20de2c2a6f6c5fc2d42e443",
+      "mode": "100644",
+      "reason": "Dependencia exclusiva de src/main.jsx; no alcanza ninguna entrada de Vite"
+    },
+    {
+      "from": "src/components/CareerFX.jsx",
+      "to": "Revisar para limpiar/src/components/CareerFX.jsx",
+      "sha": "dc57be7a64aa00880b62f3250a3e9a1dc24f83b3",
+      "mode": "100644",
+      "reason": "Dependencia exclusiva de src/main.jsx; no alcanza ninguna entrada de Vite"
+    },
+    {
+      "from": "src/components/CareerSelect.jsx",
+      "to": "Revisar para limpiar/src/components/CareerSelect.jsx",
+      "sha": "0be02f4f870c4da5a47b461568ca4a288afd6df9",
+      "mode": "100644",
+      "reason": "Dependencia exclusiva de src/main.jsx; no alcanza ninguna entrada de Vite"
+    },
+    {
+      "from": "src/components/ConfirmDialog.jsx",
+      "to": "Revisar para limpiar/src/components/ConfirmDialog.jsx",
+      "sha": "6f87057943c26467f2e45985dcce8a4c9e28f9a7",
+      "mode": "100644",
+      "reason": "Dependencia exclusiva de src/main.jsx; no alcanza ninguna entrada de Vite"
+    },
+    {
+      "from": "src/components/CourseDetail.jsx",
+      "to": "Revisar para limpiar/src/components/CourseDetail.jsx",
+      "sha": "f2780b3e7a7ff76dc1093acfb02f51ac282056e2",
+      "mode": "100644",
+      "reason": "Dependencia exclusiva de src/main.jsx; no alcanza ninguna entrada de Vite"
+    },
+    {
+      "from": "src/components/DinoGame.jsx",
+      "to": "Revisar para limpiar/src/components/DinoGame.jsx",
+      "sha": "9dcbd43e306a367af86cb4a0746c3d6826c1ebdd",
+      "mode": "100644",
+      "reason": "Dependencia exclusiva de src/main.jsx; no alcanza ninguna entrada de Vite"
+    },
+    {
+      "from": "src/components/Frogger.jsx",
+      "to": "Revisar para limpiar/src/components/Frogger.jsx",
+      "sha": "67ef36231a9b82704fa2bcc6bc5a11e334827038",
+      "mode": "100644",
+      "reason": "Dependencia exclusiva de src/main.jsx; no alcanza ninguna entrada de Vite"
+    },
+    {
+      "from": "src/components/Galaxia.jsx",
+      "to": "Revisar para limpiar/src/components/Galaxia.jsx",
+      "sha": "a3af3d40414c3083f6329568c753b0a4dc9e5ca3",
+      "mode": "100644",
+      "reason": "Dependencia exclusiva de src/main.jsx; no alcanza ninguna entrada de Vite"
+    },
+    {
+      "from": "src/components/LoginPage.jsx",
+      "to": "Revisar para limpiar/src/components/LoginPage.jsx",
+      "sha": "0f5536e0310d707672e8551c19a88ddbbeeb09a6",
+      "mode": "100644",
+      "reason": "Dependencia exclusiva de src/main.jsx; no alcanza ninguna entrada de Vite"
+    },
+    {
+      "from": "src/components/MallaCurricular.jsx",
+      "to": "Revisar para limpiar/src/components/MallaCurricular.jsx",
+      "sha": "401647e116469a1dc398a5ada83714ba66ed9ab0",
+      "mode": "100644",
+      "reason": "Dependencia exclusiva de src/main.jsx; no alcanza ninguna entrada de Vite"
+    },
+    {
+      "from": "src/components/MallaFX.css",
+      "to": "Revisar para limpiar/src/components/MallaFX.css",
+      "sha": "b224eceaf66a3276ed61d7e396934c96dfd4eb28",
+      "mode": "100644",
+      "reason": "Dependencia exclusiva de src/main.jsx; no alcanza ninguna entrada de Vite"
+    },
+    {
+      "from": "src/components/MallaFX.jsx",
+      "to": "Revisar para limpiar/src/components/MallaFX.jsx",
+      "sha": "8a692f48ace4fa9a7165ae6f0b154b98f821339c",
+      "mode": "100644",
+      "reason": "Dependencia exclusiva de src/main.jsx; no alcanza ninguna entrada de Vite"
+    },
+    {
+      "from": "src/components/MallaSidebar.jsx",
+      "to": "Revisar para limpiar/src/components/MallaSidebar.jsx",
+      "sha": "58f54796f34a3fe4b8574edeb97092a70bd32a84",
+      "mode": "100644",
+      "reason": "Dependencia exclusiva de src/main.jsx; no alcanza ninguna entrada de Vite"
+    },
+    {
+      "from": "src/components/MemoryMatch.jsx",
+      "to": "Revisar para limpiar/src/components/MemoryMatch.jsx",
+      "sha": "307a7cf90dab406ed77654e45d626937517c33c3",
+      "mode": "100644",
+      "reason": "Dependencia exclusiva de src/main.jsx; no alcanza ninguna entrada de Vite"
+    },
+    {
+      "from": "src/components/ProfessorPanel.jsx",
+      "to": "Revisar para limpiar/src/components/ProfessorPanel.jsx",
+      "sha": "5b1f1003a555a2dabc35f6d5eace7563a6914b0d",
+      "mode": "100644",
+      "reason": "Dependencia exclusiva de src/main.jsx; no alcanza ninguna entrada de Vite"
+    },
+    {
+      "from": "src/components/ResumenCiclo.jsx",
+      "to": "Revisar para limpiar/src/components/ResumenCiclo.jsx",
+      "sha": "cf14b5444fe27f254548f4fd9d74827e4677d580",
+      "mode": "100644",
+      "reason": "Dependencia exclusiva de src/main.jsx; no alcanza ninguna entrada de Vite"
+    },
+    {
+      "from": "src/components/SidePanel.jsx",
+      "to": "Revisar para limpiar/src/components/SidePanel.jsx",
+      "sha": "228594715011ad2077e5a65e4d31ac4948f44d41",
+      "mode": "100644",
+      "reason": "Dependencia exclusiva de src/main.jsx; no alcanza ninguna entrada de Vite"
+    },
+    {
+      "from": "src/components/UpdatePassword.jsx",
+      "to": "Revisar para limpiar/src/components/UpdatePassword.jsx",
+      "sha": "e51257264bcf94fa150fd3507ef7024ccfebf267",
+      "mode": "100644",
+      "reason": "Dependencia exclusiva de src/main.jsx; no alcanza ninguna entrada de Vite"
+    },
+    {
+      "from": "src/data/calendario.js",
+      "to": "Revisar para limpiar/src/data/calendario.js",
+      "sha": "2d9fbebc4c37592ca6f6f315630f985390679268",
+      "mode": "100644",
+      "reason": "Dependencia exclusiva de src/main.jsx; no alcanza ninguna entrada de Vite"
+    },
+    {
+      "from": "src/index.css",
+      "to": "Revisar para limpiar/src/index.css",
+      "sha": "892801845a2aa94c1b1688ae249dccaf991f25ff",
+      "mode": "100644",
+      "reason": "Dependencia exclusiva de src/main.jsx; no alcanza ninguna entrada de Vite"
+    },
+    {
+      "from": "src/lib/temporada.js",
+      "to": "Revisar para limpiar/src/lib/temporada.js",
+      "sha": "5fd23f3d7d1c05f4a7e2eaed765a1876196603de",
+      "mode": "100644",
+      "reason": "Dependencia exclusiva de src/main.jsx; no alcanza ninguna entrada de Vite"
+    },
+    {
+      "from": "src/lib/theme.js",
+      "to": "Revisar para limpiar/src/lib/theme.js",
+      "sha": "b8a7c0e92d6f4c8a8b4b3bb9cb42093f0b08a4aa",
+      "mode": "100644",
+      "reason": "Dependencia exclusiva de src/main.jsx; no alcanza ninguna entrada de Vite"
+    },
+    {
+      "from": "src/main.jsx",
+      "to": "Revisar para limpiar/src/main.jsx",
+      "sha": "05b87979f5e4b1f8383d4a015af4d4fb93e46561",
+      "mode": "100644",
+      "reason": "Dependencia exclusiva de src/main.jsx; no alcanza ninguna entrada de Vite"
+    },
+    {
+      "from": "src/styles/AcademicCalendar.css",
+      "to": "Revisar para limpiar/src/styles/AcademicCalendar.css",
+      "sha": "e6ebef116f0216ac8caf0b97cf800314533da44f",
+      "mode": "100644",
+      "reason": "Dependencia exclusiva de src/main.jsx; no alcanza ninguna entrada de Vite"
+    },
+    {
+      "from": "src/styles/AdminPanel.css",
+      "to": "Revisar para limpiar/src/styles/AdminPanel.css",
+      "sha": "6ec2e251c9fbe3735aa26fbc96f3fc96134200a8",
+      "mode": "100644",
+      "reason": "Dependencia exclusiva de src/main.jsx; no alcanza ninguna entrada de Vite"
+    },
+    {
+      "from": "src/styles/Arcade.css",
+      "to": "Revisar para limpiar/src/styles/Arcade.css",
+      "sha": "e256d67a7ed1278b4b161b81c8dddc2e4d31a61c",
+      "mode": "100644",
+      "reason": "Dependencia exclusiva de src/main.jsx; no alcanza ninguna entrada de Vite"
+    },
+    {
+      "from": "src/styles/AstroDefensa.css",
+      "to": "Revisar para limpiar/src/styles/AstroDefensa.css",
+      "sha": "6e9078adea047294250cc52714f6c5ff3f3d6a6e",
+      "mode": "100644",
+      "reason": "Dependencia exclusiva de src/main.jsx; no alcanza ninguna entrada de Vite"
+    },
+    {
+      "from": "src/styles/CareerSelect.css",
+      "to": "Revisar para limpiar/src/styles/CareerSelect.css",
+      "sha": "a7e566d51c5e43eb9dde70f0d3c6da1ab8aff05e",
+      "mode": "100644",
+      "reason": "Dependencia exclusiva de src/main.jsx; no alcanza ninguna entrada de Vite"
+    },
+    {
+      "from": "src/styles/ConfirmDialog.css",
+      "to": "Revisar para limpiar/src/styles/ConfirmDialog.css",
+      "sha": "fb0ce792475111394315ed39312773f56580e6a0",
+      "mode": "100644",
+      "reason": "Dependencia exclusiva de src/main.jsx; no alcanza ninguna entrada de Vite"
+    },
+    {
+      "from": "src/styles/CourseDetail.css",
+      "to": "Revisar para limpiar/src/styles/CourseDetail.css",
+      "sha": "932ee2c803ae8177dfb41df0aaeb4d7e91317dde",
+      "mode": "100644",
+      "reason": "Dependencia exclusiva de src/main.jsx; no alcanza ninguna entrada de Vite"
+    },
+    {
+      "from": "src/styles/LoginPage.css",
+      "to": "Revisar para limpiar/src/styles/LoginPage.css",
+      "sha": "82cb8287d927cca9b1a639ec35cc9a27afd7eabc",
+      "mode": "100644",
+      "reason": "Dependencia exclusiva de src/main.jsx; no alcanza ninguna entrada de Vite"
+    },
+    {
+      "from": "src/styles/MallaCurricular.css",
+      "to": "Revisar para limpiar/src/styles/MallaCurricular.css",
+      "sha": "a369a98967dd535228709030ed7815a2516eaae1",
+      "mode": "100644",
+      "reason": "Dependencia exclusiva de src/main.jsx; no alcanza ninguna entrada de Vite"
+    },
+    {
+      "from": "src/styles/MallaSidebar.css",
+      "to": "Revisar para limpiar/src/styles/MallaSidebar.css",
+      "sha": "862516efbd4cc3c79f49dce6584693173382b00a",
+      "mode": "100644",
+      "reason": "Dependencia exclusiva de src/main.jsx; no alcanza ninguna entrada de Vite"
+    },
+    {
+      "from": "src/styles/MemoryMatch.css",
+      "to": "Revisar para limpiar/src/styles/MemoryMatch.css",
+      "sha": "1eb3cf90d7657bb80cc3397bb6635dd237c7a4c9",
+      "mode": "100644",
+      "reason": "Dependencia exclusiva de src/main.jsx; no alcanza ninguna entrada de Vite"
+    },
+    {
+      "from": "src/styles/ProfessorPanel.css",
+      "to": "Revisar para limpiar/src/styles/ProfessorPanel.css",
+      "sha": "5120a87899bbeb6a5965c7b0c58b1dd4fc36a35e",
+      "mode": "100644",
+      "reason": "Dependencia exclusiva de src/main.jsx; no alcanza ninguna entrada de Vite"
+    },
+    {
+      "from": "src/styles/ResumenCiclo.css",
+      "to": "Revisar para limpiar/src/styles/ResumenCiclo.css",
+      "sha": "4e95236dbbe41cfc6fcde6f4556e15052b84ab45",
+      "mode": "100644",
+      "reason": "Dependencia exclusiva de src/main.jsx; no alcanza ninguna entrada de Vite"
+    },
+    {
+      "from": "src/styles/SidePanel.css",
+      "to": "Revisar para limpiar/src/styles/SidePanel.css",
+      "sha": "2f1695027ac4b3bf044aedb9cf9aff78420ecab3",
+      "mode": "100644",
+      "reason": "Dependencia exclusiva de src/main.jsx; no alcanza ninguna entrada de Vite"
+    },
+    {
+      "from": "src/styles/design-tokens.css",
+      "to": "Revisar para limpiar/src/styles/design-tokens.css",
+      "sha": "88286309f8f8158007456f401336a749dc0f1daa",
+      "mode": "100644",
+      "reason": "Dependencia exclusiva de src/main.jsx; no alcanza ninguna entrada de Vite"
+    }
+  ],
+  "deletions": [
+    {
+      "path": "Malla curricular · Ingeniería en IA · ESAN.html",
+      "sha": "f1ed6d1ac377479806e12b92c32bff29a3568e37",
+      "reason": "Prototipo de malla independiente y hoja de fuentes utilizada solo por él"
+    },
+    {
+      "path": "Malla curricular · Ingeniería en IA · ESAN_files/css2",
+      "sha": "9984f018a240ab04173e61bf53c8f376e20bc8d1",
+      "reason": "Prototipo de malla independiente y hoja de fuentes utilizada solo por él"
+    },
+    {
+      "path": "Mallas curriculares/Malla_Ingenieria_en_Inteligencia_Artificial (1).md",
+      "sha": "c47485d8519190779c4aa633cd031b422127b956",
+      "reason": "Copia byte a byte de la fuente IA canónica"
+    }
+  ]
+}
