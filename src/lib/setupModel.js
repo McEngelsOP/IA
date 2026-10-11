@@ -3,7 +3,11 @@ import { addDays, civil, monday, todayLima } from './calendarModel.js'
 export const SETUP_STEPS = ['Semestre', 'Pendientes', 'Ciclo', 'Carga', 'Horario', 'Espacio', 'Resumen']
 export const normalize = value => String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().replace(/\s+/g, ' ')
 export function newSetup(career, theme = 'light') {
-  return { career: career.key, semester: 1, pending: [], enrolled: career.cursos.filter(c => c.c === 1).map(c => c.id), credits: 16, schedule: [], scheduleChoice: 'later', scheduleStart: todayLima(), scheduleEnd: addDays(todayLima(), 120), theme, companion: 'cat', method: 'p45', clockStyle: 'ring', step: 0, reviewCycle: 1 }
+  return { career: career.key, semester: 1, pending: [], enrolled: career.cursos.filter(c => c.c === 1).map(c => c.id), credits: 16, schedule: [], scheduleChoice: 'later', scheduleStart: todayLima(), scheduleEnd: addDays(todayLima(), 120), theme, companion: 'cat', method: 'p45', clockStyle: 'ring', step: 0, setupVersion: 2, reviewCycle: 1 }
+}
+export function resumeSetupStep(draft = {}) {
+  const step = Number.isInteger(draft.step) ? draft.step : 0
+  return Math.max(0, Math.min(6, draft.setupVersion === 2 ? step : step >= 4 ? step - 1 : step))
 }
 export function completedCourses(courses, draft) {
   return courses.filter(c => c.c > 0 && c.c < draft.semester && !draft.pending.includes(c.id)).map(c => c.id)

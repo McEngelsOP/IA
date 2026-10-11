@@ -1,7 +1,15 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { newSetup, changeSemester, completedCourses, togglePending, parseCSV, detectColumns, scheduleRows, scheduleEvents, timeValue } from '../src/lib/setupModel.js'
+import { newSetup, resumeSetupStep, changeSemester, completedCourses, togglePending, parseCSV, detectColumns, scheduleRows, scheduleEvents, timeValue } from '../src/lib/setupModel.js'
 const career = { key: 'fixture', cursos: [{ id: 'pre', c: 0, n: 'Pre', cr: 0 }, { id: 'a', c: 1, n: 'Matemática I', cr: 4 }, { id: 'b', c: 2, n: 'Datos', cr: 3 }, { id: 'c', c: 3, n: 'Curso C', cr: 4 }] }
+test('resuming old setup drafts preserves their equivalent step after removing mention', () => {
+  assert.equal(resumeSetupStep({ step: 3 }), 3)
+  assert.equal(resumeSetupStep({ step: 4 }), 3)
+  assert.equal(resumeSetupStep({ step: 5 }), 4)
+  assert.equal(resumeSetupStep({ step: 6 }), 5)
+  assert.equal(resumeSetupStep({ step: 7 }), 6)
+  assert.equal(resumeSetupStep({ step: 5, setupVersion: 2 }), 5)
+})
 test('semester setup preserves pending exceptions and does not complete current or pre-formation courses', () => {
   let d = changeSemester(career, newSetup(career), 3)
   assert.deepEqual(completedCourses(career.cursos, d), ['a', 'b'])

@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
-import { SETUP_STEPS, COLUMNS, DAY_NAMES, newSetup, completedCourses, changeSemester, togglePending, parseCSV, detectColumns, scheduleRows, scheduleEvents, setupPreferences, normalize } from '../lib/setupModel.js'
+import { SETUP_STEPS, COLUMNS, DAY_NAMES, newSetup, completedCourses, changeSemester, togglePending, parseCSV, detectColumns, scheduleRows, scheduleEvents, setupPreferences, normalize, resumeSetupStep } from '../lib/setupModel.js'
 import '../styles/InitialSetup.css'
 
 function Mark({ checked = false, arrow = false }) { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{arrow ? <path d="M5 12h14m-6-6 6 6-6 6"/> : checked ? <path d="m5 12 4 4 10-10"/> : <rect x="4" y="4" width="16" height="16" rx="4"/>}</svg> }
 function InitialSetup({ client, user, career, saved, preferencesOnly = false, renderPet, onBusy, onClose, onComplete }) {
   const initial = useRef({ ...newSetup(career, document.documentElement.dataset.theme || 'light'), ...(preferencesOnly ? saved?.preferences : saved?.draft), career: career.key })
-  const [draft, setDraft] = useState(() => ({ ...initial.current, token: initial.current.token || crypto.randomUUID(), step: preferencesOnly ? 3 : Math.min(6, Math.max(0, initial.current.step || 0)) }))
+  const [draft, setDraft] = useState(() => ({ ...initial.current, token: initial.current.token || crypto.randomUUID(), step: preferencesOnly ? 3 : resumeSetupStep(saved?.draft || initial.current) }))
   const [busy, setBusy] = useState(false), [error, setError] = useState(''), [query, setQuery] = useState(''), [adding, setAdding] = useState(false)
   const [sheet, setSheet] = useState(null), [mapping, setMapping] = useState({}), [fileName, setFileName] = useState(''), [fileBusy, setFileBusy] = useState(false)
   const panel = useRef(null), heading = useRef(null), lock = useRef(false), alive = useRef(true), fileVersion = useRef(0)
