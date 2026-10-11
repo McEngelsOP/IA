@@ -51,11 +51,12 @@ function projectSemesters(courses, completedIds, limit) {
   return { semesters, remaining: pending.size }
 }
 
-export default function SemesterRoadmap({ courses, completedIds, onAddFirstSemester, onClose, embedded = false }) {
-  const [activeLoad, setActiveLoad] = useState('equilibrada')
+export default function SemesterRoadmap({ courses, completedIds, onAddFirstSemester, onClose, embedded = false, habitualCredits }) {
+  const loads = useMemo(() => Number.isFinite(habitualCredits) && habitualCredits >= 1 && habitualCredits <= 30 ? [{ id: 'habitual', label: 'Tu carga habitual', credits: habitualCredits }, ...LOADS] : LOADS, [habitualCredits])
+  const [activeLoad, setActiveLoad] = useState(habitualCredits ? 'habitual' : 'equilibrada')
   const projections = useMemo(() => Object.fromEntries(
-    LOADS.map(load => [load.id, { ...load, ...projectSemesters(courses, completedIds, load.credits) }])
-  ), [courses, completedIds])
+    loads.map(load => [load.id, { ...load, ...projectSemesters(courses, completedIds, load.credits) }])
+  ), [courses, completedIds, loads])
   const selected = projections[activeLoad]
   const totalCreditsLeft = courses
     .filter(course => !completedIds.includes(course.id))
@@ -75,7 +76,7 @@ export default function SemesterRoadmap({ courses, completedIds, onAddFirstSemes
         </header>
 
         <div className="roadmap-loads" role="tablist" aria-label="Carga máxima por ciclo">
-          {LOADS.map(load => {
+          {loads.map(load => {
             const result = projections[load.id]
             return (
               <button
@@ -140,3 +141,4 @@ export default function SemesterRoadmap({ courses, completedIds, onAddFirstSemes
     </div>
   )
 }
+
