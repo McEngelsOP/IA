@@ -75,7 +75,7 @@ assert.equal(lastPayload.events[0].date, '2026-10-19'); assert.equal(lastPayload
 assert.equal(await page.locator('html').getAttribute('data-theme'), 'dark')
 await page.reload(); await page.getByRole('tab', { name: 'Gráficos' }).waitFor(); assert.equal(await dialog.count(), 0)
 await page.getByRole('button', { name: 'Abrir perfil' }).click(); await page.getByRole('menuitem', { name: 'Preferencias de estudio' }).click(); await title.waitFor()
-await next(); await next(); await screen('space-dark-1366'); await next(); await dialog.getByRole('button', { name: 'Guardar preferencias' }).click(); await dialog.waitFor({ state: 'detached' })
+await next(); await screen('space-dark-1366'); await next(); await dialog.getByRole('button', { name: 'Guardar preferencias' }).click(); await dialog.waitFor({ state: 'detached' })
 await page.getByRole('button', { name: 'Mod Focus', exact: true }).click(); await page.locator('.k-settings').waitFor()
 assert.equal(await page.locator('[data-a=kpt][data-v=rabbit]').getAttribute('aria-pressed'), 'true')
 assert.equal(await page.locator('#kcs option').count(), lastPayload.enrolled.length + 1)

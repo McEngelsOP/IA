@@ -1,9 +1,9 @@
 import { addDays, civil, monday, todayLima } from './calendarModel.js'
 
-export const SETUP_STEPS = ['Semestre', 'Pendientes', 'Ciclo', 'Mención', 'Carga', 'Horario', 'Espacio', 'Resumen']
+export const SETUP_STEPS = ['Semestre', 'Pendientes', 'Ciclo', 'Carga', 'Horario', 'Espacio', 'Resumen']
 export const normalize = value => String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().replace(/\s+/g, ' ')
 export function newSetup(career, theme = 'light') {
-  return { career: career.key, semester: 1, pending: [], enrolled: career.cursos.filter(c => c.c === 1).map(c => c.id), mention: '', undecided: true, credits: 16, schedule: [], scheduleChoice: 'later', scheduleStart: todayLima(), scheduleEnd: addDays(todayLima(), 120), theme, companion: 'cat', method: 'p45', clockStyle: 'ring', step: 0, reviewCycle: 1 }
+  return { career: career.key, semester: 1, pending: [], enrolled: career.cursos.filter(c => c.c === 1).map(c => c.id), credits: 16, schedule: [], scheduleChoice: 'later', scheduleStart: todayLima(), scheduleEnd: addDays(todayLima(), 120), theme, companion: 'cat', method: 'p45', clockStyle: 'ring', step: 0, reviewCycle: 1 }
 }
 export function completedCourses(courses, draft) {
   return courses.filter(c => c.c > 0 && c.c < draft.semester && !draft.pending.includes(c.id)).map(c => c.id)
@@ -68,4 +68,4 @@ export function scheduleEvents(draft) {
     return { id: `setup-${draft.token}-${i}`, index: i, title: row.title, location: row.room, course_id: row.courseId || null, date, start_time: row.start, end_time: row.end, event_type: 'clase', color: 'azul', repeat_rule: 'weekly', repeat_until: draft.scheduleEnd }
   })
 }
-export function setupPreferences(draft) { return { semester: draft.semester, mention: draft.undecided ? '' : draft.mention.trim(), credits: draft.credits, theme: draft.theme, companion: draft.companion, method: draft.method, clockStyle: draft.clockStyle } }
+export function setupPreferences(draft) { return { semester: draft.semester, mention: '', credits: draft.credits, theme: draft.theme, companion: draft.companion, method: draft.method, clockStyle: draft.clockStyle } }

@@ -7,11 +7,10 @@ La creación de una cuenta continúa usando el registro existente de `login.html
 1. Elegir semestre. Se sugieren como llevados los ciclos anteriores; pre-formación se revisa manualmente.
 2. Revisar el catálogo ciclo por ciclo, desde el 1 hasta el actual. Se puede avanzar sin pendientes y retroceder sin perder selecciones. El ciclo actual se muestra sin marcarlo como llevado.
 3. Ajustar la matrícula del ciclo y agregar cursos de la malla, incluidos adelantados.
-4. Registrar el nombre de la mención o dejarla pendiente. No existe todavía un catálogo de menciones oficiales por carrera: no se ofrecen opciones inventadas ni se reemplazan los electivos.
-5. Elegir carga habitual. Brújula IA incorpora esa carga como opción inicial de proyección.
-6. Importar horario o posponerlo. Se aceptan CSV y XLSX de hasta 2 MB, una fila por clase, primera hoja, máximo 200 clases. Las columnas pueden reasignarse; días, horas y duplicados se revisan antes de continuar. Se requiere revisar las fechas del ciclo. Los nombres reconocidos deben estar seleccionados en la matrícula; otros se guardan como clases sin vínculo a la malla. Solo las clases se guardan, nunca el archivo.
-7. Elegir compañero, método, reloj y tema de Mod Focus, o continuar con los valores predeterminados.
-8. Revisar el resumen y confirmar.
+4. Elegir carga habitual. Brújula IA incorpora esa carga como opción inicial de proyección.
+5. Importar horario o posponerlo. Se aceptan CSV y XLSX de hasta 2 MB, una fila por clase, primera hoja, máximo 200 clases. Las columnas pueden reasignarse; días, horas y duplicados se revisan antes de continuar. Se requiere revisar las fechas del ciclo. Los nombres reconocidos deben estar seleccionados en la matrícula; otros se guardan como clases sin vínculo a la malla. Solo las clases se guardan, nunca el archivo.
+6. Elegir compañero, método, reloj y tema de Mod Focus, o continuar con los valores predeterminados.
+7. Revisar el resumen y confirmar.
 
 ## Persistencia
 
