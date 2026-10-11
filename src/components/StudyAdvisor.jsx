@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import '../styles/StudyAdvisor.css'
+import OfficialIcon from './OfficialIcon'
+import OfficialBot from './OfficialBot'
 
 const INITIAL_MESSAGE = {
   role: 'assistant',
@@ -28,6 +30,8 @@ export default function StudyAdvisor({ planCourses, careerName, onClose, embedde
   const [errorMessage, setErrorMessage] = useState('')
   const listRef = useRef(null)
   const inputRef = useRef(null)
+  const [copyStatus, setCopyStatus] = useState('')
+  const [contextOpen, setContextOpen] = useState(false), [suggestionTab, setSuggestionTab] = useState(0)
 
   useEffect(() => {
     let cancelled = false
@@ -126,6 +130,28 @@ export default function StudyAdvisor({ planCourses, careerName, onClose, embedde
     }
   }
 
+  if (embedded === 'web') {
+    const hasChat = messages.length > 1
+    const hour = Number(new Intl.DateTimeFormat('es-PE', { timeZone: 'America/Lima', hour: 'numeric', hourCycle: 'h23' }).format(new Date()))
+    const suggestions = [
+      ['Sugeridas', 'spark', ['¿Qué tan pesada se ve mi carga con estos cursos?', '¿Qué créditos y dificultad tienen los cursos de mi plan?', '¿Cómo reparto mi tiempo de estudio esta semana?']],
+      ['Carga', 'trend', ['¿Esta combinación de cursos se ve pesada?', '¿Cuál de mis cursos exige más estudio semanal?', '¿Qué debería considerar para equilibrar mi próximo ciclo?']],
+      ['Prerrequisitos', 'cap', ['¿Qué debería revisar sobre los prerrequisitos antes de matricularme?', '¿Cómo puedo verificar si mi plan es viable?']],
+      ['Plan', 'clock', ['¿Cómo reparto mi tiempo de estudio esta semana?', 'Ármame un plan de estudio con bloques de Mod Focus de 45 minutos.']],
+    ]
+    const compose = <div className="a-cwrap">{!hasChat && <div className="a-bot"><OfficialBot/></div>}<form className="a-cmp" onSubmit={sendMessage}>
+      {contextOpen && <div className="a-cbody" id="advisor-context"><div className="a-cx"><div className="a-cs"><span>Créditos</span><b>{summary.credits}</b></div><div className="a-cs"><span>Dificultad ponderada</span><b>{summary.weightedDifficulty?.toFixed(1) || '—'}<small>/5</small></b></div><div className="a-cs"><span>Cursos</span><b>{planCourses.length}</b></div></div><div className="a-cl">{planCourses.map(c => <span className="a-cc" key={c.id}><b>{c.name}</b><small>{c.credits} cr</small></span>)}</div><p className="a-cn">{loadingRatings ? 'Consultando votos…' : `${summary.ratedCount} de ${planCourses.length} cursos con votos`}. {careerName}. No enviamos tus notas ni tu código.</p><details className="a-prerequisites"><summary>Prerrequisitos registrados en tu plan</summary><ul>{planCourses.map(c => <li key={c.id}>{c.name}: {c.prerequisites?.join(', ') || 'Sin prerrequisitos directos'}</li>)}</ul><p>Este detalle te ayuda a revisar el plan; la consulta al asesor usa los créditos y votos de dificultad de los cursos.</p></details></div>}
+      {errorMessage && <p className="a-error" role="alert">{errorMessage}</p>}
+      <textarea ref={inputRef} value={draft} onChange={e => setDraft(e.target.value.slice(0, 1200))} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); e.currentTarget.form?.requestSubmit() } }} maxLength={1200} rows={2} placeholder={hasChat ? 'Escribe tu siguiente pregunta…' : 'Ej. ¿Esta combinación de cursos se ve pesada?'} aria-label="Pregunta para el asesor académico"/>
+      <div className="a-cb"><button className={`a-chip${contextOpen ? ' on' : ''}`} type="button" aria-expanded={contextOpen} onClick={() => setContextOpen(o => !o)}><OfficialIcon name="cap" size={16}/>Mis cursos · {planCourses.length}</button><span className="a-sp"/><span className="a-cnt">{draft.length}/1200</span><button className="a-go" aria-label="Enviar pregunta" type="submit" disabled={!draft.trim() || sending}><OfficialIcon name="arrow" size={20}/></button></div>
+    </form></div>
+    const newChat = () => { if (sending) return; setMessages([INITIAL_MESSAGE]); setDraft(''); setErrorMessage(''); setCopyStatus(''); inputRef.current?.focus() }
+    const privacy = <p className="a-privacy">Al enviar, Gemini, Groq u OpenRouter pueden recibir tu pregunta, el historial reciente y los cursos de tu plan con sus votos de dificultad. Las respuestas son orientativas.</p>
+    return <section className={`official-advisor ${hasChat ? 'a-chatv' : 'a-page'}`} aria-label="Asesor IA">
+      {hasChat ? <><div className="a-bar"><div className="a-id"><OfficialBot compact/><div><b>Asesor IA</b><small>{sending ? 'Analizando tu plan…' : 'Consulta académica'}</small></div></div><div className="a-tools"><button className="a-ib" aria-label="Nuevo chat" title="Nuevo chat" onClick={newChat} disabled={sending}><OfficialIcon name="plus"/></button><button className="a-ib" aria-label="Copiar conversación" title="Copiar conversación" disabled={sending} onClick={async () => { try { await navigator.clipboard.writeText(messages.slice(1).map(m => `${m.role === 'user' ? 'Tú' : 'Asesor'}: ${m.content}`).join('\n\n')); setCopyStatus('Conversación copiada') } catch { setCopyStatus('No se pudo copiar. Selecciona el texto de la conversación.') } }}><OfficialIcon name="copy"/></button></div></div><p className="a-copy-status" role="status">{copyStatus}</p><div className="a-scroll" ref={listRef} role="log" aria-live="polite"><div className="a-msgs">{messages.slice(1).map((m, i) => m.role === 'user' ? <div className="a-um" key={i}>{m.content}</div> : <div className="a-bm" key={i}><OfficialBot compact/><div className="a-rep">{m.content}</div></div>)}{sending && <div className="a-bm"><OfficialBot compact/><p role="status">Analizando tu plan…</p></div>}</div></div>{compose}{privacy}</> : <><section className="a-hcard"><p className="a-greeting">{hour < 12 ? 'Buenos días' : hour < 19 ? 'Buenas tardes' : 'Buenas noches'}</p><h2 className="a-hi">Convierte tus <b>dudas</b> en un <b>plan</b></h2><p className="a-hs">Evalúa tu carga, compara cursos y organiza tu estudio.</p></section>{compose}{!planCourses.length && <p className="a-plan-empty">Agrega cursos en tu plan para recibir una recomendación sobre tu carga.</p>}<section className="a-sug" aria-label="Preguntas sugeridas"><div className="a-tabs" role="group" aria-label="Categorías de consulta">{suggestions.map(([label, icon], i) => <button className={`a-tab${suggestionTab === i ? ' on' : ''}`} aria-pressed={suggestionTab === i} key={label} onClick={() => setSuggestionTab(i)}><OfficialIcon name={icon} size={16}/>{label}</button>)}</div><div className="a-rows">{suggestions[suggestionTab][2].map(question => <button className="a-row" key={question} onClick={() => { setDraft(question); inputRef.current?.focus() }}><OfficialIcon name={suggestions[suggestionTab][1]}/><span>{question}</span><span className="go"><OfficialIcon name="arrow" size={16}/></span></button>)}</div></section>{privacy}</>}
+    </section>
+  }
+
   return (
     <div className="study-advisor-backdrop" onMouseDown={event => {
       if (event.target === event.currentTarget) onClose()
@@ -198,3 +224,4 @@ export default function StudyAdvisor({ planCourses, careerName, onClose, embedde
     </div>
   )
 }
+

@@ -7,7 +7,7 @@ const LOADS = [
   { id: 'intensiva', label: 'Intensiva', credits: 24 }
 ]
 
-function projectSemesters(courses, completedIds, limit) {
+export function projectSemesters(courses, completedIds, limit) {
   const byId = Object.fromEntries(courses.map(course => [course.id, course]))
   const completed = new Set(completedIds.filter(id => byId[id]))
   const pending = new Set(courses.filter(course => !completed.has(course.id)).map(course => course.id))
@@ -141,4 +141,5 @@ export default function SemesterRoadmap({ courses, completedIds, onAddFirstSemes
     </div>
   )
 }
+
 

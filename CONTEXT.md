@@ -9,6 +9,8 @@ Malla curricular interactiva para cuatro carreras: **Ingeniería en IA**, **Inge
 - `node --test tests/calendarModel.test.mjs` — pruebas del modelo de calendario
 - Requiere `.env.local` con `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`
 
+La extensión de escritorio de Buzón, Brújula IA, Asesor IA, Mod Focus y Recursos está documentada en [docs/desktop-surfaces.md](docs/desktop-surfaces.md): mapeo de referencias, alcance superior a 860 px, contratos de datos, funciones aún deshabilitadas y evidencia de validación.
+
 ## Arquitectura original: index.html
 
 `App.jsx` decide la pantalla según la sesión de Supabase: `LoginPage` (login/registro/recuperación), `UpdatePassword` (llega del enlace del correo), `CareerSelect` o `MallaCurricular`. La malla recibe `user` y `carrera` — si `user` es `null` es **modo visitante**: puede explorar (y alternar de carrera con `onSwitchCarrera`) pero nada persiste, y las funciones sociales (profesores, panel lateral) ni se renderizan. El bloqueo real del visitante no es la UI: las tablas nuevas tienen políticas RLS solo para `authenticated`, el rol `anon` no tiene ninguna.
@@ -93,3 +95,4 @@ Las referencias anteriores a `App.jsx`, `AcademicCalendar.jsx`, su calendario of
 Validación disponible en el repositorio: `node --test tests/calendarModel.test.mjs tests/studyGroups.test.mjs` y `tests/studyGroups.sql.test.mjs` (PGlite externo; instrucciones en `supabase/STUDY_GROUPS_SETUP.md`). Comprueba fechas, zona horaria, límites de repetición, rangos históricos, eventos simultáneos y validación. Además de `npm run build`, la implementación se verificó con fixtures de navegador y PostgreSQL local (PGlite): aislamiento entre cuentas, rechazo anónimo, conservación de datos y migración idempotente. Estas pruebas no equivalen a una prueba con cuentas reales en producción.
 
 La migración y el procedimiento de despliegue están en `supabase/CALENDAR_SETUP.md`. En esta entrega la base activa **no fue modificada**: `SUPABASE_DB_URL` está configurada, pero el proxy del entorno rechaza la conexión PostgreSQL con HTTP 403. El usuario eligió ejecutar `sync_features.sql` y `study_groups.sql` en el SQL Editor; revisar `calendar_audit.sql` y las políticas efectivas antes de publicar el frontend en producción. Los archivos SQL consolidados reemplazan versiones antiguas del repositorio; no se deben volver a ejecutar todos sobre una base existente.
+
