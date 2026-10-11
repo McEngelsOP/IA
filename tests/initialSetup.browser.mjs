@@ -12,7 +12,7 @@ const session = { access_token: token, refresh_token: 'fixture', expires_at: Mat
 let record = null, progress = null, statuses = [], calendar = [], failDraft = false, failComplete = false, lastPayload = null, saves = 0
 const browser = await chromium.launch({ headless: true, executablePath: process.env.SETUP_BROWSER, args: ['--no-sandbox'] })
 const context = await browser.newContext({ viewport: { width: 1366, height: 768 } })
-await context.addInitScript(({session}) => { localStorage.setItem('sb-setup-fixture-auth-token', JSON.stringify(session)) }, {session})
+await context.addInitScript(({session}) => { localStorage.setItem('sb-setup-fixture-auth-token', JSON.stringify(session)); localStorage.setItem('sb-setup-fixture-auth-token:web-activity:v1:' + session.user.id, JSON.stringify({ at: Date.now() })) }, {session})
 await context.route('https://setup-fixture.supabase.co/**', async route => {
   const req = route.request(), url = new URL(req.url()), path = url.pathname; let data = [], status = 200
   if (path === '/auth/v1/user') data = user
@@ -59,7 +59,7 @@ await dialog.getByRole('button', { name: 'Continuar', exact: true }).click(); aw
 await dialog.getByRole('button', { name: 'Continuar después' }).click(); await dialog.waitFor({ state: 'detached' })
 await page.reload(); await page.getByText('Los cursos adelantados los puedes llenar manualmente.').waitFor()
 assert.equal(record.draft.step, 2); assert.ok(saves >= 5)
-await next(); await next(); await dialog.getByRole('button', { name: '14', exact: true }).click(); await next()
+await next(); await title.filter({ hasText: '¿Cuántos créditos llevas por ciclo?' }).waitFor(); await dialog.getByRole('button', { name: '14', exact: true }).click(); await next()
 await dialog.getByRole('button', { name: /Sí, tengo un archivo/ }).click()
 const currentCourse = CARRERAS.ia.cursos.find(c => c.c === 3)
 const csv = `dia,hora de inicio,hora de fin,curso,aula\nLunes,08:00,10:00,${currentCourse.n},A-101\nMiércoles,08:00,10:00,${currentCourse.n},A-101`
@@ -81,8 +81,10 @@ assert.equal(await page.locator('[data-a=kpt][data-v=rabbit]').getAttribute('ari
 assert.equal(await page.locator('#kcs option').count(), lastPayload.enrolled.length + 1)
 await page.getByRole('button', { name: 'Herramientas', exact: true }).click()
 await page.getByRole('button', { name: 'Brújula IA', exact: true }).click()
-await page.getByRole('tab', { name: /Tu carga habitual/ }).waitFor()
-assert.match(await page.getByRole('tab', { name: /Tu carga habitual/ }).textContent(), /14/)
+await page.locator('.bj-st').filter({ hasText: 'Comparar' }).click()
+await page.getByRole('button', { name: /Tu carga habitual/ }).waitFor()
+assert.match(await page.getByRole('button', { name: /Tu carga habitual/ }).textContent(), /14/)
 assert.deepEqual(errors, [])
 console.log(JSON.stringify({ status: 'passed', draftSaves: saves, currentCourses: lastPayload.enrolled.length, importedClasses: calendar.length, screenshots: out, consoleErrors: errors }))
 await browser.close()
+

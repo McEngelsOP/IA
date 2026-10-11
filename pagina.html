@@ -825,6 +825,7 @@ a{text-underline-offset:3px}.page button:not(.ck){min-height:36px}
 <script type="module">
 import { FOCUS_PRESETS, enrolledFocusCourses, focusRemaining, focusDuration, focusMotivation, focusError, todayLima } from './src/lib/focusModel.js';
 import { getSupabaseClient } from './src/lib/getSupabaseClient.js';
+import { createWebSessionGuard, webAuthStorageKey } from './src/lib/webSession.js';
 import { CARRERAS } from './src/data/carreras.js';
 import { CAREER_KEYS, careerLabel } from './src/data/careerOptions.js';
 import { LOGROS } from './src/lib/logros.js';
@@ -993,9 +994,11 @@ async function homeInit(){
   if(revision!==HOME.revision)return;
   if(error)throw error;
   if(!data.session){homeReset();homeRender();return}
+  if(!webSession.restore(data.session))return;
   const verified=await homeClient.auth.getUser();
   if(revision!==HOME.revision)return;
   if(verified.error||!verified.data.user)throw new Error('session_failed');
+  if(!webSession.check())return;
   await homeLoad(verified.data.user);
  }catch{
   if(revision!==HOME.revision)return;
@@ -1884,6 +1887,12 @@ $('page').addEventListener('keydown',e=>{
  homeTab(HOME_TABS[next][0]);
 });
 renderProfile();setMenu(false);applySide();go('Inicio');NAV_MOTION.ready=true;
+const webSession=homeClient?createWebSessionGuard(homeClient,{authKey:webAuthStorageKey(),
+ onLock:()=>{document.body.style.visibility='hidden';homeReset();curriculumRender++;curriculumUnmount?.();curriculumUnmount=null},
+ onSuspend:()=>{document.body.style.visibility='hidden'},
+ onResume:()=>{document.body.style.visibility=''},
+ onExpired:reason=>location.replace(new URL('./login.html?reason='+reason,location.href).href)
+}):null;
 homeInit();
 window.addEventListener('focus',()=>{if(HOME.mode==='profile'&&HOME.user&&!HOME.saving.size)homeLoad(HOME.user)});
 if(homeClient)homeClient.auth.onAuthStateChange((event,session)=>{

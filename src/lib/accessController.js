@@ -1,4 +1,5 @@
 import { getSupabaseClient } from './getSupabaseClient.js'
+import { createWebSessionGuard, webAuthStorageKey } from './webSession.js'
 import { CAREER_OPTIONS, CAREER_KEYS, careerLabel } from '../data/careerOptions.js'
 
 const $ = id => document.getElementById(id)
@@ -20,6 +21,12 @@ for (const key of CAREER_KEYS) $('registerCareer').add(new Option(careerLabel(ke
 try {
   client = getSupabaseClient()
 } catch { /* Configuration failures are shown without exposing credentials. */ }
+
+const webSession = client ? createWebSessionGuard(client, {
+  authKey: webAuthStorageKey(),
+  onLock: () => { checkingSession = true; acceptedSession = false; clearPasswords(); setBusy(false) },
+  onExpired: reason => location.replace(new URL('./login.html?reason=' + reason, location.href).href),
+}) : null
 
 let fitFrame = 0
 function scheduleFit() {
@@ -136,6 +143,7 @@ function cleanCallback() {
   history.replaceState(null, '', url.pathname + url.search)
 }
 async function enterHome() {
+  if (!webSession.check()) return
   acceptedSession = true; clearPasswords(); cleanCallback()
   $('accessStatus').textContent = 'Sesión iniciada. Ya puedes consultar tu avance académico.'
   await new Promise(resolve => requestAnimationFrame(resolve))
@@ -213,6 +221,7 @@ $('loginForm').addEventListener('submit', async event => {
     if (!result.session?.access_token || !result.session?.refresh_token) throw new Error('session_missing')
     const session = await client.auth.setSession(result.session)
     if (session.error || !session.data.session || !session.data.user) throw new Error('session_failed')
+    if (!webSession.begin(session.data.session)) return
     await enterHome()
   } catch { feedback('No pudimos conectar para iniciar sesión. Revisa tu conexión y reintenta.', 'error') }
   finally { if (!acceptedSession) setBusy(false) }
@@ -237,7 +246,7 @@ $('registerForm').addEventListener('submit', async event => {
     const result = await client.auth.signUp({ email, password: $('registerPassword').value, options: { data: { student_code: code, carrera: career }, emailRedirectTo: callback } })
     if (result.error) throw result.error
     if (!result.data.user || result.data.user.identities?.length === 0) { feedback('Ese correo ya tiene una cuenta. Usa otro correo o inicia sesión.', 'error'); return }
-    if (result.data.session) await enterHome()
+    if (result.data.session) { if (webSession.begin(result.data.session)) await enterHome() }
     else { clearPasswords(); await mailScreen('confirmation', code, maskEmail(email)) }
   } catch (error) {
     feedback(error?.status === 429 ? 'Se alcanzó el límite de registros. Espera un momento antes de reintentar.' : 'No pudimos completar el registro. Revisa tus datos y reintenta; si persiste, contacta al soporte.', 'error')
@@ -340,17 +349,26 @@ async function initialize() {
     const { data, error } = await client.auth.getSession()
     if (error) throw error
     if (!data.session) {
+      if (query.get('reason') === 'inactivity') {
+        await show('loginScreen', false)
+        feedback('Tu sesión se cerró tras 30 minutos sin actividad. Inicia sesión de nuevo para continuar.')
+      }
       if (recovering || params.get('error') || query.get('error')) {
         recovering = false; await show('forgotScreen'); cleanCallback()
         feedback('El enlace no es válido o ha caducado. Solicita uno nuevo con tu código universitario.', 'error')
       }
       return
     }
+    if (!recovering && !params.get('access_token') && !query.get('code') && !webSession.restore(data.session)) return
     const verified = await client.auth.getUser()
     if (verified.error || !verified.data.user) {
       if (verified.error && [401, 403].includes(verified.error.status)) await client.auth.signOut({ scope: 'local' })
       throw new Error('session_failed')
     }
+    if (recovering || params.get('access_token') || query.get('code')) {
+      if (!webSession.begin(data.session)) return
+    }
+    if (!webSession.check()) return
     cleanCallback()
     if (recovering) { clearPasswords(); await show('resetScreen', false) }
     else await enterHome()
@@ -358,3 +376,4 @@ async function initialize() {
   finally { checkingSession = false; if (!acceptedSession) setBusy(false) }
 }
 foot(); initialize()
+

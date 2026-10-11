@@ -9,6 +9,14 @@ Malla curricular interactiva para cuatro carreras: **Ingeniería en IA**, **Inge
 - `node --test tests/calendarModel.test.mjs` — pruebas del modelo de calendario
 - Requiere `.env.local` con `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`
 
+## Sesión de la web Oficial
+
+`pagina.html` y `accessController.js` instalan `src/lib/webSession.js`: cierre de sesión tras 30 minutos sin interacción. Solo las acciones reales de teclado, puntero, entrada, scroll o toque en una pestaña visible actualizan la actividad; la renovación de tokens, las consultas y el temporizador de Focus no la prolongan. El registro por sesión persiste en el navegador y se comparte entre pestañas. Recargar, enfocar o volver desde suspensión/bfcache comprueba el plazo antes de admitir actividad o cargar datos académicos. Una sesión antigua sin registro válido requiere volver a iniciar sesión una vez.
+
+Al caducar, el portal oculta y desmonta la información privada inmediatamente, intenta `signOut({scope:'local'})` y limpia únicamente las claves de autenticación de este proyecto aunque no haya conexión. Tras un máximo de 1,5 segundos esperando el cierre, vuelve al acceso. No elimina notas, cursos ni preferencias de Supabase y no cierra otros dispositivos. Los enlaces de recuperación/confirmación verificados y un login nuevo establecen un registro nuevo. `App.jsx`, `ios-android.html` y el cliente Supabase compartido conservan su implementación. Este control es de la aplicación web, no una política de expiración de JWT ni una modificación de Supabase Auth en el servidor.
+
+Pruebas: `node --test tests/webSession.test.mjs` y `tests/webSession.browser.mjs` (Playwright, `SETUP_BROWSER` opcional, Vite en 5181 con URL `https://setup-fixture.supabase.co` y clave fixture). Se comprueban inactividad, regreso siete horas después, recarga, actividad entre pestañas, restauración y cierre sin conexión; los requests de la prueba de navegador son simulados.
+
 La extensión de escritorio de Buzón, Brújula IA, Asesor IA, Mod Focus y Recursos está documentada en [docs/desktop-surfaces.md](docs/desktop-surfaces.md): mapeo de referencias, alcance superior a 860 px, contratos de datos, funciones aún deshabilitadas y evidencia de validación.
 
 ## Arquitectura original: index.html
