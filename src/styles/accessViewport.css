@@ -166,3 +166,13 @@ body[data-extreme="true"][data-state] .panel { height: calc(var(--access-height)
   body[data-state] .panel { min-width: 420px; }
 }
 
+/* Keep the five-field form inside the shared shell on taller desktop views. */
+@media (min-height: 801px) {
+  body[data-state="registerScreen"] {
+    --label-size: 15px; --label-line: 1.3; --label-gap: 4px;
+    --input-height: 46px; --button-height: 52px;
+    --form-gap: 8px; --field-gap: 6px;
+    --button-gap: 10px; --back-gap: 4px;
+  }
+}
+
