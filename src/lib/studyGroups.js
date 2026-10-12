@@ -1,6 +1,8 @@
 export const ROOM_PAGE_SIZE = 30
 export const MESSAGE_PAGE_SIZE = 50
 const ERRORS = {
+  CHAT_SUSPENDED: 'Tu participación en el chat está suspendida temporalmente por moderación. Vuelve cuando termine la suspensión.',
+  PROFANITY_DETECTED: 'El mensaje contiene términos ofensivos y no se envió. Reformúlalo; tres faltas en 48 horas o una ofensa grave suspenden el chat por tres días.',
   NO_AUTH: 'Tu sesión venció. Vuelve a iniciar sesión.',
   PROFILE_REQUIRED: 'Completa tu perfil para participar en una sala.',
   ROOM_LIMIT: 'Ya creaste cinco salas. Cierra una de ellas para crear otra.',
@@ -31,3 +33,4 @@ export function validRoom(draft, courses) {
   if (draft.description.length > 500) return 'La descripción admite hasta 500 caracteres.'
   return ''
 }
+

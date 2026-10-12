@@ -1,4 +1,5 @@
--- Arcade: rankings por temporada y cinco juegos. Conserva puntajes existentes.
+-- Arcade: Dino Run+, Escuadrón Galáctico y juegos educativos.
+-- Los valores históricos astro/frogger se conservan solo para compatibilidad de datos.
 begin;
 create table if not exists public.game_scores (
   student_id uuid not null references auth.users (id) on delete cascade,
@@ -65,7 +66,7 @@ begin
   if auth.uid() is null then
     raise exception 'NO_AUTH';
   end if;
-  if g not in ('dino', 'astro', 'galaxia', 'frogger', 'memoria') then
+  if g not in ('dino', 'galaxia', 'memoria') then
     raise exception 'BAD_GAME';
   end if;
   if s < 1 or s > 100000 then

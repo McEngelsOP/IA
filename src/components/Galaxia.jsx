@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from 'react'
-import '../styles/AstroDefensa.css'
+import '../styles/Galaxia.css'
 
 // ESCUADRÓN GALÁCTICO · shooter vertical: tu nave abajo, oleadas de naves
 // enemigas descienden y disparan. Canvas puro con rAF y estado en refs,
@@ -744,3 +744,4 @@ export default function Galaxia({ onGameOver }) {
     </div>
   )
 }
+

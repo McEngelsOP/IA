@@ -112,7 +112,9 @@ function OfficialStudyGroups({ client, user, courses, onBusy }) {
     const id = roomId, body = messageDraft.trim(), revision = chatRevision.current
     if (submission.current?.body !== body || submission.current?.room !== id) submission.current = { body, room: id, id: crypto.randomUUID() }
     const ok = await mutate(async () => {
-      const result = await rpc('send_study_message', { rid: id, message_body: body, request_id: submission.current.id })
+      const response = await rpc('send_moderated_study_message', { rid: id, message_body: body, request_id: submission.current.id })
+      if (!response?.allowed) throw new Error(response?.error || 'MESSAGE_FAILED')
+      const result = response.messages
       if (!result?.[0]?.id) throw new Error('empty')
       if (alive.current && revision === chatRevision.current) { setMessages(previous => mergeMessages(previous, result)); setMessageDraft(''); submission.current = null; scrolling.current = false }
     })
@@ -167,3 +169,4 @@ function OfficialStudyGroups({ client, user, courses, onBusy }) {
   </section>
 }
 export function mountOfficialStudyGroups(container, props) { const root = createRoot(container); root.render(<OfficialStudyGroups {...props}/>); return () => root.unmount() }
+

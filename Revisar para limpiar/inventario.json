@@ -16,146 +16,6 @@
       "reason": "Plan alternativo no seleccionado en curriculumSources.mjs"
     },
     {
-      "from": "public/juegos/a-pure-css-gameyou-must-build-a-lighthouse/a-pure-css-gameyou-must-build-a-lighthouse/LICENSE.txt",
-      "to": "Revisar para limpiar/public/juegos/a-pure-css-gameyou-must-build-a-lighthouse/a-pure-css-gameyou-must-build-a-lighthouse/LICENSE.txt",
-      "sha": "cb2d8c5fa7e6868cac8264af979e91898311b9ae",
-      "mode": "100644",
-      "reason": "Juego externo de la aplicación React anterior, con fuentes y licencias"
-    },
-    {
-      "from": "public/juegos/a-pure-css-gameyou-must-build-a-lighthouse/a-pure-css-gameyou-must-build-a-lighthouse/README.md",
-      "to": "Revisar para limpiar/public/juegos/a-pure-css-gameyou-must-build-a-lighthouse/a-pure-css-gameyou-must-build-a-lighthouse/README.md",
-      "sha": "56eb0e9db10bbb146c0edc2595d99861b4a6ab0c",
-      "mode": "100644",
-      "reason": "Juego externo de la aplicación React anterior, con fuentes y licencias"
-    },
-    {
-      "from": "public/juegos/a-pure-css-gameyou-must-build-a-lighthouse/a-pure-css-gameyou-must-build-a-lighthouse/dist/index.html",
-      "to": "Revisar para limpiar/public/juegos/a-pure-css-gameyou-must-build-a-lighthouse/a-pure-css-gameyou-must-build-a-lighthouse/dist/index.html",
-      "sha": "16bafc2efe724002e4959b5a15744d1e6a9f4b79",
-      "mode": "100644",
-      "reason": "Juego externo de la aplicación React anterior, con fuentes y licencias"
-    },
-    {
-      "from": "public/juegos/a-pure-css-gameyou-must-build-a-lighthouse/a-pure-css-gameyou-must-build-a-lighthouse/dist/script.js",
-      "to": "Revisar para limpiar/public/juegos/a-pure-css-gameyou-must-build-a-lighthouse/a-pure-css-gameyou-must-build-a-lighthouse/dist/script.js",
-      "sha": "dde3155f837e56e838bf4cd2ae8a0a73fbdd96ee",
-      "mode": "100644",
-      "reason": "Juego externo de la aplicación React anterior, con fuentes y licencias"
-    },
-    {
-      "from": "public/juegos/a-pure-css-gameyou-must-build-a-lighthouse/a-pure-css-gameyou-must-build-a-lighthouse/dist/style.css",
-      "to": "Revisar para limpiar/public/juegos/a-pure-css-gameyou-must-build-a-lighthouse/a-pure-css-gameyou-must-build-a-lighthouse/dist/style.css",
-      "sha": "afec5a62b5c6d7fe21c41e1d3e32ef70fec11018",
-      "mode": "100644",
-      "reason": "Juego externo de la aplicación React anterior, con fuentes y licencias"
-    },
-    {
-      "from": "public/juegos/a-pure-css-gameyou-must-build-a-lighthouse/a-pure-css-gameyou-must-build-a-lighthouse/src/index.html",
-      "to": "Revisar para limpiar/public/juegos/a-pure-css-gameyou-must-build-a-lighthouse/a-pure-css-gameyou-must-build-a-lighthouse/src/index.html",
-      "sha": "3f1012601fc8a3b7f913f3e7f7ae225fa6632daa",
-      "mode": "100644",
-      "reason": "Juego externo de la aplicación React anterior, con fuentes y licencias"
-    },
-    {
-      "from": "public/juegos/a-pure-css-gameyou-must-build-a-lighthouse/a-pure-css-gameyou-must-build-a-lighthouse/src/script.js",
-      "to": "Revisar para limpiar/public/juegos/a-pure-css-gameyou-must-build-a-lighthouse/a-pure-css-gameyou-must-build-a-lighthouse/src/script.js",
-      "sha": "62370be445ca8bf61acd298f0157d4fe1eba7dac",
-      "mode": "100644",
-      "reason": "Juego externo de la aplicación React anterior, con fuentes y licencias"
-    },
-    {
-      "from": "public/juegos/a-pure-css-gameyou-must-build-a-lighthouse/a-pure-css-gameyou-must-build-a-lighthouse/src/style.scss",
-      "to": "Revisar para limpiar/public/juegos/a-pure-css-gameyou-must-build-a-lighthouse/a-pure-css-gameyou-must-build-a-lighthouse/src/style.scss",
-      "sha": "1dd0ba9e1344bff6a488f1f1e97853d83eecd8c3",
-      "mode": "100644",
-      "reason": "Juego externo de la aplicación React anterior, con fuentes y licencias"
-    },
-    {
-      "from": "public/juegos/block-ninja/block-ninja/LICENSE.txt",
-      "to": "Revisar para limpiar/public/juegos/block-ninja/block-ninja/LICENSE.txt",
-      "sha": "6b4d45f56def7cf34a3aeda5cbcc723862bfe973",
-      "mode": "100644",
-      "reason": "Juego externo de la aplicación React anterior, con fuentes y licencias"
-    },
-    {
-      "from": "public/juegos/block-ninja/block-ninja/README.md",
-      "to": "Revisar para limpiar/public/juegos/block-ninja/block-ninja/README.md",
-      "sha": "9d69c509aa742042fead5289ff0a85537f0596b8",
-      "mode": "100644",
-      "reason": "Juego externo de la aplicación React anterior, con fuentes y licencias"
-    },
-    {
-      "from": "public/juegos/block-ninja/block-ninja/dist/index.html",
-      "to": "Revisar para limpiar/public/juegos/block-ninja/block-ninja/dist/index.html",
-      "sha": "f6b4f75d09c3b1c78fa13951a97075887be68e95",
-      "mode": "100644",
-      "reason": "Juego externo de la aplicación React anterior, con fuentes y licencias"
-    },
-    {
-      "from": "public/juegos/block-ninja/block-ninja/dist/script.js",
-      "to": "Revisar para limpiar/public/juegos/block-ninja/block-ninja/dist/script.js",
-      "sha": "8e4bffdda3190cd62e5b6c8ecf8b5c03b22b9711",
-      "mode": "100644",
-      "reason": "Juego externo de la aplicación React anterior, con fuentes y licencias"
-    },
-    {
-      "from": "public/juegos/block-ninja/block-ninja/dist/style.css",
-      "to": "Revisar para limpiar/public/juegos/block-ninja/block-ninja/dist/style.css",
-      "sha": "c762c2b1d4d21cd11ef8b06b8dfba61c355ea7cf",
-      "mode": "100644",
-      "reason": "Juego externo de la aplicación React anterior, con fuentes y licencias"
-    },
-    {
-      "from": "public/juegos/block-ninja/block-ninja/src/index.html",
-      "to": "Revisar para limpiar/public/juegos/block-ninja/block-ninja/src/index.html",
-      "sha": "02730f5015a5891713e3f9fabbfedbd99a972c5d",
-      "mode": "100644",
-      "reason": "Juego externo de la aplicación React anterior, con fuentes y licencias"
-    },
-    {
-      "from": "public/juegos/block-ninja/block-ninja/src/script.js",
-      "to": "Revisar para limpiar/public/juegos/block-ninja/block-ninja/src/script.js",
-      "sha": "148fad6964a19dc517c8b4e92a8cc5224014be55",
-      "mode": "100644",
-      "reason": "Juego externo de la aplicación React anterior, con fuentes y licencias"
-    },
-    {
-      "from": "public/juegos/block-ninja/block-ninja/src/style.css",
-      "to": "Revisar para limpiar/public/juegos/block-ninja/block-ninja/src/style.css",
-      "sha": "d86b1c1eeec784ad95a4b242740e9891f6d9c53a",
-      "mode": "100644",
-      "reason": "Juego externo de la aplicación React anterior, con fuentes y licencias"
-    },
-    {
-      "from": "public/juegos/escape-roads/index.html",
-      "to": "Revisar para limpiar/public/juegos/escape-roads/index.html",
-      "sha": "b006998baa78b9daec3dd9acad3d7b94387f47b8",
-      "mode": "100644",
-      "reason": "Juego externo de la aplicación React anterior, con fuentes y licencias"
-    },
-    {
-      "from": "public/juegos/escape-roads/script.js",
-      "to": "Revisar para limpiar/public/juegos/escape-roads/script.js",
-      "sha": "908765008f8ae1f5d9fa620353ba38d74fb5ec31",
-      "mode": "100644",
-      "reason": "Juego externo de la aplicación React anterior, con fuentes y licencias"
-    },
-    {
-      "from": "public/juegos/escape-roads/style.css",
-      "to": "Revisar para limpiar/public/juegos/escape-roads/style.css",
-      "sha": "c227083464fb9af8955c90d2924774ee50abb547",
-      "mode": "100644",
-      "reason": "Juego externo de la aplicación React anterior, con fuentes y licencias"
-    },
-    {
-      "from": "public/juegos/void-runner/index.html",
-      "to": "Revisar para limpiar/public/juegos/void-runner/index.html",
-      "sha": "52b4a5b4df2940541040337126593ae1af6d7122",
-      "mode": "100644",
-      "reason": "Juego externo de la aplicación React anterior, con fuentes y licencias"
-    },
-    {
       "from": "src/App.css",
       "to": "Revisar para limpiar/src/App.css",
       "sha": "e9343e26c4b2f48590cf480633431b7eac35a71e",
@@ -180,20 +40,6 @@
       "from": "src/components/AdminPanel.jsx",
       "to": "Revisar para limpiar/src/components/AdminPanel.jsx",
       "sha": "d58748faaf4ed378586b2c631fed1d72a357ec29",
-      "mode": "100644",
-      "reason": "Dependencia exclusiva de src/main.jsx; no alcanza ninguna entrada de Vite"
-    },
-    {
-      "from": "src/components/Arcade.jsx",
-      "to": "Revisar para limpiar/src/components/Arcade.jsx",
-      "sha": "c2e8dcf0721fd6ffbdff1f267cee54dd38e1a2f9",
-      "mode": "100644",
-      "reason": "Dependencia exclusiva de src/main.jsx; no alcanza ninguna entrada de Vite"
-    },
-    {
-      "from": "src/components/AstroDefensa.jsx",
-      "to": "Revisar para limpiar/src/components/AstroDefensa.jsx",
-      "sha": "5f3249e14b139a4f38fc43d58cbdc5e81dee6aa2",
       "mode": "100644",
       "reason": "Dependencia exclusiva de src/main.jsx; no alcanza ninguna entrada de Vite"
     },
@@ -229,27 +75,6 @@
       "from": "src/components/CourseDetail.jsx",
       "to": "Revisar para limpiar/src/components/CourseDetail.jsx",
       "sha": "f2780b3e7a7ff76dc1093acfb02f51ac282056e2",
-      "mode": "100644",
-      "reason": "Dependencia exclusiva de src/main.jsx; no alcanza ninguna entrada de Vite"
-    },
-    {
-      "from": "src/components/DinoGame.jsx",
-      "to": "Revisar para limpiar/src/components/DinoGame.jsx",
-      "sha": "9dcbd43e306a367af86cb4a0746c3d6826c1ebdd",
-      "mode": "100644",
-      "reason": "Dependencia exclusiva de src/main.jsx; no alcanza ninguna entrada de Vite"
-    },
-    {
-      "from": "src/components/Frogger.jsx",
-      "to": "Revisar para limpiar/src/components/Frogger.jsx",
-      "sha": "67ef36231a9b82704fa2bcc6bc5a11e334827038",
-      "mode": "100644",
-      "reason": "Dependencia exclusiva de src/main.jsx; no alcanza ninguna entrada de Vite"
-    },
-    {
-      "from": "src/components/Galaxia.jsx",
-      "to": "Revisar para limpiar/src/components/Galaxia.jsx",
-      "sha": "a3af3d40414c3083f6329568c753b0a4dc9e5ca3",
       "mode": "100644",
       "reason": "Dependencia exclusiva de src/main.jsx; no alcanza ninguna entrada de Vite"
     },
@@ -373,20 +198,6 @@
       "reason": "Dependencia exclusiva de src/main.jsx; no alcanza ninguna entrada de Vite"
     },
     {
-      "from": "src/styles/Arcade.css",
-      "to": "Revisar para limpiar/src/styles/Arcade.css",
-      "sha": "e256d67a7ed1278b4b161b81c8dddc2e4d31a61c",
-      "mode": "100644",
-      "reason": "Dependencia exclusiva de src/main.jsx; no alcanza ninguna entrada de Vite"
-    },
-    {
-      "from": "src/styles/AstroDefensa.css",
-      "to": "Revisar para limpiar/src/styles/AstroDefensa.css",
-      "sha": "6e9078adea047294250cc52714f6c5ff3f3d6a6e",
-      "mode": "100644",
-      "reason": "Dependencia exclusiva de src/main.jsx; no alcanza ninguna entrada de Vite"
-    },
-    {
       "from": "src/styles/CareerSelect.css",
       "to": "Revisar para limpiar/src/styles/CareerSelect.css",
       "sha": "a7e566d51c5e43eb9dde70f0d3c6da1ab8aff05e",
@@ -480,5 +291,36 @@
       "sha": "c47485d8519190779c4aa633cd031b422127b956",
       "reason": "Copia byte a byte de la fuente IA canónica"
     }
+  ],
+  "retiredByDeberes": [
+    "Revisar para limpiar/public/juegos/a-pure-css-gameyou-must-build-a-lighthouse/a-pure-css-gameyou-must-build-a-lighthouse/LICENSE.txt",
+    "Revisar para limpiar/public/juegos/a-pure-css-gameyou-must-build-a-lighthouse/a-pure-css-gameyou-must-build-a-lighthouse/README.md",
+    "Revisar para limpiar/public/juegos/a-pure-css-gameyou-must-build-a-lighthouse/a-pure-css-gameyou-must-build-a-lighthouse/dist/index.html",
+    "Revisar para limpiar/public/juegos/a-pure-css-gameyou-must-build-a-lighthouse/a-pure-css-gameyou-must-build-a-lighthouse/dist/script.js",
+    "Revisar para limpiar/public/juegos/a-pure-css-gameyou-must-build-a-lighthouse/a-pure-css-gameyou-must-build-a-lighthouse/dist/style.css",
+    "Revisar para limpiar/public/juegos/a-pure-css-gameyou-must-build-a-lighthouse/a-pure-css-gameyou-must-build-a-lighthouse/src/index.html",
+    "Revisar para limpiar/public/juegos/a-pure-css-gameyou-must-build-a-lighthouse/a-pure-css-gameyou-must-build-a-lighthouse/src/script.js",
+    "Revisar para limpiar/public/juegos/a-pure-css-gameyou-must-build-a-lighthouse/a-pure-css-gameyou-must-build-a-lighthouse/src/style.scss",
+    "Revisar para limpiar/public/juegos/block-ninja/block-ninja/LICENSE.txt",
+    "Revisar para limpiar/public/juegos/block-ninja/block-ninja/README.md",
+    "Revisar para limpiar/public/juegos/block-ninja/block-ninja/dist/index.html",
+    "Revisar para limpiar/public/juegos/block-ninja/block-ninja/dist/script.js",
+    "Revisar para limpiar/public/juegos/block-ninja/block-ninja/dist/style.css",
+    "Revisar para limpiar/public/juegos/block-ninja/block-ninja/src/index.html",
+    "Revisar para limpiar/public/juegos/block-ninja/block-ninja/src/script.js",
+    "Revisar para limpiar/public/juegos/block-ninja/block-ninja/src/style.css",
+    "Revisar para limpiar/public/juegos/escape-roads/index.html",
+    "Revisar para limpiar/public/juegos/escape-roads/script.js",
+    "Revisar para limpiar/public/juegos/escape-roads/style.css",
+    "Revisar para limpiar/public/juegos/void-runner/index.html",
+    "Revisar para limpiar/src/components/Arcade.jsx",
+    "Revisar para limpiar/src/components/AstroDefensa.jsx",
+    "Revisar para limpiar/src/components/Frogger.jsx",
+    "Revisar para limpiar/src/styles/Arcade.css",
+    "Revisar para limpiar/src/styles/AstroDefensa.css"
+  ],
+  "restoredByDeberes": [
+    "src/components/DinoGame.jsx",
+    "src/components/Galaxia.jsx"
   ]
 }

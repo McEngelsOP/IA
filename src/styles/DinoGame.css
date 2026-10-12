@@ -1,0 +1,175 @@
+.dino-wrap { width: 100%; }
+
+.dino-stage { position: relative; }
+
+/* ---------- Overlays del juego (menú, pausa, game over) ---------- */
+.dg-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 12px;
+  overflow-y: auto;
+  /* bien oscuro: el juego de fondo puede estar en modo día (fondo claro) */
+  background: rgba(13, 18, 32, 0.88);
+  backdrop-filter: blur(2px);
+  animation: arcade-in 0.2s ease;
+}
+
+.dg-overlay.dg-dim { background: rgba(13, 18, 32, 0.92); }
+
+.dg-title {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 6px;
+  color: #2de2e6;
+  text-shadow: 0 0 22px rgba(45, 226, 230, 0.4);
+}
+
+.dg-title.over { color: #ff6c9f; text-shadow: 0 0 22px rgba(255, 108, 159, 0.4); }
+
+.dg-modes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 7px;
+  width: 100%;
+  max-width: 640px;
+}
+
+.dg-mode {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  text-align: left;
+  padding: 8px 11px;
+  border-radius: 10px;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.05);
+  color: #dfe4f5;
+  transition: border-color 0.15s, background 0.15s, transform 0.15s;
+}
+
+.dg-mode:hover {
+  border-color: #2de2e6;
+  background: rgba(45, 226, 230, 0.1);
+  transform: translateY(-1px);
+}
+
+.dg-mode-name {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.dg-rank-tag {
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: #3d2f04;
+  background: #ffd166;
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
+.dg-rank-tag.off {
+  background: rgba(255, 255, 255, 0.14);
+  color: #aeb8e0;
+}
+
+.dg-mode-desc {
+  font-size: 10.5px;
+  line-height: 1.4;
+  color: #8b96c9;
+}
+
+.dg-note {
+  margin: 0;
+  font-size: 9.5px;
+  letter-spacing: 1.2px;
+  color: #6b76a8;
+}
+
+.dg-score {
+  font-size: 15px;
+  letter-spacing: 1.5px;
+  color: #dfe4f5;
+}
+
+.dg-score b { color: #ffd166; }
+
+.dg-stats {
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  gap: 5px 20px;
+  font-size: 10.5px;
+  letter-spacing: 1px;
+  color: #8b96c9;
+}
+
+.dg-btns { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+
+.dg-btn {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  padding: 9px 18px;
+  border-radius: 999px;
+  cursor: pointer;
+  border: none;
+  background: #2de2e6;
+  color: #062a33;
+  transition: transform 0.15s, background 0.15s;
+}
+
+.dg-btn:hover { transform: translateY(-1px); background: #59eef1; }
+
+.dg-btn.ghost {
+  background: rgba(255, 255, 255, 0.08);
+  color: #aeb8e0;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.dg-btn.ghost:hover { background: rgba(255, 255, 255, 0.16); color: #fff; }
+
+.dino-canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    #121830;
+  background-size: 24px 24px;
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+.dino-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  font-size: 10px;
+  letter-spacing: 1.2px;
+  color: #6b76a8;
+}
+
+.dino-foot .dino-last { color: #ffd166; }
+
+
+@media(max-width:600px){.dg-modes{grid-template-columns:1fr}.dg-title{font-size:20px}.dg-mode-desc{font-size:13px}.dg-note,.dino-foot{font-size:12px}}
+
+.gm-react-game .dino-stage:has(.dg-overlay:not(.dg-dim)){min-height:350px}

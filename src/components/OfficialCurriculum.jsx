@@ -4,6 +4,7 @@ import { CARRERAS } from '../data/carreras'
 import { AREAS } from '../data/areas'
 import { buildMalla, bfs, edgePath, COL_W, LEFT, completedCredits, canTake, previewCompleted, validPlan } from '../lib/curriculumGraph'
 import '../styles/OfficialCurriculum.css'
+import CourseCommunity from './CourseCommunity'
 
 const MODES = [
   ['open', '¿Qué abre?'], ['req', '¿Qué requiere?'], ['noreq', '¿Qué puedo llevar?'],
@@ -32,7 +33,7 @@ function Icon({ name }) {
   return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>
 }
 
-function OfficialCurriculum({ career, user, client, sessionMode, initialDone, initialPlan, statuses, initialGrades, onProgressChange, onGradeChange, onBusy }) {
+function OfficialCurriculum({ career, user, client, sessionMode, initialDone, initialPlan, statuses: initialStatuses, initialGrades, onProgressChange, onGradeChange, onStatusChange, onBusy }) {
   const M = getMalla(career)
   const [mode, setMode] = useState('open'), [selected, setSelected] = useState(null)
   const [done, setDone] = useState(() => new Set(initialDone)), [plan, setPlan] = useState(() => new Set(initialPlan))
@@ -40,6 +41,7 @@ function OfficialCurriculum({ career, user, client, sessionMode, initialDone, in
   const [query, setQuery] = useState(''), [matchIndex, setMatchIndex] = useState(0), [zoom, setZoom] = useState(1)
   const [pending, setPending] = useState(null), [busy, setBusy] = useState(false), [message, setMessage] = useState(''), [error, setError] = useState('')
   const [gradeDraft, setGradeDraft] = useState('')
+  const [statuses, setStatuses] = useState(initialStatuses), [statusDraft, setStatusDraft] = useState('')
   const scroller = useRef(null), areas = useRef(null), search = useRef(null), detail = useRef(null), confirm = useRef(null)
   const drag = useRef(null), locked = useRef(false), mounted = useRef(true), previousFocus = useRef(null)
   const isLive = sessionMode === 'live' && !!user && !!client
@@ -54,6 +56,7 @@ function OfficialCurriculum({ career, user, client, sessionMode, initialDone, in
   const opensAfter = M.cursos.filter(c => canTake(c, planAfter, completedCredits(M, planAfter)) && !canTake(c, done, credits))
 
   useEffect(() => { mounted.current = true; return () => { mounted.current = false } }, [])
+  useEffect(() => { setStatusDraft(course ? statuses[course.id]?.status || '' : '') }, [course?.id, statuses])
   useEffect(() => { setGradeDraft(course && Number.isFinite(grades[course.id]) ? String(grades[course.id]) : '') }, [course?.id, grades])
   useEffect(() => {
     const c = matches[matchIndex]
@@ -153,6 +156,20 @@ function OfficialCurriculum({ career, user, client, sessionMode, initialDone, in
     } catch { if (mounted.current) setError('No se pudo guardar la nota. La anterior se conserva; reintenta.') }
     finally { finish() }
   }
+  async function saveStatus(e) {
+    e.preventDefault()
+    if (locked.current || !isLive || !course || done.has(course.id)) return
+    begin()
+    try {
+      await verifiedUser()
+      const row = { student_id: user.id, course_id: course.id, status: statusDraft, times_taken: statuses[course.id]?.times_taken || 1, updated_at: new Date().toISOString() }
+      const r = statusDraft ? await client.from('course_status').upsert(row, { onConflict: 'student_id,course_id' }) : await client.from('course_status').delete().match({ student_id: user.id, course_id: course.id })
+      if (r.error) throw r.error
+      onStatusChange(course.id, statusDraft ? row : null)
+      if (mounted.current) { setStatuses(previous => { const next = { ...previous }; if (statusDraft) next[course.id] = row; else delete next[course.id]; return next }); setMessage('Estado guardado. Inicio y Mod Focus usan esta matrícula.') }
+    } catch { if (mounted.current) setError('No se pudo guardar el estado. El registro anterior se conserva; reintenta.') }
+    finally { finish() }
+  }
   function adjustZoom(next) {
     const z = Math.min(1.8, Math.max(0.6, Math.round(next * 100) / 100)), node = scroller.current
     const left = (node.scrollLeft + node.clientWidth / 2) * z / zoom - node.clientWidth / 2
@@ -234,8 +251,10 @@ function OfficialCurriculum({ career, user, client, sessionMode, initialDone, in
       <h4>¿Qué requiere?</h4><p className="oc-course-links">{course.r.length ? list(course.r) : 'Sin prerrequisitos de cursos.'}</p>{course.rc > 0 && <p>Requiere {course.rc} créditos aprobados previos. Tu avance: {number(credits)} créditos.</p>}{course.requirementNote && <p>{course.requirementNote}</p>}
       <h4>¿Qué abre?</h4><p className="oc-course-links">{M.unlocks[course.id]?.length ? list(M.unlocks[course.id]) : 'No abre otros cursos directamente.'}</p>
       {statuses[course.id]?.times_taken && <p>Veces llevado: {statuses[course.id].times_taken}{statuses[course.id].passed_at ? ` · Fecha registrada: ${new Date(statuses[course.id].passed_at).toLocaleDateString('es-PE')}` : ''}</p>}
+      {!done.has(course.id) && <form className="oc-grade" onSubmit={saveStatus}><label>Estado académico<select value={statusDraft} disabled={busy || !isLive} onChange={e => setStatusDraft(e.target.value)}><option value="">Pendiente</option><option value="matriculado">Matriculado</option><option value="desaprobado">Desaprobado</option>{['aprobado', 'convalidado'].includes(statusDraft) && <option value={statusDraft}>{STATUS[statusDraft]}</option>}</select></label><button type="submit" className="oc-primary" disabled={busy || !isLive}>Guardar estado</button><p>Los cursos matriculados aparecen en Inicio y Mod Focus.</p></form>}
       <div className="oc-actions"><button type="button" disabled={busy} onClick={() => requestDone(course.id)}>{done.has(course.id) ? 'Desmarcar como llevado' : 'Marcar como llevado'}</button></div>
       {done.has(course.id) || statuses[course.id]?.status === 'desaprobado' ? <form className="oc-grade" onSubmit={saveGrade}><label>Nota / 20<input aria-label={`Nota de ${course.n}`} inputMode="decimal" value={gradeDraft} disabled={busy} placeholder="Sin nota" onChange={e => setGradeDraft(e.target.value)}/></label><button type="submit" className="oc-primary" disabled={busy}>{busy ? 'Guardando…' : 'Guardar nota'}</button><p>Deja el campo vacío para eliminar la nota. La nota también aparece en Inicio.</p></form> : <p>Marca el curso como llevado para registrar su nota.</p>}
+      <CourseCommunity key={course.id} course={course} client={client} user={isLive ? user : null} onBusy={value => { locked.current = value; setBusy(value); onBusy(value) }}/>
     </section> : <div className="oc-details"><h3>Ficha del curso</h3><p>Selecciona un curso en el grafo para consultar sus requisitos, créditos y registro académico.</p></div>)}
     <p className="oc-foot">{M.foot}</p>
   </section>
@@ -246,3 +265,4 @@ export function mountOfficialCurriculum(container, props) {
   root.render(<OfficialCurriculum {...props}/>)
   return () => root.unmount()
 }
+

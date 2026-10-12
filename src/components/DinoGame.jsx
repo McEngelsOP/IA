@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState } from 'react'
+import '../styles/DinoGame.css'
 
 // DINO RUN+ · versión propia del dinosaurio de Chrome con modos de juego.
 // Canvas puro con requestAnimationFrame; el estado del juego vive en un ref
@@ -852,3 +853,4 @@ export default function DinoGame({ onGameOver }) {
     </div>
   )
 }
+

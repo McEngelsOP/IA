@@ -1,4 +1,4 @@
-/* ASTRO-DEFENSA · overlays y lienzo (mismo lenguaje visual que Dino Run+) */
+/* Escuadrón Galáctico: lienzo y controles conservados. */
 
 .ast-wrap { width: 100%; }
 
@@ -22,16 +22,6 @@
   max-width: 400px;
   max-height: 62vh;
   margin: 0 auto;
-}
-
-/* Frogger+: lienzo casi cuadrado; touch-action none para que el
-   deslizamiento (saltar) no haga scroll en la página */
-.fg-canvas {
-  max-width: 460px;
-  max-height: 66vh;
-  margin: 0 auto;
-  touch-action: none;
-  cursor: pointer;
 }
 
 .ast-foot {
@@ -178,3 +168,6 @@
 }
 
 .ast-btn.ghost:hover { background: rgba(255, 255, 255, 0.16); color: #fff; }
+
+
+.gm-react-game .ast-title{font-size:22px;letter-spacing:.06em;max-width:100%;text-align:center;overflow-wrap:anywhere}
