@@ -69,16 +69,12 @@ CHECK_JS='''() => {
  const elements=[document.querySelector('.brand'),screen.querySelector('h1,h2'),...screen.querySelectorAll('label,input,select,.primary,.secondary,.back-link,.message:not([hidden]),.inline-error:not([hidden])'),document.querySelector('.panel-foot')].filter(Boolean);
  const bad=elements.map(inView).filter(r=>r.top<-.1||r.bottom>innerHeight+.1||r.left<-.1||r.right>innerWidth+.1);
  const stage=document.querySelector('.stage');
- return {height:innerHeight,width:innerWidth,scrollH:document.documentElement.scrollHeight,scrollW:document.documentElement.scrollWidth,y:scrollY,x:scrollX,density:document.body.dataset.fit,headingSize:parseFloat(getComputedStyle(screen.querySelector('h1,h2')).fontSize),logoSize:document.querySelector('.compass').getBoundingClientRect().height,panelHeight:document.querySelector('.panel').getBoundingClientRect().height,stageH:stage.clientHeight,stageScrollH:stage.scrollHeight,stageTop:stage.scrollTop,bad};
+ return {shell:inView(document.querySelector('.panel')),height:innerHeight,width:innerWidth,scrollH:document.documentElement.scrollHeight,scrollW:document.documentElement.scrollWidth,y:scrollY,x:scrollX,density:document.body.dataset.fit,headingSize:parseFloat(getComputedStyle(screen.querySelector('h1,h2')).fontSize),logoSize:document.querySelector('.compass').getBoundingClientRect().height,panelHeight:document.querySelector('.panel').getBoundingClientRect().height,stageH:stage.clientHeight,stageScrollH:stage.scrollHeight,stageTop:stage.scrollTop,bad};
 }'''
 
 def inspect(page,label):
     page.wait_for_timeout(100)
     before=page.evaluate(CHECK_JS)
-    if label=='forgot' and page.viewport_size['width']>=1366:
-        assert before['headingSize']>=min(42,page.viewport_size['width']*.025)-.1, before
-        assert before['logoSize']>=52, before
-        assert before['panelHeight']>=page.viewport_size['height']*.8, before
     if label=='register' and list(page.viewport_size.values())==[1536,730]:
         assert before['headingSize']>=34 and before['logoSize']>=48, before
     if label=='register' and list(page.viewport_size.values())==[1366,657]:
@@ -97,7 +93,14 @@ def inspect(page,label):
     assert page.evaluate("[...document.querySelectorAll('.stage > :not([hidden]) label')].every(e=>parseFloat(getComputedStyle(e).fontSize)>=14)")
     assert page.evaluate("[...document.querySelectorAll('.stage > :not([hidden]) input,.stage > :not([hidden]) select')].every(e=>parseFloat(getComputedStyle(e).fontSize)>=15 && e.getBoundingClientRect().height>=44)")
     assert page.evaluate("[...document.querySelectorAll('.stage > :not([hidden]) button:not([hidden])')].every(e=>e.getBoundingClientRect().height>=44)")
-    ok=before['scrollH']<=before['height'] and before['scrollW']<=before['width'] and not before['bad'] and before['stageScrollH']<=before['stageH'] and after['y']==0 and after['x']==0 and after['stageTop']==0
+    shell=before['shell']
+    ok=(before['scrollH']<=before['height'] and before['scrollW']<=before['width']
+        and shell['top']>=-.1 and shell['bottom']<=before['height']+.1
+        and shell['left']>=-.1 and shell['right']<=before['width']+.1
+        and after['y']==0 and after['x']==0)
+    # Content may scroll inside the fixed panel; it must stay reachable.
+    if before['stageScrollH']<=before['stageH']:
+        ok=ok and not before['bad']
     results.append({'view':label,'size':list(page.viewport_size.values()),'ok':ok,'before':before,'after':after})
     if not ok:print('FAIL',label,page.viewport_size,before,after,flush=True)
 
@@ -140,10 +143,14 @@ with sync_playwright() as p:
             page.locator('#newPassword').fill('fixturePass12!');page.locator('#newConfirm').fill('fixturePass12!');page.get_by_role('button',name='Guardar y entrar',exact=True).click()
         page.wait_for_url('**/pagina.html');assert page.evaluate("sessionStorage.getItem('success-announced')==='true' && !sessionStorage.getItem('unexpected-complete')");ctx.close();print('PASS direct',action,flush=True)
     ctx,page,flags=context(browser,size=(1366,657))
-    page.locator('#replay').click();expect(page.locator('#startup')).to_be_visible();expect(page.locator('#loginScreen')).to_be_visible(timeout=10000)
+    assert page.locator('#startup, #replay, #skipStartup').count()==0
+    shell=page.locator('.panel').bounding_box()
+    page.locator('#forgot').click();expect(page.locator('#forgotScreen')).to_be_visible()
+    assert page.locator('.panel').bounding_box()==shell
+    page.locator('#forgotScreen [data-view]').click();expect(page.locator('#loginScreen')).to_be_visible()
     page.locator('#studentCode').fill('25101823');page.locator('#password').fill('fixturePass12!');flags['unconfirmed']=True
     page.locator('#submit').click();expect(page.locator('#formMessage')).to_contain_text('Confirma tu correo')
-    page.locator('#resendConfirmation').click();expect(page.locator('#mailScreen')).to_be_visible();ctx.close();print('PASS replay and confirmation before real session',flush=True)
+    page.locator('#resendConfirmation').click();expect(page.locator('#mailScreen')).to_be_visible();ctx.close();print('PASS stable shell and confirmation before real session',flush=True)
     # Real extreme height: only stage scrolls, root remains at zero.
     ctx,page,flags=context(browser,size=(390,480));register(page)
     assert page.evaluate('document.documentElement.scrollHeight===innerHeight && document.body.dataset.extreme==="true"')
@@ -162,3 +169,4 @@ with sync_playwright() as p:
     ctx.close();print('PASS ordinary entrance and exit animations retained',flush=True)
     assert not errors,errors
     browser.close();print('PASS no browser warnings or errors',flush=True)
+

@@ -1,10 +1,11 @@
+import { initializeAccessBackground } from './accessBackground.js'
 import { getSupabaseClient } from './getSupabaseClient.js'
 import { createWebSessionGuard, webAuthStorageKey } from './webSession.js'
 import { CAREER_OPTIONS, CAREER_KEYS, careerLabel } from '../data/careerOptions.js'
 
 const $ = id => document.getElementById(id)
 const panel = document.querySelector('.panel')
-const screens = ['startup', 'loginScreen', 'registerScreen', 'forgotScreen', 'mailScreen', 'resetScreen'].map($)
+const screens = ['loginScreen', 'registerScreen', 'forgotScreen', 'mailScreen', 'resetScreen'].map($)
 const reduce = matchMedia('(prefers-reduced-motion: reduce)')
 const destination = new URL('./pagina.html', location.href).href
 const callback = new URL('./login.html', location.href).href
@@ -14,7 +15,7 @@ const support = 'solopcional16@gmail.com'
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
 let recovering = params.get('type') === 'recovery' || query.get('type') === 'recovery'
 let busy = false, transitioning = false, checkingSession = true, acceptedSession = false
-let revision = 0, manualPause = false, unconfirmedCode = null, mailCode = '', mailKind = 'recovery', resendAt = 0
+let unconfirmedCode = null, mailCode = '', mailKind = 'recovery', resendAt = 0
 let client = null
 for (const key of CAREER_KEYS) $('registerCareer').add(new Option(careerLabel(key), key))
 
@@ -30,7 +31,6 @@ const webSession = client ? createWebSessionGuard(client, {
 
 let fitFrame = 0
 function scheduleFit() {
-  if (document.querySelector('.stage .entrance')) return
   if (!fitFrame) fitFrame = requestAnimationFrame(() => { fitFrame = 0; fitViewport() })
 }
 function fitViewport() {
@@ -40,24 +40,12 @@ function fitViewport() {
   document.documentElement.style.setProperty('--access-top', `${viewport?.offsetTop || 0}px`)
   const extreme = height < 520 || height < window.innerHeight - 100
   document.body.dataset.extreme = String(extreme)
-  // Start with the original control sizes and the tighter panel rhythm. The
-  // older full-height stage made the fitter collapse even short views merely
-  // to occupy empty panel space.
-  const levels = extreme ? ['minimal'] : ['spacing', 'cozy', 'compact', 'tight', 'minimal']
-  const stage = document.querySelector('.stage')
-  for (const level of levels) {
-    document.body.dataset.fit = String(level)
-    // Ignore subpixel/line-box rounding; it should not collapse a full-size
-    // form to the tightest density when the panel already fits the viewport.
-    if (stage.scrollHeight <= stage.clientHeight + 2 || level === 'minimal') break
-  }
-  if (!extreme) stage.scrollTop = 0
+  // CSS determines the panel and controls before the first paint. Only the
+  // visual viewport (virtual keyboard / zoom) needs runtime geometry.
 }
 window.addEventListener('resize', scheduleFit)
 window.visualViewport?.addEventListener('resize', scheduleFit)
 window.visualViewport?.addEventListener('scroll', scheduleFit)
-document.fonts?.ready.then(scheduleFit)
-new ResizeObserver(scheduleFit).observe(panel)
 fitViewport()
 
 function state() { return document.body.dataset.state }
@@ -74,7 +62,7 @@ function feedback(text, kind = 'info', shouldFit = true) {
 }
 function foot() {
   const help = `<a href="mailto:${support}">${support}</a>`
-  $('entryReplay').hidden = !['startup', 'loginScreen'].includes(state())
+  $('entryInfo').hidden = state() !== 'loginScreen'
   $('accessHint').innerHTML = ({
     registerScreen: `¿Escribiste mal tu correo? Avisa a ${help} para liberarlo y volver a registrarte.`,
     forgotScreen: `¿Ya no tienes acceso a ese correo? Escribe a ${help}.`,
@@ -89,18 +77,18 @@ async function show(id, animate = true) {
   if (old && animate && !reduce.matches) { old.classList.add('screen-exit'); await delay(320) }
   screens.forEach(el => { el.hidden = el !== next; el.classList.remove('entrance', 'screen-exit') })
   const shouldAnimate = animate && !reduce.matches
+  document.body.dataset.state = id; foot(); panel.classList.remove('has-message')
+  feedback('', 'info', false)
+  document.querySelector('.stage').scrollTop = 0
+  fitViewport()
   if (shouldAnimate) {
     next.classList.add('entrance')
     next.addEventListener('animationend', event => {
       if (event.target !== next) return
       next.classList.remove('entrance')
-      scheduleFit()
     }, { once: true })
   }
-  document.body.dataset.state = id; foot(); panel.classList.remove('has-message')
   transitioning = false
-  feedback('', 'info', false)
-  if (!shouldAnimate) fitViewport()
   next.querySelector('h1, h2')?.focus({ preventScroll: true })
 }
 function updateResend() {
@@ -304,46 +292,12 @@ $('resetForm').addEventListener('submit', async event => {
   finally { if (!acceptedSession) setBusy(false) }
 })
 
-function motion() {
-  document.body.dataset.paused = String(manualPause || reduce.matches)
-  const button = $('motionToggle'); button.disabled = reduce.matches
-  button.setAttribute('aria-pressed', String(manualPause || reduce.matches))
-  button.setAttribute('aria-label', reduce.matches ? 'Movimiento reducido del sistema activado' : manualPause ? 'Reanudar movimiento del paisaje' : 'Pausar movimiento del paisaje')
-  $('pauseIcon').toggleAttribute('hidden', manualPause || reduce.matches); $('playIcon').toggleAttribute('hidden', !(manualPause || reduce.matches))
-  if (manualPause || reduce.matches) $('landscape').pause()
-  else $('landscape').play().catch(() => {})
-}
-motion(); reduce.addEventListener('change', motion)
-$('motionToggle').addEventListener('click', () => { manualPause = !manualPause; motion() })
-const backgroundReady = $('landscape').readyState >= 2 ? Promise.resolve() : new Promise(resolve => {
-  $('landscape').addEventListener('loadeddata', resolve, { once: true }); $('landscape').addEventListener('error', resolve, { once: true })
-})
-const assets = Promise.allSettled([backgroundReady, document.fonts?.ready || Promise.resolve()])
-async function startup() {
-  if (busy || transitioning) return
-  const current = ++revision
-  await show('startup', false); $('replay').disabled = true
-  $('loadFill').style.width = '12%'; $('loadingCopy').textContent = 'Preparando tu espacio…'
-  await Promise.race([assets, delay(4000)])
-  if (current !== revision) return
-  $('loadFill').style.width = '64%'; await delay(reduce.matches ? 100 : 850)
-  if (current !== revision) return
-  $('loadFill').style.width = '100%'; $('loadingCopy').textContent = 'Tu espacio está listo.'
-  await delay(reduce.matches ? 100 : 750)
-  if (current !== revision) return
-  await show('loginScreen'); $('replay').disabled = checkingSession
-}
-$('skipStartup').addEventListener('click', async () => {
-  if (transitioning) return
-  revision++; await show('loginScreen'); $('replay').disabled = checkingSession
-})
-$('replay').addEventListener('click', startup)
+initializeAccessBackground()
 setInterval(updateResend, 1000)
 document.addEventListener('visibilitychange', updateResend)
 if (client) client.auth.onAuthStateChange(event => { if (event === 'PASSWORD_RECOVERY') recovering = true })
 async function initialize() {
-  panel.querySelectorAll('input, select, button').forEach(el => { if (el.id !== 'skipStartup') el.disabled = true })
-  await startup()
+  panel.querySelectorAll('input, select, button').forEach(el => { el.disabled = true })
   try {
     if (!client) { feedback('El acceso no está disponible en este momento. Inténtalo más tarde.', 'error'); return }
     const { data, error } = await client.auth.getSession()
@@ -376,4 +330,5 @@ async function initialize() {
   finally { checkingSession = false; if (!acceptedSession) setBusy(false) }
 }
 foot(); initialize()
+
 

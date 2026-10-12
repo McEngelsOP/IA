@@ -1,70 +1,40 @@
-# Verificación del acceso
+# Acceso directo y fondo optimizado
 
-Se comparó el acceso actual con el PDF «I'ESAN · Sistema de acceso» y las capturas compartidas. El ajuste anterior imponía densidades pequeñas a todas las vistas por altura: a 1536×730, Recuperación quedaba con un título de 28 px y un panel de 348 px pese a disponer de espacio. A 1366×657, el título se reducía a 24 px. Eso comprimía innecesariamente el diseño.
+Revisión del 12 de octubre de 2026 sobre `Oficial`, base `5a9f296`.
 
-`src/styles/accessViewport.css` conserva la fuente, superficie, colores, textos, fondo de video y animaciones. `html`/`body` siguen limitados al viewport, `.entry` permanece fija y `.panel` ahora toma la altura del contenido activo dentro del máximo disponible. El pie fluye después del formulario y sus enlaces, en vez de anclarse al fondo de una tarjeta alta. La medición espera a que termine la transición de entrada para que su desplazamiento no active una compactación innecesaria. `fitViewport()` conserva primero los tamaños de campos y títulos; solo reduce más cuando el contenido activo todavía desborda. No utiliza escala ni zoom. Un error visible se vuelve a medir; el formulario recupera su distribución amplia al desaparecer el mensaje. Solo `.stage` permite desplazarse por debajo de 520 px o con el teclado virtual. En escritorio bajo se conserva un ancho mínimo de 420 px para evitar líneas adicionales en errores y la nota del pie.
+## Problema y comportamiento nuevo
 
-## Proporciones recuperadas
+El HTML mostraba inicialmente el formulario, pero `initialize()` lo reemplazaba por `startup()`. La secuencia esperaba fuentes/video hasta 4 segundos y añadía pausas de 850 y 750 ms, además de la transición. Un `ResizeObserver` y la carga de fuentes podían volver a compactar el formulario mediante varias mediciones de layout.
 
-Medidas de las vistas normales, sin mensaje de error:
+Ahora el formulario permanece visible desde el HTML. La verificación de sesión empieza inmediatamente, sin depender del paisaje. Se eliminaron la pantalla «Un momento para comenzar», su barra, «Continuar al acceso», el botón de repetición y sus esperas. Registro, recuperación, confirmación de correo y validación de sesión conservan sus flujos reales.
 
-| Vista | Viewport | Título | Logo | Alto del panel |
-| --- | --- | ---: | ---: | ---: |
-| Inicio de sesión | 1536×730 | 38,4 px | 63 px | 654 px |
-| Crear cuenta | 1536×730 | 34 px | 48 px | 697 px |
-| Inicio de sesión | 1366×657 | 34 px | 48 px | 548 px |
-| Crear cuenta | 1366×657 | 32 px | 40 px | 622 px |
+El panel tiene el mismo ancho/alto en todas las vistas de una misma resolución: ancho entre 420 y 560 px en escritorio, alto máximo de 760 px limitado al viewport disponible. CSS determina los tamaños antes de pintar; JavaScript solo adapta el viewport visual cuando aparece el teclado o cambia el zoom. Los errores no agrandan el panel. En ventanas pequeñas el contenido se desplaza dentro del formulario, conservando controles de al menos 44 px y dejando el pie accesible.
 
-Estas medidas registran las proporciones visibles en las capturas actualizadas; los controles de los formularios conservan al menos 44 px de alto.
+## Recursos del paisaje
 
-Se eliminaron el HTML, los estilos y las referencias exclusivas de `#complete`. Login, registro con sesión y nueva contraseña navegan directamente a `pagina.html`; el botón permanece deshabilitado durante la solicitud. `#accessStatus` anuncia el éxito sin contenido visual. Los errores conservan el formulario y usan `#formMessage`. Un registro sin sesión sigue solicitando la confirmación real de correo.
+| Recurso | Antes | Ahora |
+| --- | ---: | ---: |
+| Video | 11.284.737 bytes, 2880×1620, 30 fps y audio | 654.520 bytes, 1920×1080, 24 fps, sin audio |
+| Imagen previa | Sin imagen | WebP de 153.612 bytes, tomada del primer fotograma |
+| HTML de login compilado | Aproximadamente 181 KB | Aproximadamente 30 KB |
 
-`#replay` sigue reiniciando la carga previa. No hay `#previewHint` ni un modo de acceso simulado en esta versión. El antiguo botón «Abrir Inicio» ejecutaba `location.replace(destination)`, con destino `./pagina.html`; se conserva ese destino.
+El video pesa un 94,2 % menos. Se conserva el mismo paisaje en Full HD. MP4 H.264 con `faststart` permite reproducir sin descargar el archivo entero. Las fuentes existentes se sirven como archivos cacheables y se precarga la regular, en lugar de repetir datos base64 dentro del HTML.
 
-## Matriz de Chromium / Playwright (revisión previa)
+`accessBackground.js` inicia el video después de dos fotogramas de renderizado y nunca espera `loadeddata` para habilitar el formulario. Si hay movimiento reducido, ahorro de datos o conexión 2G, muestra la imagen; con ahorro de datos se puede reanudar manualmente. Una pestaña oculta pausa el video. Un autoplay rechazado conserva un control para reanudar; un error de descarga vuelve a la imagen sin reintentos automáticos.
 
-La matriz siguiente corresponde a la revisión completa anterior a este ajuste del flujo vertical. En este cambio se hizo una inspección visual de inicio de sesión y registro en 1536×730, 1366×657 y 390×844; no se volvió a ejecutar toda la matriz.
+## Validación
 
-Cada casilla incluye la vista normal y un mensaje de error visible: 10 estados por tamaño, 80 combinaciones. Todos los requests de autenticación se interceptan; no se crean cuentas reales.
+- `node --test tests/accessBackground.test.mjs`: 8 pruebas aprobadas (inicio diferido, movimiento reducido, ahorro de datos, 2G, pestaña oculta, fallo del video y autoplay rechazado).
+- `node --check src/lib/accessController.js`, compilación Python de la prueba de viewport y `git diff --check`.
+- `npm run build`: compilación de las tres entradas, con fuentes, imagen y video incluidos.
+- `tests/accessViewport.py` fue adaptada a la eliminación de replay y al panel estable. No se volvió a ejecutar la matriz completa de 80 estados: no había un Chromium local utilizable. No se atribuyen resultados nuevos a esa matriz histórica.
 
-| Viewport | Login | Registro | Recuperación | Correo enviado | Nueva contraseña |
-| --- | --- | --- | --- | --- | --- |
-| 1920×947 | Pasa | Pasa | Pasa | Pasa | Pasa |
-| 1536×730 | Pasa | Pasa | Pasa | Pasa | Pasa |
-| 1366×657 | Pasa | Pasa | Pasa | Pasa | Pasa |
-| 1280×620 | Pasa | Pasa | Pasa | Pasa | Pasa |
-| 1024×600 | Pasa | Pasa | Pasa | Pasa | Pasa |
-| 768×1024 | Pasa | Pasa | Pasa | Pasa | Pasa |
-| 390×844 | Pasa | Pasa | Pasa | Pasa | Pasa |
-| 360×640 | Pasa | Pasa | Pasa | Pasa | Pasa |
-
-En las 80 combinaciones: `scrollHeight <= innerHeight`, `scrollWidth <= innerWidth`, contenido dentro del viewport, ninguna diferencia entre la altura interna y la disponible de `.stage`, y `scrollX`, `scrollY` y `stage.scrollTop` iguales a cero tras rueda, PageDown, Espacio, Tab y un gesto táctil. Las etiquetas conservan al menos 14 px; inputs/selects al menos 15 px; campos y botones al menos 44 px de alto.
-
-También pasaron navegación directa de login/registro con sesión/reset sin ningún `#complete`, anuncio oculto de éxito, replay, confirmación de correo, scroll exclusivo de `.stage` a 390×480, geometría simulada de teclado móvil, animaciones habituales y ausencia de warnings/errores de consola. `npm run build` y `node --check src/lib/accessController.js` pasaron. El teclado se simuló mediante `visualViewport`; no es una prueba de un teléfono físico ni del correo real de Supabase.
-
-## Capturas de Crear cuenta
-
-- [1536×730](crear-cuenta-1536x730.png)
-- [1366×657](crear-cuenta-1366x657.png)
-
-Inicio de sesión: [1536×730](inicio-sesion-1536x730.png).
-
-Las capturas actuales muestran los cinco campos, botón, enlace y nota completos con el tamaño recuperado.
-
-Recuperación: [1536×730](recuperar-1536x730.png).
-
-## Reproducir
-
-Requiere Python con Playwright y Chromium. Inicia Vite con credenciales ficticias en un terminal:
+Para reproducir navegación con Supabase simulado:
 
 ```sh
 VITE_SUPABASE_URL=https://access-fixture.supabase.co VITE_SUPABASE_ANON_KEY=fixture-public-key npm run dev -- --host 127.0.0.1 --port 5181
-```
-
-En otro terminal:
-
-```sh
 ACCESS_BASE_URL=http://127.0.0.1:5181 ACCESS_BROWSER=/usr/bin/chromium python tests/accessViewport.py
 ```
 
-`ACCESS_REVIEW_DIR` permite cambiar la carpeta de resultados; por defecto escribe JSON y capturas en `/tmp/ia-access-review`. El destino `pagina.html` también se intercepta para aislar las pruebas de la base de datos.
+Las pruebas interceptan autenticación y destino: no crean cuentas reales.
+
