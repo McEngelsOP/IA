@@ -1,11 +1,36 @@
 import { useEffect, useRef, useState } from 'react'
 import OfficialIcon from './OfficialIcon'
-import { resourceUrl, resourceError, wordCount } from '../lib/resourceModel'
+import { resourceUrl, resourceError, wordCount, resourceIconSources } from '../lib/resourceModel'
 import '../styles/ResourceDirectory.css'
 
 function ResourceLogo({ url }) {
-  const [failed, setFailed] = useState(false)
-  return <span className="rc-logo" aria-hidden="true">{failed ? <OfficialIcon name="link" size={20}/> : <img src={new URL('/favicon.ico', url).href} alt="" width="24" height="24" loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={() => setFailed(true)}/>}</span>
+  // Remount on URL changes so a previous failure cannot hide a new icon.
+  return <ResourceLogoImage key={url} url={url}/>
+}
+function ResourceLogoImage({ url }) {
+  const [sources] = useState(() => resourceIconSources(url))
+  const [index, setIndex] = useState(0)
+  const [loaded, setLoaded] = useState(false)
+  const source = sources[index]
+  const advance = () => {
+    setLoaded(false)
+    setIndex(previous => previous === index ? previous + 1 : previous)
+  }
+  useEffect(() => {
+    if (!source || loaded) return
+    const timer = setTimeout(() => {
+      setLoaded(false)
+      setIndex(previous => previous === index ? previous + 1 : previous)
+    }, 4500)
+    return () => clearTimeout(timer)
+  }, [source, index, loaded])
+  return <span className="rc-logo" aria-hidden="true">
+    {!loaded && <OfficialIcon name="link" size={20}/>}
+    {source && <img key={source} src={source} alt="" width="24" height="24" decoding="async" referrerPolicy="no-referrer"
+      style={loaded ? undefined : { display: 'none' }}
+      onLoad={e => { if (e.currentTarget.naturalWidth > 1 && e.currentTarget.naturalHeight > 1) setLoaded(true); else advance() }}
+      onError={advance}/>}
+  </span>
 }
 export default function ResourceDirectory({ client, user, onBusy }) {
   const [items, setItems] = useState([]), [total, setTotal] = useState(0), [page, setPage] = useState(0)

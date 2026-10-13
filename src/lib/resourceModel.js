@@ -11,3 +11,17 @@ export function resourceError(error) {
   const key = Object.keys(errors).find(k => error?.message?.includes(k))
   return key ? errors[key] : 'No se pudo guardar. Tus datos se conservan; reintenta.'
 }
+
+/** Only the public hostname is sent to fallback services; never paths or tokens. */
+export function resourceIconSources(value) {
+  try {
+    const url = new URL(resourceUrl(value))
+    const host = url.hostname
+    if (!host.includes('.') || host === 'localhost' || host.includes(':') || /^\d{1,3}(\.\d{1,3}){3}$/.test(host)) return []
+    return [
+      new URL('/favicon.ico', url).href,
+      `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=64`,
+      `https://icons.duckduckgo.com/ip3/${encodeURIComponent(host)}.ico`
+    ]
+  } catch { return [] }
+}
