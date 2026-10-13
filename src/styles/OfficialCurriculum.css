@@ -129,3 +129,16 @@
  .oc-grade select,.oc-grade input,.oc-professor-form input{width:100%;min-width:0;font-size:16px;min-height:44px}
  .oc-grade button{min-height:44px}.oc-stars label{width:44px;height:44px}
 }
+
+/* Keep area filters at their natural width inside their own scroll region. */
+.oc .oc-areas button{flex:0 0 auto;width:auto;max-width:none;white-space:nowrap}
+.oc .oc-areas{overflow-x:auto;overflow-y:hidden;touch-action:pan-x;align-items:center}
+.oc .oc-areas button i{flex-shrink:0}
+@media(max-width:860px){
+ .oc .oc-area-row{width:100%;min-width:0;gap:4px}
+ .oc .oc-areas{flex:1 1 0;width:0;padding:4px 0;gap:8px;-webkit-overflow-scrolling:touch}
+ .oc .oc-areas button{padding:10px 14px;line-height:1.35}
+ .oc .oc-arrow{flex:0 0 44px;width:44px;padding:0}
+ .oc .oc-scroller{height:420px;height:clamp(320px,55dvh,520px)}
+ .oc .oc-bottom{line-height:1.5;overflow-wrap:anywhere}
+}

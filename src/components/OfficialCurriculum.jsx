@@ -35,15 +35,9 @@ function Icon({ name }) {
 
 function OfficialCurriculum({ career, user, client, sessionMode, initialDone, initialPlan, statuses: initialStatuses, initialGrades, onProgressChange, onGradeChange, onStatusChange, onBusy }) {
   const M = getMalla(career)
-  const [mobile, setMobile] = useState(() => window.matchMedia('(max-width:860px)').matches)
   const [preferredView, setPreferredView] = useState(null), [cycle, setCycle] = useState('all')
-  const view = preferredView || (mobile ? 'cycles' : 'graph')
+  const view = preferredView || 'graph'
   const surface = useRef(null)
-  useEffect(() => {
-    const media = window.matchMedia('(max-width:860px)'), update = () => setMobile(media.matches)
-    media.addEventListener('change', update)
-    return () => media.removeEventListener('change', update)
-  }, [])
   const [mode, setMode] = useState('open'), [selected, setSelected] = useState(null)
   const [done, setDone] = useState(() => new Set(initialDone)), [plan, setPlan] = useState(() => new Set(initialPlan))
   const [grades, setGrades] = useState(initialGrades), [area, setArea] = useState(null)
@@ -72,15 +66,15 @@ function OfficialCurriculum({ career, user, client, sessionMode, initialDone, in
   useEffect(() => { setGradeDraft(course && Number.isFinite(grades[course.id]) ? String(grades[course.id]) : '') }, [course?.id, grades])
   useEffect(() => {
     const c = matches[matchIndex]
-    if (c) scroller.current?.scrollTo({ left: Math.max(0, c.x * zoom - 80), top: Math.max(0, c.y * zoom - 100), behavior: 'instant' })
+    if (c) scroller.current?.scrollTo({ left: Math.max(0, c.x * zoom - 80), top: Math.max(0, c.y * zoom - 100), behavior: 'auto' })
   }, [matches, matchIndex, zoom, view])
   useEffect(() => {
     if (mode === 'ficha' && course) {
-      detail.current?.scrollIntoView({ behavior: 'instant', block: 'nearest' })
+      detail.current?.scrollIntoView({ behavior: 'auto', block: 'nearest' })
       detail.current?.focus({ preventScroll: true })
     }
   }, [mode, course?.id])
-  useEffect(() => { if (pending) { confirm.current?.scrollIntoView({ behavior: 'instant', block: 'nearest' }); confirm.current?.focus({ preventScroll: true }) } }, [pending])
+  useEffect(() => { if (pending) { confirm.current?.scrollIntoView({ behavior: 'auto', block: 'nearest' }); confirm.current?.focus({ preventScroll: true }) } }, [pending])
   useEffect(() => {
     const handler = e => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); search.current?.focus(); search.current?.select() }
@@ -232,7 +226,7 @@ function OfficialCurriculum({ career, user, client, sessionMode, initialDone, in
       }}/>{query && <>{view === 'graph' && <span>{matches.length ? `${matchIndex + 1}/${matches.length}` : '0'}</span>}<button type="button" aria-label="Limpiar búsqueda de cursos" onClick={() => { setQuery(''); search.current?.focus() }}><Icon name="close"/></button></>}</label>
       {view === 'graph' && <div className="oc-zoom" role="group" aria-label="Tamaño del grafo"><button type="button" onClick={() => adjustZoom(zoom - 0.15)} disabled={zoom <= 0.6} aria-label="Alejar grafo">−</button><button type="button" onClick={() => adjustZoom(1)} aria-label="Restablecer tamaño del grafo">{Math.round(zoom * 100)}%</button><button type="button" onClick={() => adjustZoom(zoom + 0.15)} disabled={zoom >= 1.8} aria-label="Acercar grafo">+</button></div>}
     </div>
-    <div className="oc-area-row"><span>Áreas</span><button type="button" className="oc-arrow" aria-label="Áreas anteriores" onClick={() => areas.current.scrollBy({ left: -240, behavior: 'instant' })}><Icon name="left"/></button><div className="oc-areas" ref={areas} role="group" aria-label="Áreas de Matemáticas a Electivos"><button type="button" aria-pressed={!area} onClick={() => setArea(null)}>Todas</button>{Object.entries(AREAS).filter(([key]) => M.cursos.some(c => c.a === key)).map(([key, a]) => <button key={key} type="button" aria-pressed={area === key} onClick={() => setArea(area === key ? null : key)}><i style={{ background: a.color }} aria-hidden="true"/>{a.label}</button>)}</div><button type="button" className="oc-arrow" aria-label="Áreas siguientes" onClick={() => areas.current.scrollBy({ left: 240, behavior: 'instant' })}><Icon name="right"/></button></div>
+    <div className="oc-area-row"><span>Áreas</span><button type="button" className="oc-arrow" aria-label="Áreas anteriores" onClick={() => areas.current.scrollBy({ left: -240, behavior: 'auto' })}><Icon name="left"/></button><div className="oc-areas" ref={areas} role="group" aria-label="Áreas de Matemáticas a Electivos"><button type="button" aria-pressed={!area} onClick={() => setArea(null)}>Todas</button>{Object.entries(AREAS).filter(([key]) => M.cursos.some(c => c.a === key)).map(([key, a]) => <button key={key} type="button" aria-pressed={area === key} onClick={() => setArea(area === key ? null : key)}><i style={{ background: a.color }} aria-hidden="true"/>{a.label}</button>)}</div><button type="button" className="oc-arrow" aria-label="Áreas siguientes" onClick={() => areas.current.scrollBy({ left: 240, behavior: 'auto' })}><Icon name="right"/></button></div>
     <div className="oc-status" role="status" aria-live="polite">{busy ? 'Guardando…' : course && ['open', 'req'].includes(mode) ? <><strong>{course.n}</strong> {mode === 'open' ? 'abre' : 'requiere'} {chain.size} {mode === 'open' ? 'cursos en cadena' : 'cursos previos'}{mode === 'req' && course.rc ? ` · ${course.rc} créditos aprobados previos` : ''}.</> : mode === 'plan' ? <>{planned.length} cursos · {number(planCredits)} créditos en tu plan. {HINTS.plan}</> : HINTS[mode]}{mode === 'noreq' && ` ${available.length} cursos disponibles.`}</div>
     {error && <p className="oc-feedback error" role="alert">{error}</p>}{message && <p className="oc-feedback" role="status">{message}</p>}
     {pending && <div className="oc-confirm" ref={confirm} tabIndex="-1" aria-label="Revisar cambios de cursos llevados">

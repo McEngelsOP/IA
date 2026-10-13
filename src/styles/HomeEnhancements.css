@@ -307,3 +307,18 @@
  #app .h-home .hmg i.l1,#app .h-home .hmg i.l2,#app .h-home .hmg i.l3{background:var(--hx)}
  #app .h-home .hmg i.l1{opacity:.3}#app .h-home .hmg i.l2{opacity:.5}#app .h-home .hmg i.l3{opacity:.75}
 }
+
+/* Visible feedback: hover on pointers, short illumination on touch. */
+#app .page .blk::after,#app .page .h-hero::after,#app .page .oc-node::after{
+ content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+ background:radial-gradient(220px circle at var(--mx,50%) var(--my,50%),rgba(242,96,47,.24),transparent 75%);
+ opacity:0;transition:opacity 180ms ease;
+}
+:root[data-glow="on"] #app .page .blk:hover::after,
+:root[data-glow="on"] #app .page .h-hero:hover::after,
+:root[data-glow="on"] #app .page .oc-node:hover::after{opacity:var(--glow-o,1)}
+:root[data-glow="off"] #app .page :is(.blk,.h-hero,.oc-node)::after{opacity:0!important}
+@media(hover:none),(pointer:coarse){
+ #app .page :is(.blk,.h-hero,.oc-node)::after{display:block;opacity:0!important}
+ :root[data-glow="on"] #app .page :is(.blk,.h-hero,.oc-node)[data-glow-active]::after{opacity:var(--glow-o,1)!important}
+}
