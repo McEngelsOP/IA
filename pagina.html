@@ -805,9 +805,9 @@ a{text-underline-offset:3px}.page button:not(.ck){min-height:36px}
 .mobile-dock{display:none}
 @media(max-width:860px){
  .mobile-dock{position:fixed;z-index:5;left:max(12px,env(safe-area-inset-left));right:max(12px,env(safe-area-inset-right));bottom:calc(12px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) 54px;gap:4px;padding:5px;background:var(--bar);border:1px solid var(--bar-b);border-radius:30px;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);box-shadow:0 8px 24px var(--sh)}
- .mobile-dock button{min-height:54px;border:0;border-radius:25px;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11px;color:var(--txt)}
- .mobile-dock button[aria-current=page],.mobile-dock button[aria-expanded=true]{background:var(--ind)}
- .mobile-dock button:active{background:var(--tile-p)}
+ .mobile-dock #mobile-tabs button{min-height:54px;border:0;border-radius:25px;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11px;color:var(--txt)}
+ .mobile-dock #mobile-tabs button[aria-current=page],.mobile-dock #mobile-tabs button[aria-expanded=true]{background:var(--ind)}
+ .mobile-dock #mobile-tabs button:active{background:var(--tile-p)}
  #app .page{padding-top:calc(88px + env(safe-area-inset-top));padding-bottom:calc(104px + env(safe-area-inset-bottom));scroll-padding-bottom:104px;overscroll-behavior:contain}
  #app .side{bottom:calc(92px + env(safe-area-inset-bottom));max-width:calc(100% - 24px)}
  #app.dopen .scrim{background:rgba(0,0,0,.24)}
@@ -824,11 +824,41 @@ a{text-underline-offset:3px}.page button:not(.ck){min-height:36px}
  #setup-root .setup-course-list,#setup-root .setup-choices,#setup-root .setup-mapping,#setup-root .setup-dates,#setup-root .setup-preferences{grid-template-columns:minmax(0,1fr)}
  #setup-root .setup-pets{gap:6px}#setup-root .setup-pets>button{padding:12px 4px}#setup-root .setup-pets .pet{width:64px}
  #setup-root .setup-summary>div{grid-template-columns:1fr;gap:6px}
- #setup-root .setup-footer{bottom:calc(-20px - env(safe-area-inset-bottom));padding-bottom:calc(20px + env(safe-area-inset-bottom));margin-bottom:calc(-20px - env(safe-area-inset-bottom));gap:8px;flex-wrap:wrap}#setup-root .setup-footer>span{flex-basis:100%}#setup-root .setup-panel #setup-root .setup-primary{margin-left:auto;padding:12px 16px}
+ #setup-root .setup-footer{bottom:calc(-20px - env(safe-area-inset-bottom));padding-bottom:calc(20px + env(safe-area-inset-bottom));margin-bottom:calc(-20px - env(safe-area-inset-bottom));gap:8px;flex-wrap:wrap}#setup-root .setup-footer>span{flex-basis:100%}#setup-root .setup-panel .setup-primary{margin-left:auto;padding:12px 16px}
  #app[data-keyboard=true] .mobile-dock{display:none}
 }
 @media(pointer:coarse){.it,.hb,.trig{min-height:44px;min-width:44px}.page button{touch-action:manipulation}}
-@media(prefers-reduced-motion:reduce){.mobile-dock,.mobile-dock button{transition:none}}
+@media(prefers-reduced-motion:reduce){.mobile-dock,.mobile-dock #mobile-tabs button{transition:none}}
+
+
+/* Barra flotante del diseño móvil de referencia: tres accesos + perfil separado. */
+@media(max-width:860px){
+ #mobile-dock{display:flex;gap:8px;height:54px;padding:0;border:0;background:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;left:max(16px,env(safe-area-inset-left));right:max(16px,env(safe-area-inset-right));bottom:calc(20px + env(safe-area-inset-bottom));border-radius:0}
+ .mobile-bar{position:relative;flex:1;min-width:0;border-radius:27px;background:var(--bar);border:1px solid var(--bar-b);box-shadow:0 8px 24px var(--sh);backdrop-filter:blur(24px) saturate(1.5);-webkit-backdrop-filter:blur(24px) saturate(1.5);transition:opacity .28s,transform .5s var(--spring),filter .35s;transform-origin:0 100%}
+ #mobile-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));height:100%;padding:4px;box-sizing:border-box;position:relative;z-index:1}
+ #mobile-tabs button{min-height:44px;border-radius:23px;display:grid;place-items:center;padding:0;background:none;color:var(--ic)}
+ #mobile-tabs button[aria-current=page]{background:none}#mobile-tabs button[aria-current=page] svg{transform:scale(1.08)}
+ .mobile-ind{position:absolute;top:4px;bottom:4px;left:4px;width:calc((100% - 8px)/3);border-radius:999px;background:var(--ind);box-shadow:var(--ind-s);transform:translateX(calc(var(--mobile-index)*100%));transition:transform .6s var(--spring);opacity:0}
+ .has-current .mobile-ind{opacity:1}
+ #mobile-dock .pf{position:static;flex:0 0 54px}#mobile-dock .act{width:54px;height:54px;min-height:54px;border-radius:50%;background:var(--bar);border:1px solid var(--bar-b);box-shadow:0 8px 24px var(--sh)}
+ #mobile-dock .menu{position:absolute;left:0;right:62px;top:auto;bottom:0;width:auto;max-width:none;max-height:calc(100dvh - 130px - env(safe-area-inset-bottom));border-radius:30px;transform-origin:0 100%}
+ #app.open .mobile-bar{opacity:0;transform:scale(.9);filter:blur(10px);pointer-events:none}#app.open #mobile-dock .act svg{transform:rotate(45deg)}
+ #app.open .scrim{background:rgba(0,0,0,.16)}
+ .top .title{text-align:center;margin-right:44px;font-size:17px}
+ #app .focus-web .k-stage{height:auto;min-height:calc(100dvh - 205px);padding:46px 14px 24px}
+ #app .focus-web .k-prev{min-height:280px}#app .focus-web .kc{width:min(100%,300px)}
+ #app .focus-web .k-sty{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #app .focus-web .k-hist-row{flex-wrap:wrap}#app .focus-web .k-sel{max-width:100%}
+ #app .official-tools .b-cycles{grid-template-columns:minmax(0,1fr)}
+ #app .official-tools .b-crow{flex-wrap:wrap}#app .official-tools .b-controls{flex-wrap:wrap}
+ #app .official-tools .rc-fg{grid-template-columns:minmax(0,1fr)}#app .official-tools .rc-fr{flex-wrap:wrap}
+ #app .official-tools input,#app .official-tools textarea,#app .official-tools select,#app .sc input,#app .sc select{font-size:16px}
+ #app .official-mailbox .z-grid{grid-template-columns:minmax(0,1fr)}#app .official-mailbox .z-hero{padding:16px;gap:12px}
+ #app .official-mailbox .z-sec{padding:16px}#app .official-mailbox .z-tabs{width:100%;overflow:auto;flex-wrap:nowrap}
+ #app .official-tools .study-advisor{height:calc(100dvh - 200px);min-height:360px;max-height:none}
+ #app .sc .ev2{min-height:0}
+}
+@media(prefers-reduced-motion:reduce){.mobile-bar,.mobile-ind{transition:none}}
 
 </style>
 </head>
@@ -849,7 +879,7 @@ a{text-underline-offset:3px}.page button:not(.ck){min-height:36px}
   </div>
 </header>
 <main class="page" id="page" aria-labelledby="title"></main>
-<nav class="mobile-dock" id="mobile-dock" aria-label="Navegación móvil"></nav>
+<nav class="mobile-dock" id="mobile-dock" aria-label="Navegación móvil"><div class="mobile-bar"><div class="mobile-ind" aria-hidden="true"></div><div id="mobile-tabs"></div></div></nav>
 <div id="bmod"></div>
 <div class="toast" id="toast" role="status"></div>
 
@@ -1326,23 +1356,12 @@ function pet(k,m){
   const tail=k==='cat'?'<path class="tl" d="M120 108c24 2 32-24 16-42" fill="none" stroke="currentColor" stroke-width="9" stroke-linecap="round"/>':k==='rabbit'?'<circle class="tl" cx="124" cy="110" r="10"/>':'<path class="tl" d="M118 112l22 8-20 6z"/>';
   const r=k==='owl'?10:8;
   return `<svg class="pet ${m}" viewBox="0 0 170 150" aria-hidden="true"><ellipse cx="80" cy="144" rx="46" ry="5" opacity=".15"/><g class="all">${tail}<ellipse cx="80" cy="104" rx="42" ry="34"/><g class="hd">${ears}<circle cx="80" cy="54" r="30"/><g class="eyes"><circle class="ew" cx="67" cy="52" r="${r}"/><circle class="ew" cx="93" cy="52" r="${r}"/><circle class="pp" cx="69" cy="52" r="3.6"/><circle class="pp" cx="95" cy="52" r="3.6"/></g><g class="hp"><path d="M58 54q9-11 18 0M84 54q9-11 18 0"/></g>${k==='owl'?'<path class="bk" d="M76 62h8l-4 9z"/>':'<path class="mo" d="M74 66q6 6 12 0"/>'}</g><g class="bo"><rect x="52" y="108" width="56" height="28" rx="5"/><path d="M80 108v28"/><path class="pgf" d="M80 108h28v28H80z"/></g><circle cx="64" cy="112" r="7"/><circle cx="96" cy="112" r="7"/></g></svg>`}
-function clockHTML(st,t){
- if(!mqM.matches)return webClock(st,t,fx.st==='setup');
-  const tm=`<div class="k-time" id="kt" role="timer" aria-live="off" aria-label="Tiempo restante">${fmt(t)}</div>`;
-  if(st==='ring'){let l='';for(let i=0;i<60;i++)l+=`<line x1="100" y1="12" x2="100" y2="${i%5?22:30}" transform="rotate(${i*6} 100 100)"/>`;return `<div class="k-c ring"><svg viewBox="0 0 200 200" aria-hidden="true">${l}</svg>${tm}</div>`}
-  if(st==='arc')return `<div class="k-c arc"><svg viewBox="0 0 200 200" aria-hidden="true"><circle class="tr" cx="100" cy="100" r="88"/><circle class="pg" id="karc" cx="100" cy="100" r="88" pathLength="100" stroke-dasharray="100 100" stroke-dashoffset="0" transform="rotate(-90 100 100)"/></svg>${tm}</div>`;
-  if(st==='dots')return `<div class="k-c dots">${tm}<div class="dg" id="kdg">${'<i></i>'.repeat(96)}</div></div>`;
-  return `<div class="k-c dig">${tm}</div>`}
-function kPaint(L){
- if(!mqM.matches){webPaint(L);return}
-  const f=fx.total?1-L/fx.total:0,t=$('kt');if(t)t.textContent=fmt(L);
-  if(fx.style==='ring'){const n=Math.round(f*60);document.querySelectorAll('.k-c.ring line').forEach((e,i)=>e.classList.toggle('e',i<n))}
-  else if(fx.style==='arc'){const a=$('karc');if(a)a.setAttribute('stroke-dashoffset',f*100)}
-  else if(fx.style==='dots'){const n=Math.floor(f*96);document.querySelectorAll('#kdg i').forEach((e,i)=>e.classList.toggle('x',i<n))}}
+function clockHTML(st,t){return webClock(st,t,fx.st==='setup')}
+function kPaint(L){webPaint(L)}
 function kTick(){if(fx.st!=='run'||fx.paused)return;fx.left=focusRemaining(fx.end);if(cur==='Mod Focus')kPaint(fx.left);if(!fx.left){fx.st='done';clearInterval(fx.iv);kRender();if(!fx.busy)kComplete()}else if(fx.session&&Date.now()-fx.lastSync>30000&&!document.hidden)kSync()}
 const wheel=(id,vals,sel,lb)=>`<div class="k-w"><div class="k-wh" id="${id}" role="spinbutton" tabindex="0" aria-label="${lb}" aria-valuemin="0" aria-valuemax="${id==='wh'?3:55}" aria-valuenow="${sel}">${vals.map(v=>`<div class="k-wi${v===sel?' on':''}" aria-hidden="true" data-a="wi" data-v="${v}">${String(v).padStart(2,'0')}</div>`).join('')}</div><small>${lb.toLowerCase()}</small></div>`;
 function kWheels(){$('wh').scrollTop=fx.h*40;$('wm').scrollTop=fx.m/5*40}
-function prevHTML(){const p=PN[fx.pet];if(!mqM.matches)return `${webClock(fx.style,kSecs(),true)}<p class="k-hint">${p[1]} te acompañará${fx.course?' mientras estudias '+esc(kCourseName(fx.course)):''}.</p>`;return `${pet(fx.pet,'idle')}${clockHTML(fx.style,kSecs())}<p class="k-hint">${p[1]} te acompañará${fx.course?' mientras estudias '+esc(kCourseName(fx.course)):''}.</p>`}
+function prevHTML(){const p=PN[fx.pet];return `${webClock(fx.style,kSecs(),true)}<p class="k-hint">${p[1]} te acompañará${fx.course?' mientras estudias '+esc(kCourseName(fx.course)):''}.</p>`}
 function kPrev(){const p=$('kprev');if(p)p.innerHTML=prevHTML()}
 function kSetup(){
   if(fx.course&&!focusCourses().some(c=>c.id===fx.course))fx.course='';
@@ -1427,11 +1446,11 @@ function webPaint(L){
 }
 function kStage(){
  const P=PN[fx.pet],disabled=fx.busy?' disabled':'',lbl=`<div class="k-lbl" id="k-focus-label" tabindex="-1">${fx.course?esc(kCourseName(fx.course)):'Sesión de enfoque'} · ${fmt(fx.total)}</div>`;
- if(fx.st==='done')return `<div class="blk k-stage">${lbl}<div class="k-bub">${P[1]}: ¡Buen trabajo! Un paso más en tu estudio.</div>${mqM.matches?pet(fx.pet,'joy'):webPet(fx.pet,'joy')}<p class="k-msg"><b>Sesión terminada · ${fmt(fx.total)}</b><br>Descansa unos minutos antes de volver.</p>${kFeedback()}<p class="k-msg" role="status">${fx.save==='saved'?'Sesión guardada en tu historial.':fx.save==='guest'?'Inicia sesión para guardar tu próximo momento de estudio.':fx.busy?'Guardando la sesión…':'El guardado está pendiente. Puedes reintentarlo.'}</p><div class="k-act">${fx.save==='pending'&&!fx.busy?'<button class="k-btn d" data-a="ksave">Reintentar guardado</button>':''}<button class="k-btn" data-a="kf"${disabled}>Volver a Mod Focus</button></div></div>`;
+ if(fx.st==='done')return `<div class="blk k-stage">${lbl}<div class="k-bub">${P[1]}: ¡Buen trabajo! Un paso más en tu estudio.</div>${webPet(fx.pet,'joy')}<p class="k-msg"><b>Sesión terminada · ${fmt(fx.total)}</b><br>Descansa unos minutos antes de volver.</p>${kFeedback()}<p class="k-msg" role="status">${fx.save==='saved'?'Sesión guardada en tu historial.':fx.save==='guest'?'Inicia sesión para guardar tu próximo momento de estudio.':fx.busy?'Guardando la sesión…':'El guardado está pendiente. Puedes reintentarlo.'}</p><div class="k-act">${fx.save==='pending'&&!fx.busy?'<button class="k-btn d" data-a="ksave">Reintentar guardado</button>':''}<button class="k-btn" data-a="kf"${disabled}>Volver a Mod Focus</button></div></div>`;
  const q=fx.cq?`<p class="k-msg">¿Terminar antes? ${fx.session?'Se guardará el tiempo de estudio transcurrido.':'El historial requiere iniciar sesión.'}</p><div class="k-act"><button class="k-btn d" data-a="kqy"${disabled}>Terminar ahora</button><button class="k-btn" data-a="kqn"${disabled}>Continuar</button></div>`:`<p class="k-msg">${fx.paused?'En pausa. El descanso no suma tiempo de estudio.':P[1]+' está estudiando contigo. Una sesión a la vez.'}</p><div class="k-act"><button class="k-btn d" data-a="kp"${disabled}>${fx.paused?'Reanudar':'Pausa'}</button><button class="k-btn" data-a="kq"${disabled}>Terminar antes</button></div>`;
- return `<div class="blk k-stage${fx.paused?' pz':''}">${lbl}${mqM.matches?pet(fx.pet,'study in'):''}<div class="${mqM.matches?'':'k-clock-stage'}">${clockHTML(fx.style,fx.left)}</div>${q}${kFeedback()}</div>`;
+ return `<div class="blk k-stage${fx.paused?' pz':''}">${lbl}<div class="k-clock-stage">${clockHTML(fx.style,fx.left)}</div>${q}${kFeedback()}</div>`;
 }
-function focus(){if(HOME.mode==='loading')return '<section class="blk" role="status">Comprobando tu sesión…</section>';if(HOME.user&&HOME.mode!=='live')return '<section class="blk">'+homeEmpty('Mod Focus','Carga tu perfil para consultar los cursos matriculados y el historial.',false)+'<button class="h-btn" data-a="hretry">Reintentar</button></section>';return mqM.matches?(fx.st==='setup'?kSetup():kStage()):'<div class="focus-web">'+(fx.st==='setup'?webSetup():kStage())+'</div>'}
+function focus(){if(HOME.mode==='loading')return '<section class="blk" role="status">Comprobando tu sesión…</section>';if(HOME.user&&HOME.mode!=='live')return '<section class="blk">'+homeEmpty('Mod Focus','Carga tu perfil para consultar los cursos matriculados y el historial.',false)+'<button class="h-btn" data-a="hretry">Reintentar</button></section>';return '<div class="focus-web">'+(fx.st==='setup'?webSetup():kStage())+'</div>'}
 $('page').addEventListener('scroll',e=>{const t=e.target;if(!t.classList||!t.classList.contains('k-wh'))return;
   if(fx.busy)return;const i=Math.max(0,Math.round(t.scrollTop/40));if(t.id==='wh')fx.h=Math.min(3,i);else fx.m=Math.min(11,i)*5;
   t.setAttribute('aria-valuenow',t.id==='wh'?fx.h:fx.m);[...t.children].forEach((c,j)=>c.classList.toggle('on',j===i));kPrev()},true);
@@ -1582,14 +1601,14 @@ function setMenu(o,restoreFocus){
   $('act').setAttribute('aria-expanded',o);
   $('act').setAttribute('aria-label',o?'Cerrar perfil':'Abrir perfil');
   if(o){
-    menu.hidden=false;app.classList.add('open');
+    menu.hidden=false;app.classList.add('open');renderMobileDock();
     if(menu.animate)menu.animate(navReduced()?[{opacity:.75},{opacity:1}]:[
       {opacity:0,transform:'translateY(-6px) scale(.96)'},
       {opacity:1,transform:'none'}
     ],{duration:navReduced()?140:480,easing:'cubic-bezier(.22,.7,.25,1)'});
     setTimeout(()=>{if(app.classList.contains('open'))menu.querySelector('.tgb[aria-checked="true"],.it')?.focus({preventScroll:true})},60);
   }else{
-    app.classList.remove('open');
+    app.classList.remove('open');renderMobileDock();
     profileCloseTimer=setTimeout(()=>{if(!app.classList.contains('open'))menu.hidden=true},navReduced()?0:240);
     if(restoreFocus)$('act').focus({preventScroll:true});
   }
@@ -1936,10 +1955,17 @@ const webSession=homeClient?createWebSessionGuard(homeClient,{authKey:webAuthSto
 
 /* La plataforma es informativa; el diseño responde al espacio y al tipo de entrada. */
 function renderMobileDock(){
- const dock=$('mobile-dock');if(!dock)return;
- dock.innerHTML=TABS.map(([label,icon,name])=>`<button type="button" data-mobile-page="${name}"${cur===name?' aria-current="page"':''}>${svg(icon,21)}<span>${label}</span></button>`).join('')+`<button type="button" data-mobile-menu aria-label="${app.classList.contains('dopen')?'Cerrar':'Abrir'} todas las secciones" aria-controls="side" aria-expanded="${app.classList.contains('dopen')}">${svg('listc',21)}<span>Menú</span></button>`;
+ const dock=$('mobile-dock'),tabs=$('mobile-tabs');if(!dock||!tabs)return;
+ const profile=$('act').closest('.pf'),host=mqM.matches?dock:$('top');if(profile.parentElement!==host)host.append(profile);
+ $('act').innerHTML=svg(mqM.matches?'plus':'user',mqM.matches?26:23);
+ const names=TABS.map(t=>t[2]);
+ if(!tabs.children.length)tabs.innerHTML=TABS.map(([label,icon,name])=>`<button type="button" data-mobile-page="${name}" aria-label="${name}" title="${name}">${svg(icon,24)}</button>`).join('');
+ [...tabs.children].forEach(b=>{if(b.dataset.mobilePage===cur)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')});
+ dock.style.setProperty('--mobile-index',Math.max(0,names.indexOf(cur)));
+ dock.classList.toggle('has-current',names.includes(cur));tabs.inert=app.classList.contains('open');
 }
-$('mobile-dock').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.hasAttribute('data-mobile-menu'))setDrawer(!app.classList.contains('dopen'));else{setMenu(false);setDrawer(false);go(b.dataset.mobilePage)}});
+$('mobile-tabs').addEventListener('click',e=>{const b=e.target.closest('[data-mobile-page]');if(!b)return;setMenu(false);setDrawer(false);go(b.dataset.mobilePage)});
+
 const ua=navigator.userAgent;
 root.dataset.platform=/android/i.test(ua)?'android':/iPad|iPhone|iPod/.test(ua)||navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1?'ios':'desktop';
 root.dataset.input=matchMedia('(pointer:coarse)').matches?'touch':'pointer';
