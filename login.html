@@ -832,6 +832,8 @@
     body[data-state="registerScreen"] .panel-foot { margin-top: 18px; }
     @media(min-width:761px) { .panel { width: 34vw; min-width: 360px; max-width: 560px; max-height: none; height: auto; } body[data-state="registerScreen"] .panel { padding-top: 30px; padding-bottom: 30px; } }
     @media(max-width:760px) { .entry, body[data-state="registerScreen"] .entry { padding: 32px 16px 120px; } .panel { max-width: 464px; padding: 28px 24px; } .brand { margin-bottom: 30px; } .subtitle { font-size: 18px; } input, select { font-size: 16px; height: 52px; } .access-form { margin-top: 24px; } .field + .field { margin-top: 18px; } .scene-caption { bottom: 20px; } }
+  
+
   </style>
   <link rel="stylesheet" href="./src/styles/accessViewport.css">
 </head>
@@ -839,6 +841,7 @@
 <body data-video-background="true" data-state="loginScreen">
 
   <div class="environment" aria-hidden="true">
+    <picture class="mobile-landscape"><source media="(max-width:860px)" srcset="./login-mobile-cat.jpg"><img src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" width="736" height="1311" alt="" decoding="async" fetchpriority="high"></picture>
     <video class="landscape" id="landscape" data-src="./login-landscape.mp4" poster="./login-landscape.webp" width="1920" height="1080" muted loop playsinline preload="none" disablepictureinpicture></video>
   </div>
 
@@ -986,3 +989,4 @@
 </body>
 
 </html>
+
