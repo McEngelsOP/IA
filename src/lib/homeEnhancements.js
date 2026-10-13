@@ -26,8 +26,7 @@ function ensure(){var m=document.getElementById("menu");if(!m||m.querySelector("
 function boot(){var m=document.getElementById("menu");if(!m)return;ensure();new MutationObserver(ensure).observe(m,{childList:true})}
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot);else boot();
 window.__esanBrillo={get:function(){return{on:st.on,lv:st.lv}},set:function(o){if(o&&"on"in o)st.on=!!o.on;if(o&&+o.lv>=10&&+o.lv<=100)st.lv=Math.round(+o.lv);apply();save();var g=document.querySelector("#menu .gl");if(g){g.remove();ensure()}}}
-})()
- })();
+})();
  (function(){
 var OK="esan-inicio-orden-v1",BLK=["hero","hoy","stats","notas","racha","semestre","panel"],DK="esan-diagnostico-v1",MIN=10.5,nv="notas",DEF=[["Evaluación continua",30],["Examen parcial",30],["Examen final",40]],MES=["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"],intro=true,pal,sel=0,list=[],prev;
 var E=function(){return api},$=function(s,r){return(r||document).querySelector(s)},scoped=function(k){var a=E();return k+":"+(a&&a.x&&a.x.user&&a.x.user.id||"guest")};
