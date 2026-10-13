@@ -4,15 +4,14 @@ export function mountHomeEnhancements(api){
  if(window.__homeEnhancementsMounted)return;
  window.__homeEnhancementsMounted=true;
  (function(){
-var K="esan-brillo-v1",R=document.documentElement,st={on:true,lv:100};
+var K="esan-brillo-v1",R=document.documentElement,st={on:true,lv:100},mobileGlow=matchMedia("(max-width:860px), (hover:none), (pointer:coarse)");
 try{var q=JSON.parse(localStorage.getItem(K));if(q){st.on=q.on!==false;var n=Math.round(+q.lv);if(n>=10&&n<=100)st.lv=n}}catch(e){}
-function apply(){R.dataset.glow=st.on?"on":"off";R.style.setProperty("--glow-o",st.on?(st.lv/100).toFixed(2):"0");R.style.setProperty("--glow-bm",st.on?st.lv+"%":"0%")}
+function apply(){var on=st.on&&!mobileGlow.matches;R.dataset.glow=on?"on":"off";R.style.setProperty("--glow-o",on?(st.lv/100).toFixed(2):"0");R.style.setProperty("--glow-bm",on?st.lv+"%":"0%")}
 function save(){try{localStorage.setItem(K,JSON.stringify(st))}catch(e){}}
 apply();
+if(mobileGlow.addEventListener)mobileGlow.addEventListener("change",apply);else if(mobileGlow.addListener)mobileGlow.addListener(apply);
 var raf=0,ex=0,ey=0,blk=null;
-addEventListener("pointermove",function(e){if(!st.on||e.pointerType==="touch")return;var b=e.target.closest&&e.target.closest(".page .blk,.page .h-hero,.page .oc-node");if(!b)return;blk=b;ex=e.clientX;ey=e.clientY;if(raf)return;raf=requestAnimationFrame(function(){raf=0;if(!blk||!blk.isConnected)return;var r=blk.getBoundingClientRect();blk.style.setProperty("--mx",ex-r.left+"px");blk.style.setProperty("--my",ey-r.top+"px")})},{passive:true});
-var touchGlowTimer=0,touchGlow=null;
-addEventListener("pointerdown",function(e){if(!st.on||e.pointerType!=="touch")return;var b=e.target.closest&&e.target.closest(".page .blk,.page .h-hero,.page .oc-node");if(!b)return;if(touchGlow)touchGlow.removeAttribute("data-glow-active");clearTimeout(touchGlowTimer);var r=b.getBoundingClientRect();b.style.setProperty("--mx",e.clientX-r.left+"px");b.style.setProperty("--my",e.clientY-r.top+"px");b.setAttribute("data-glow-active","true");touchGlow=b;touchGlowTimer=setTimeout(function(){if(touchGlow)touchGlow.removeAttribute("data-glow-active");touchGlow=null},850)},{passive:true});
+addEventListener("pointermove",function(e){if(!st.on||mobileGlow.matches||e.pointerType==="touch")return;var b=e.target.closest&&e.target.closest(".page .blk,.page .h-hero,.page .oc-node");if(!b)return;blk=b;ex=e.clientX;ey=e.clientY;if(raf)return;raf=requestAnimationFrame(function(){raf=0;if(!blk||!blk.isConnected)return;var r=blk.getBoundingClientRect();blk.style.setProperty("--mx",ex-r.left+"px");blk.style.setProperty("--my",ey-r.top+"px")})},{passive:true});
 function ctl(){
 var d=document.createElement("div");d.className="gl";d.setAttribute("role","group");d.setAttribute("aria-label","Iluminación al pasar el cursor");
 d.innerHTML='<button type="button" class="gl-sw" role="switch" aria-checked="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6L7 7M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"/></svg><span class="l">Brillo al pasar</span><span class="gl-t" aria-hidden="true"></span></button>'

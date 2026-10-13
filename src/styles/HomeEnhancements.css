@@ -322,3 +322,9 @@
  #app .page :is(.blk,.h-hero,.oc-node)::after{display:block;opacity:0!important}
  :root[data-glow="on"] #app .page :is(.blk,.h-hero,.oc-node)[data-glow-active]::after{opacity:var(--glow-o,1)!important}
 }
+
+/* Mobile glow is disabled regardless of saved preferences or pointer events. */
+@media(max-width:860px),(hover:none),(pointer:coarse){
+ #app .page :is(.blk,.h-hero,.oc-node)::after{display:none!important;opacity:0!important}
+ #app .menu .gl-sw,#app .menu .gl-rng{display:none!important}
+}
