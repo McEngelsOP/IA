@@ -12,16 +12,48 @@ export function resourceError(error) {
   return key ? errors[key] : 'No se pudo guardar. Tus datos se conservan; reintenta.'
 }
 
-/** Only the public hostname is sent to fallback services; never paths or tokens. */
+const RESOURCE_ICON_HOSTS = {
+  'grok.com': 'grok.com',
+  'claude.ai': 'claude.ai',
+  'claude.com': 'claude.ai',
+  'gemini.google.com': 'gemini.google.com',
+  'theastudy.com': 'theastudy.com',
+  'auth.tidbcloud.com': 'tidbcloud.com',
+  'tidbcloud.com': 'tidbcloud.com',
+  'gamma.app': 'gamma.app',
+  'canva.com': 'canva.com',
+  'supabase.com': 'supabase.com',
+  'notebooklm.google': 'notebooklm.google',
+  'notebooklm.google.com': 'notebooklm.google',
+  'notebook.google': 'notebooklm.google'
+}
+
+const RESOURCE_ICON_ASSETS = {
+  'grok.com': new URL('../assets/resource-icons/grok.com.png', import.meta.url).href,
+  'claude.ai': new URL('../assets/resource-icons/claude.ai.png', import.meta.url).href,
+  'gemini.google.com': new URL('../assets/resource-icons/gemini.google.com.png', import.meta.url).href,
+  'theastudy.com': new URL('../assets/resource-icons/theastudy.com.png', import.meta.url).href,
+  'tidbcloud.com': new URL('../assets/resource-icons/tidbcloud.com.png', import.meta.url).href,
+  'gamma.app': new URL('../assets/resource-icons/gamma.app.png', import.meta.url).href,
+  'canva.com': new URL('../assets/resource-icons/canva.com.png', import.meta.url).href,
+  'supabase.com': new URL('../assets/resource-icons/supabase.com.png', import.meta.url).href,
+  'notebooklm.google': new URL('../assets/resource-icons/notebooklm.google.png', import.meta.url).href
+}
+
+/** Packaged icons avoid hotlink blocks. Remote fallbacks receive only the host. */
 export function resourceIconSources(value) {
   try {
     const url = new URL(resourceUrl(value))
-    const host = url.hostname
-    if (!host.includes('.') || host === 'localhost' || host.includes(':') || /^\d{1,3}(\.\d{1,3}){3}$/.test(host)) return []
+    const host = url.hostname.toLowerCase().replace(/^www\./, '')
+    if (!host.includes('.') || host.includes(':') || /^\d{1,3}(\.\d{1,3}){3}$/.test(host)) return []
+    const known = RESOURCE_ICON_HOSTS[host]
+    const iconHost = known || host
+    const local = known ? [RESOURCE_ICON_ASSETS[known]] : []
     return [
-      new URL('/favicon.ico', url).href,
-      `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=64`,
-      `https://icons.duckduckgo.com/ip3/${encodeURIComponent(host)}.ico`
+      ...local,
+      'https://www.google.com/s2/favicons?domain=' + encodeURIComponent(iconHost) + '&sz=64',
+      'https://icons.duckduckgo.com/ip3/' + encodeURIComponent(iconHost) + '.ico',
+      new URL('/favicon.ico', url).href
     ]
   } catch { return [] }
 }
