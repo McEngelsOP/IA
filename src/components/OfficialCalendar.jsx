@@ -2,9 +2,10 @@ import { useEffect, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { EVENT_TYPES, DAYS, civil, addDays, monday, monthDays, labelDate, todayLima, minutes, timeLabel, eventsOn, layoutEvents, validateEvent } from '../lib/calendarModel'
 import '../styles/OfficialCalendar.css'
+import TextToTasks from './TextToTasks'
 
 const FIELDS = 'id,student_id,title,description,date,start_date,end_date,color,event_type,start_time,end_time,location,course_id,repeat_rule,repeat_until'
-const TASK_FIELDS = 'id,student_id,title,due_date,completed'
+const TASK_FIELDS = 'id,student_id,title,due_date,completed,course_id'
 const blank = day => ({ title: '', description: '', date: day, start_date: null, end_date: null, color: 'gris', event_type: 'personal', start_time: '08:00', end_time: '09:00', location: '', course_id: '', repeat_rule: 'none', repeat_until: '' })
 function Icon({ name }) {
   const paths = { left: <path d="m14 6-6 6 6 6"/>, right: <path d="m10 6 6 6-6 6"/>, plus: <path d="M12 5v14M5 12h14"/>, check: <path d="m5 12 4 4 10-10"/>, cal: <><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M8 3v4m8-4v4M4 11h16"/></>, edit: <><path d="m14 5 5 5M4 20l5-1L20 8l-5-5L4 14z"/></>, trash: <><path d="M4 7h16M9 7V4h6v3M7 7l1 14h8l1-14M10 11v6m4-6v6"/></> }
@@ -76,7 +77,7 @@ function OfficialCalendar({ client, user, courses, onBusy }) {
   async function saveTask(e) {
     e.preventDefault()
     if (!taskDraft.title.trim() || !civil(taskDraft.due_date)) { setError('Escribe un título y una fecha válida para la tarea.'); return }
-    if (await write('calendar_tasks', { title: taskDraft.title.trim(), due_date: taskDraft.due_date, completed: taskDraft.completed || false }, taskDraft.id)) closeEditor()
+    if (await write('calendar_tasks', { title: taskDraft.title.trim(), due_date: taskDraft.due_date, completed: taskDraft.completed || false, course_id: taskDraft.course_id || null }, taskDraft.id)) closeEditor()
   }
   async function remove() {
     const item = draft || taskDraft
@@ -107,6 +108,7 @@ function OfficialCalendar({ client, user, courses, onBusy }) {
   if (state === 'error') return <section className="blk sc"><h2 className="bt">Calendario no disponible</h2><p role="alert">{error}</p><button className="h-btn primary" onClick={load}>Reintentar</button></section>
   return <div className={`sc sc-view-${view}${draft || taskDraft ? ' sc-editing' : ''}`} onKeyDown={e => { if (e.key === 'Escape' && (draft || taskDraft) && !busy) { e.stopPropagation(); closeEditor() } }}>
     <div className="sc-status" aria-live="polite">{busy ? 'Guardando…' : message}</div>{error && <p className="sc-error" role="alert">{error}</p>}
+    <TextToTasks client={client} user={user} courses={courses} disabled={busy} onBusy={value => { lock.current = value; setBusy(value); onBusy(value) }} onSaved={saved => setTasks(old => [...old.filter(t => !saved.some(s => s.id === t.id)), ...saved])}/>
     <div className="cw"><section className="blk"><div className="ch"><div className="nv"><button className="hb" aria-label="Período anterior" onClick={() => navigate(-1)}><Icon name="left"/></button><h2 className="cl">{heading}</h2><button className="hb" aria-label="Período siguiente" onClick={() => navigate(1)}><Icon name="right"/></button></div><button className="tdb" onClick={() => setDay(today)}>Hoy</button><div className="seg" role="group" aria-label="Vista del calendario">{[['agenda', 'Agenda'], ['day', 'Día'], ['week', 'Semana'], ['month', 'Mes']].map(([id, label]) => <button key={id} className={view === id ? 'on' : ''} aria-pressed={view === id} onClick={() => setView(id)}>{label}</button>)}</div><button className="mk" ref={createButton} disabled={busy} onClick={createEvent}><Icon name="plus"/>Crear evento</button></div>
       <div className="sc-datebar"><p className="sc-zone">Hora de Lima · UTC−5</p><label>Ir a fecha<input type="date" value={day} onChange={e => { if (civil(e.target.value)) setDay(e.target.value) }}/></label></div>
       {view === 'agenda' ? null : view === 'month' ? <div className="wkw"><div className="mg">{DAYS.map(d => <em key={d}>{d}</em>)}{monthDays(day).map(d => { const list = eventsOn(events, d, hidden); return <button key={d} className={`mc${d.slice(0, 7) !== day.slice(0, 7) ? ' out' : ''}${d === today ? ' tdy' : ''}`} aria-label={labelDate(d, { day: 'numeric', month: 'long' }) + `, ${list.length} eventos`} onClick={() => { setDay(d); setView('day') }}><b>{civil(d).getUTCDate()}</b>{list.slice(0, 2).map(e => <span key={e.id} className={`mt y-${e.event_type}`}>{e.title}</span>)}{list.length > 2 && <small>+{list.length - 2} más</small>}</button> })}</div></div> : <div className="wkw" tabIndex="0" role="region" aria-label={view === 'week' ? 'Horario semanal; desliza horizontalmente para ver todos los días' : 'Horario del día'}><div className="wk" style={{ '--n': days.length }}><div className="wh"><span/>{days.map(d => <button key={d} className={`dhd${d === today ? ' tdy' : ''}${d === day ? ' sl' : ''}`} aria-label={labelDate(d, { weekday: 'long', day: 'numeric', month: 'long' })} onClick={() => setDay(d)}><small>{DAYS[(civil(d).getUTCDay() + 6) % 7]}</small><b>{civil(d).getUTCDate()}</b></button>)}</div><div className="sc-allday" style={{ '--n': days.length }}><span>Todo el día</span>{days.map(d => <div key={d}>{eventsOn(events, d, hidden).filter(e => !e.start_time).map(e => <button key={e.id} disabled={busy} onClick={() => editEvent(e)}>{e.title}</button>)}</div>)}</div><div className="wb" style={{ height: (lastHour - firstHour) * 60 }}><div className="hr">{Array.from({ length: lastHour - firstHour }, (_, i) => <span key={i} style={{ top: i * 60 }}>{String(firstHour + i).padStart(2, '0')}:00</span>)}</div>{days.map(d => <div className="dc" key={d}>{layoutEvents(eventsOn(events, d, hidden)).map(e => <button key={e.id} className={`ev2 y-${e.event_type}`} disabled={busy} title={`${e.title} · ${span(e)}${e.location ? ` · ${e.location}` : ''}`} aria-label={`${e.title}, ${span(e)}. Editar evento`} onClick={() => editEvent(e)} style={{ top: e.start - firstHour * 60, height: Math.max(12, e.end - e.start - 3), left: `calc(${e.lane * 100 / e.lanes}% + 2px)`, width: `calc(${100 / e.lanes}% - 4px)` }}><b>{e.title}</b><small>{span(e)}</small></button>)}</div>)}</div></div></div>}
@@ -124,4 +126,3 @@ function OfficialCalendar({ client, user, courses, onBusy }) {
   </div>
 }
 export function mountOfficialCalendar(container, props) { const root = createRoot(container); root.render(<OfficialCalendar {...props}/>); return () => root.unmount() }
-

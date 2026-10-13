@@ -48,13 +48,14 @@ function retryAfter(response: Response, body: any): number {
 }
 
 export async function generateAdvisorAnswer({
-  providers, system, context, history, fetch, reserve, report,
+  providers, system, context, history, fetch, reserve, report, validateAnswer = () => true,
 }: {
   providers: Provider[];
   system: string;
   context: string;
   history: { role: string; content: string }[];
   fetch: typeof globalThis.fetch;
+  validateAnswer?: (answer: string) => boolean;
   reserve: (provider: string, model: string) => Promise<Gate | null>;
   report: (provider: string, model: string, status: string, wait: number, duration: number) => Promise<void>;
 }): Promise<Outcome> {
@@ -117,15 +118,15 @@ export async function generateAdvisorAnswer({
         const code = Number(body?.error?.code) || response.status;
         const blocked = !!body?.promptFeedback?.blockReason ||
           refusalReasons.has(choice?.finishReason || choice?.finish_reason) ||
-          !!choice?.message?.refusal || code === 403;
+          !!choice?.message?.refusal;
         if (blocked) {
           status = "content_blocked"; pause = 0;
           return { error: status, attempts };
         }
         if (!response.ok || body?.error) {
           status = code === 429 ? "rate_limited" : code === 402 ? "credits_exhausted"
-            : [401, 404].includes(code) ? "provider_configuration" : "provider_unavailable";
-          pause = code === 429 ? retryAfter(response, body) : [401, 402].includes(code) ? 1800 : 30;
+            : [401, 403, 404, 410].includes(code) ? "provider_configuration" : "provider_unavailable";
+          pause = code === 429 ? retryAfter(response, body) : [401, 402, 403, 404, 410].includes(code) ? 1800 : 30;
           // Un modelo Gemini retirado puede sustituirse por el predeterminado.
           if (code === 404 && model !== DEFAULT_GEMINI_MODEL && gemini) {
             pause = 0;
@@ -144,6 +145,7 @@ export async function generateAdvisorAnswer({
         if (["MAX_TOKENS", "length"].includes(choice?.finishReason || choice?.finish_reason)) {
           status = "incomplete_response"; lastError = status; waits.push(pause); break;
         }
+        if (!validateAnswer(answer)) { status = "incomplete_response"; lastError = status; waits.push(pause); break; }
         status = "ok"; pause = 0;
         return { answer, source: provider.name, model: body?.model || model, attempts };
       } catch (error) {
@@ -161,4 +163,3 @@ export async function generateAdvisorAnswer({
   }
   return { error: lastError, retryAfterSeconds: Math.max(1, waits.length ? Math.min(...waits) : 60), attempts };
 }
-

@@ -1396,7 +1396,7 @@ async function mountCalendar(){
  try{
   const {mountOfficialCalendar}=await import('./src/components/OfficialCalendar.jsx');
   if(render!==curriculumRender||revision!==HOME.revision||!container.isConnected)return;
-  curriculumUnmount=mountOfficialCalendar(container,{client:homeClient,user:HOME.user,courses:HOME.profile?.carrera?homeCareer().cursos:[],onBusy:value=>{if(revision===HOME.revision){if(value)HOME.saving.add('calendar');else HOME.saving.delete('calendar')}}});
+  curriculumUnmount=mountOfficialCalendar(container,{client:homeClient,user:HOME.user,courses:HOME.profile?.carrera?homeCareer().cursos.filter(c=>HOME.statuses[c.id]?.status==='matriculado'):[],onBusy:value=>{if(revision===HOME.revision){if(value)HOME.saving.add('calendar');else HOME.saving.delete('calendar')}}});
   container.removeAttribute('aria-busy');
  }catch{if(render===curriculumRender&&container.isConnected)container.innerHTML=homeEmpty('No se pudo abrir el calendario','Reintenta para consultar tu información.',false)+'<button class="h-btn" data-a="hretry">Reintentar</button>'}
 }
@@ -2162,7 +2162,3 @@ if(homeClient)homeClient.auth.onAuthStateChange((event,session)=>{
 </script>
 </body>
 </html>
-
-
-
-

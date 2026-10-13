@@ -75,3 +75,21 @@
  #app .sc .sc-agenda-row>svg{flex:none;width:20px;height:20px}
 }
 @media(max-width:360px){#app .sc .sc-time{flex-direction:column;gap:0}#app .sc .sc-time label{width:100%}}
+.sc-text-tasks{min-width:0;overflow-wrap:anywhere;margin-bottom:20px}
+.sc-proposals{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 24px}
+.sc-text-tasks>h2{margin-top:18px}
+.sc-text-tasks>p{max-width:72ch}
+.sc-provider-health{display:grid;gap:10px;margin-top:20px;border-top:1px solid var(--bar-b);padding-top:16px}
+.sc-provider-health button{justify-self:start}
+.sc-text-tasks fieldset{border:0;padding:0;margin:0;min-width:0;display:grid;gap:12px}
+.sc-text-tasks label{display:grid;gap:6px;font-size:13px}
+.sc-text-tasks input,.sc-text-tasks textarea,.sc-text-tasks select{box-sizing:border-box;width:100%;min-width:0;background:var(--tile);color:var(--txt);border:1px solid var(--bar-b);border-radius:10px;padding:10px;font:inherit}
+.sc-text-tasks textarea{resize:vertical;min-height:120px}
+.sc-text-tasks small{color:var(--sc-muted);line-height:1.5}
+.sc-text-tasks form+form{margin-top:24px}
+.sc-task-proposal{display:grid;gap:12px;padding:16px 0;border-top:1px solid var(--bar-b)}
+.sc-text-tasks .sc-check{display:flex;align-items:center;gap:10px}
+.sc-text-tasks .sc-check input{width:20px;height:20px;flex:none}
+.sc-text-tasks button:focus-visible,.sc-text-tasks input:focus-visible,.sc-text-tasks textarea:focus-visible,.sc-text-tasks select:focus-visible{outline:2px solid var(--ic);outline-offset:3px}
+.sc-text-tasks button:disabled{opacity:.6;cursor:wait}
+@media(max-width:860px){.sc-proposals{grid-template-columns:1fr}#app .sc-text-tasks input,#app .sc-text-tasks textarea,#app .sc-text-tasks select{font-size:16px;min-height:44px}#app .sc-text-tasks button{min-height:44px;white-space:normal}#app .sc-text-tasks .sc-actions{grid-template-columns:1fr}#app .sc-text-tasks .sc-check input{min-height:20px}}

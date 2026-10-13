@@ -8,7 +8,7 @@ import CourseCommunity from './CourseCommunity'
 
 const MODES = [
   ['open', '¿Qué abre?'], ['req', '¿Qué requiere?'], ['noreq', '¿Qué puedo llevar?'],
-  ['done', 'Marcar llevados'], ['plan', 'Planificador de ciclo'], ['ficha', 'Ficha del curso']
+  ['done', 'Marcar llevados'], ['plan', 'Planificador de ciclo'], ['semester', 'Cursos de este semestre'], ['ficha', 'Ficha del curso']
 ]
 const HINTS = {
   open: 'Selecciona un curso para ver todo lo que abre en cadena.',
@@ -16,12 +16,14 @@ const HINTS = {
   noreq: 'Los cursos resaltados están disponibles según tus llevados y créditos aprobados.',
   done: 'Selecciona los cursos que ya llevaste. Revisarás los cambios antes de confirmarlos.',
   plan: 'Agrega cursos disponibles para armar tu próximo ciclo.',
-  ficha: 'Selecciona un curso para consultar su ficha y registrar su nota.'
+  ficha: 'Selecciona un curso para consultar su ficha y registrar su nota.',
+  semester: 'Selecciona los cursos que estás llevando ahora y guarda tu matrícula. Puedes elegir cursos de distintos ciclos.'
 }
 const STATUS = { aprobado: 'Aprobado', convalidado: 'Convalidado', matriculado: 'Matriculado', desaprobado: 'Desaprobado' }
 const norm = text => text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
 const number = n => n.toLocaleString('es-PE', { maximumFractionDigits: 2 })
 const MALLAS = new Map()
+let semesterSessionDraft = null
 function getMalla(key) {
   const career = CARRERAS[key] || CARRERAS.ia
   if (!MALLAS.has(career.key)) MALLAS.set(career.key, buildMalla(career))
@@ -38,13 +40,16 @@ function OfficialCurriculum({ career, user, client, sessionMode, initialDone, in
   const [preferredView, setPreferredView] = useState(null), [cycle, setCycle] = useState('all')
   const view = preferredView || 'graph'
   const surface = useRef(null)
-  const [mode, setMode] = useState('open'), [selected, setSelected] = useState(null)
+  const cachedSemester = semesterSessionDraft?.owner === user?.id && semesterSessionDraft?.career === career ? semesterSessionDraft : null
+  const [mode, setMode] = useState(cachedSemester?.mode || 'open'), [selected, setSelected] = useState(null)
   const [done, setDone] = useState(() => new Set(initialDone)), [plan, setPlan] = useState(() => new Set(initialPlan))
   const [grades, setGrades] = useState(initialGrades), [area, setArea] = useState(null)
   const [query, setQuery] = useState(''), [matchIndex, setMatchIndex] = useState(0), [zoom, setZoom] = useState(1)
   const [pending, setPending] = useState(null), [busy, setBusy] = useState(false), [message, setMessage] = useState(''), [error, setError] = useState('')
   const [gradeDraft, setGradeDraft] = useState('')
   const [statuses, setStatuses] = useState(initialStatuses), [statusDraft, setStatusDraft] = useState('')
+  const [semesterDraft, setSemesterDraft] = useState(() => new Set(cachedSemester?.ids || Object.keys(initialStatuses).filter(id => initialStatuses[id]?.status === 'matriculado')))
+  useEffect(() => { semesterSessionDraft = { owner: user?.id, career, mode: mode === 'semester' ? 'semester' : 'open', ids: mode === 'semester' ? [...semesterDraft] : null } }, [user?.id, career, mode, semesterDraft])
   const scroller = useRef(null), areas = useRef(null), search = useRef(null), detail = useRef(null), confirm = useRef(null)
   const drag = useRef(null), locked = useRef(false), mounted = useRef(true), previousFocus = useRef(null)
   const isLive = sessionMode === 'live' && !!user && !!client
@@ -86,6 +91,7 @@ function OfficialCurriculum({ career, user, client, sessionMode, initialDone, in
   function changeMode(next) {
     if (locked.current) return
     setMode(next); setPending(null); setMessage(''); setError('')
+    if (next === 'semester') setSemesterDraft(new Set(Object.keys(statuses).filter(id => statuses[id]?.status === 'matriculado')))
     if (!['open', 'req'].includes(next)) setSelected(null)
   }
   async function verifiedUser() {
@@ -136,6 +142,10 @@ function OfficialCurriculum({ career, user, client, sessionMode, initialDone, in
   function selectCourse(id) {
     if (drag.current?.moved || locked.current) return
     setError(''); setMessage('')
+    if (mode === 'semester') {
+      if (done.has(id) || ['aprobado','convalidado'].includes(statuses[id]?.status)) { setError('Este curso ya está aprobado. Selecciona los que estás llevando actualmente.'); return }
+      setSemesterDraft(previous => { const next = new Set(previous); next.has(id) ? next.delete(id) : next.add(id); return next }); return
+    }
     if (mode === 'done') requestDone(id)
     else if (mode === 'plan') togglePlan(id)
     else setSelected(previous => previous === id ? null : id)
@@ -176,6 +186,20 @@ function OfficialCurriculum({ career, user, client, sessionMode, initialDone, in
     } catch { if (mounted.current) setError('No se pudo guardar el estado. El registro anterior se conserva; reintenta.') }
     finally { finish() }
   }
+  async function saveSemester() {
+    if (locked.current || !isLive) return
+    if (semesterDraft.size > 30) { setError('Selecciona como máximo 30 cursos.'); return }
+    begin()
+    try {
+      await verifiedUser()
+      const result = await client.rpc('set_semester_courses', { p_courses: [...semesterDraft] })
+      if (result.error || !Array.isArray(result.data)) throw new Error('save')
+      const next = Object.fromEntries(result.data.map(row => [row.course_id, row]))
+      for (const id of new Set([...Object.keys(statuses), ...Object.keys(next)])) onStatusChange(id, next[id] || null)
+      if (mounted.current) { setStatuses(next); setMessage('Matrícula guardada. Inicio, Focus y Texto → tareas usarán estos cursos.') }
+    } catch { if (mounted.current) setError('No se pudo guardar la matrícula. La selección se conserva; reintenta.') }
+    finally { finish() }
+  }
   function adjustZoom(next) {
     const z = Math.min(1.8, Math.max(0.6, Math.round(next * 100) / 100)), node = scroller.current
     if (!node) return
@@ -191,6 +215,7 @@ function OfficialCurriculum({ career, user, client, sessionMode, initialDone, in
     if (chain.has(c.id)) classes.push(mode === 'req' ? 'is-required' : 'is-opened')
     if (['noreq', 'plan'].includes(mode)) classes.push(canTake(c, done, credits) ? 'is-available' : done.has(c.id) ? '' : 'is-unavailable')
     if (plan.has(c.id)) classes.push('is-planned')
+    if (mode === 'semester' && semesterDraft.has(c.id)) classes.push('is-selected')
     if (area && c.a !== area) classes.push('is-muted')
     if (selected && ['open', 'req'].includes(mode) && selected !== c.id && !chain.has(c.id)) classes.push('is-muted')
     if (query.trim()) classes.push(matchSet.has(c.id) ? 'is-match' : 'is-muted')
@@ -229,6 +254,13 @@ function OfficialCurriculum({ career, user, client, sessionMode, initialDone, in
     <div className="oc-area-row"><span>Áreas</span><button type="button" className="oc-arrow" aria-label="Áreas anteriores" onClick={() => areas.current.scrollBy({ left: -240, behavior: 'auto' })}><Icon name="left"/></button><div className="oc-areas" ref={areas} role="group" aria-label="Áreas de Matemáticas a Electivos"><button type="button" aria-pressed={!area} onClick={() => setArea(null)}>Todas</button>{Object.entries(AREAS).filter(([key]) => M.cursos.some(c => c.a === key)).map(([key, a]) => <button key={key} type="button" aria-pressed={area === key} onClick={() => setArea(area === key ? null : key)}><i style={{ background: a.color }} aria-hidden="true"/>{a.label}</button>)}</div><button type="button" className="oc-arrow" aria-label="Áreas siguientes" onClick={() => areas.current.scrollBy({ left: 240, behavior: 'auto' })}><Icon name="right"/></button></div>
     <div className="oc-status" role="status" aria-live="polite">{busy ? 'Guardando…' : course && ['open', 'req'].includes(mode) ? <><strong>{course.n}</strong> {mode === 'open' ? 'abre' : 'requiere'} {chain.size} {mode === 'open' ? 'cursos en cadena' : 'cursos previos'}{mode === 'req' && course.rc ? ` · ${course.rc} créditos aprobados previos` : ''}.</> : mode === 'plan' ? <>{planned.length} cursos · {number(planCredits)} créditos en tu plan. {HINTS.plan}</> : HINTS[mode]}{mode === 'noreq' && ` ${available.length} cursos disponibles.`}</div>
     {error && <p className="oc-feedback error" role="alert">{error}</p>}{message && <p className="oc-feedback" role="status">{message}</p>}
+    {mode === 'semester' && <section className="oc-details oc-semester" aria-label="Matrícula de este semestre">
+      <h3>Cursos de este semestre</h3>
+      <p>{semesterDraft.size} cursos · {number(M.cursos.filter(c => semesterDraft.has(c.id)).reduce((sum, c) => sum + c.cr, 0))} créditos. Selecciona tu matrícula real; esto no confirma una matrícula oficial.</p>
+      <div className="oc-semester-list">{M.cursos.filter(c => !done.has(c.id) && !['aprobado','convalidado'].includes(statuses[c.id]?.status) && (!query.trim() || matchSet.has(c.id))).map(c => <label key={c.id}><input type="checkbox" checked={semesterDraft.has(c.id)} disabled={busy || !isLive} onChange={() => selectCourse(c.id)}/><span>{c.n}<small>Ciclo {c.c} · {number(c.cr)} créditos</small></span></label>)}</div>
+      {!isLive && <p>Inicia sesión para guardar los cursos de este semestre.</p>}
+      <div className="oc-actions"><button type="button" className="oc-primary" disabled={busy || !isLive} onClick={saveSemester}>{busy ? 'Guardando…' : 'Guardar cursos del semestre'}</button><button type="button" disabled={busy} onClick={() => changeMode('open')}>Cerrar</button></div>
+    </section>}
     {pending && <div className="oc-confirm" ref={confirm} tabIndex="-1" aria-label="Revisar cambios de cursos llevados">
       <h3>{pending.added.length ? 'Confirmar cursos llevados' : 'Confirmar cursos desmarcados'}</h3>
       <p>{pending.added.length ? 'Se marcarán el curso y sus prerrequisitos:' : 'Se desmarcarán el curso y los que dependen de él:'}</p>
@@ -250,7 +282,7 @@ function OfficialCurriculum({ career, user, client, sessionMode, initialDone, in
       <div style={{ width: M.W * zoom, height: M.H * zoom }}><div className="oc-canvas" style={{ width: M.W, height: M.H, transform: `scale(${zoom})` }}>
         <svg className="oc-edges" width={M.W} height={M.H} viewBox={`0 0 ${M.W} ${M.H}`} aria-hidden="true">{M.edges.map(e => <path key={`${e.from}-${e.to}`} className={lineClass(e)} d={edgePath(e, M.byId)} style={{ '--area-color': AREAS[M.byId[e.to].a]?.color || 'var(--ic)' }}/>)}</svg>
         {Object.entries(M.ciclos).map(([num, info]) => <div key={num} className="oc-column" style={{ left: LEFT + (num - M.minC) * COL_W }}>{info.t}<span>{info.s}</span></div>)}
-        {M.cursos.map(c => <button type="button" data-course={c.id} key={c.id} className={nodeClass(c)} style={{ left: c.x, top: c.y }} title={`${c.n} · ${c.cr} créditos${c.rc ? ` · Requiere ${c.rc} créditos previos` : ''}`} aria-pressed={mode === 'done' ? done.has(c.id) : mode === 'plan' ? plan.has(c.id) : selected === c.id} disabled={busy} onClick={() => selectCourse(c.id)}>
+        {M.cursos.map(c => <button type="button" data-course={c.id} key={c.id} className={nodeClass(c)} style={{ left: c.x, top: c.y }} title={`${c.n} · ${c.cr} créditos${c.rc ? ` · Requiere ${c.rc} créditos previos` : ''}`} aria-pressed={mode === 'done' ? done.has(c.id) : mode === 'plan' ? plan.has(c.id) : mode === 'semester' ? semesterDraft.has(c.id) : selected === c.id} disabled={busy} onClick={() => selectCourse(c.id)}>
           {(done.has(c.id) || plan.has(c.id)) && <span className="oc-check"><Icon name="tick"/></span>}<span className="oc-name">{c.n}</span><span className="oc-credits">{number(c.cr)} créd{c.rc ? ` · ${c.rc} previos` : ''}{done.has(c.id) ? ' · Llevado' : plan.has(c.id) ? ' · En el plan' : ''}</span>
         </button>)}
       </div></div>
@@ -261,7 +293,7 @@ function OfficialCurriculum({ career, user, client, sessionMode, initialDone, in
       <p className="oc-list-count" role="status">{visibleCourses.length} cursos · {area ? AREAS[area]?.label : 'Todas las áreas'}</p>
       {cycleKeys.filter(n => visibleCourses.some(c => c.c === n)).map(n => <section key={n} className="oc-cycle-section" aria-label={M.ciclos[n].t}>
         <h3>{M.ciclos[n].t}<small>{M.ciclos[n].s}</small></h3>
-        <div className="oc-course-list">{visibleCourses.filter(c => c.c === n).map(c => <button key={c.id} type="button" data-course={c.id} className={nodeClass(c)} disabled={busy} aria-pressed={mode === 'done' ? done.has(c.id) : mode === 'plan' ? plan.has(c.id) : selected === c.id} onClick={() => selectCourse(c.id)}>
+        <div className="oc-course-list">{visibleCourses.filter(c => c.c === n).map(c => <button key={c.id} type="button" data-course={c.id} className={nodeClass(c)} disabled={busy} aria-pressed={mode === 'done' ? done.has(c.id) : mode === 'plan' ? plan.has(c.id) : mode === 'semester' ? semesterDraft.has(c.id) : selected === c.id} onClick={() => selectCourse(c.id)}>
           <span className="oc-name">{c.n}</span><span className="oc-credits">{number(c.cr)} créditos · {done.has(c.id) ? 'Llevado' : plan.has(c.id) ? 'En tu plan' : STATUS[statuses[c.id]?.status] || 'Pendiente'}</span>
           {(done.has(c.id) || plan.has(c.id)) && <span className="oc-check"><Icon name="tick"/></span>}
         </button>)}</div>
@@ -290,5 +322,3 @@ export function mountOfficialCurriculum(container, props) {
   root.render(<OfficialCurriculum {...props}/>)
   return () => root.unmount()
 }
-
-

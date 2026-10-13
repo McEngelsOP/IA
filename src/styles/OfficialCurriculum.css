@@ -1,5 +1,11 @@
 /* Official page shell supplies the palette, type and corner language. */
 .oc{width:100%;min-width:0;box-sizing:border-box;background:var(--panel);border:1px solid var(--bar-b);border-radius:26px;box-shadow:0 8px 24px var(--sh);overflow:hidden;color:var(--txt);--oc-muted:color-mix(in srgb,var(--txt) 66%,var(--bg));--oc-green:#23764a;--oc-amber:#996114}
+.oc-semester-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 20px;max-height:380px;overflow:auto;margin:16px 0;scrollbar-width:thin;scrollbar-color:var(--ic) var(--tile)}
+.oc-semester-list label{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--bar-b);min-width:0;cursor:pointer}
+.oc-semester-list input{width:20px;height:20px;flex:none;accent-color:var(--ic)}
+.oc-semester-list span{overflow-wrap:anywhere;font-size:14px}
+.oc-semester-list small{display:block;margin-top:4px;color:var(--oc-muted);font-size:12px}
+@media(max-width:860px){.oc-semester-list{grid-template-columns:1fr;max-height:45dvh}.oc-semester .oc-actions{display:grid;grid-template-columns:1fr}.oc-semester button{min-height:44px;white-space:normal}}
 .oc *{box-sizing:border-box}
 .oc button,.oc input{font:inherit;color:inherit}
 .oc button{background:transparent;border:1px solid var(--bar-b);border-radius:18px;padding:9px 13px;cursor:pointer;transition:background .15s,border-color .15s}
