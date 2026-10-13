@@ -2,7 +2,7 @@
 -- Sílabo IA · Funciones y Permisos para el Panel de Administrador
 --
 -- 1) Columna is_admin en profiles.
--- 2) Actualización de triggers lock_carrera y lock_alias para permitir cambios al admin.
+-- 2) Actualización de trigger lock_carrera para permitir cambios al admin.
 -- 3) Funciones RPC con comprobación de administrador (is_admin = true).
 --
 -- Nombre sugerido de la query: 21 · Panel de Administrador
@@ -26,7 +26,7 @@ as '
 
 grant execute on function public.is_app_admin() to authenticated;
 
--- 3. Permitir que los administradores puedan omitir los candados lock_carrera y lock_alias
+-- 3. Permitir que los administradores puedan omitir los candado lock_carrera
 create or replace function public.lock_carrera()
 returns trigger
 language plpgsql
@@ -43,21 +43,7 @@ begin
 end;
 ';
 
-create or replace function public.lock_alias()
-returns trigger
-language plpgsql
-security definer set search_path = public
-as '
-begin
-  if auth.uid() is not null
-     and not public.is_app_admin()
-     and old.alias is not null
-     and new.alias is distinct from old.alias then
-    raise exception ''El nombre secreto no se puede cambiar desde la app'';
-  end if;
-  return new;
-end;
-';
+-- El alias sigue siendo editable: no reinstalar el candado histórico lock_alias.
 
 -- 4. RPC: Obtener lista de usuarios (solo admins)
 create or replace function public.admin_get_users()

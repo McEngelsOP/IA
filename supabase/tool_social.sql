@@ -1,8 +1,8 @@
 -- ============================================================
 -- Sílabo IA · Likes y comentarios anónimos en herramientas
 -- Cada alumno puede dar like a una herramienta (uno por persona)
--- y comentarla firmando con un "nombre secreto" (alias) que elige
--- una sola vez. El anonimato es real: el alias lo estampa el
+-- y comentarla firmando con un "nombre secreto" (alias) que puede cambiar
+-- desde su perfil. El anonimato es real: el alias lo estampa el
 -- servidor y la columna author_id NO es legible desde el cliente
 -- (permiso a nivel de columna), así nadie puede mapear alias → uuid
 -- ni insertar comentarios a nombre de otro.
@@ -10,7 +10,7 @@
 -- Nombre sugerido de la query: 12 · Social de herramientas
 -- ============================================================
 
--- 1. Nombre secreto del alumno (único, se elige una sola vez)
+-- 1. Nombre secreto del alumno (único y editable desde su perfil)
 alter table public.profiles
   add column alias text
   check (alias is null or char_length(trim(alias)) between 3 and 24);
@@ -18,28 +18,8 @@ alter table public.profiles
 create unique index profiles_alias_uniq
   on public.profiles (lower(trim(alias)));
 
--- Candado: igual que la carrera, el alias no se cambia desde la app
--- (auth.uid() presente); el dueño sí puede corregirlo desde el Table Editor.
-create or replace function public.lock_alias()
-returns trigger
-language plpgsql
-as $$
-begin
-  if auth.uid() is not null
-     and old.alias is not null
-     and new.alias is distinct from old.alias then
-    raise exception 'El nombre secreto no se puede cambiar desde la app';
-  end if;
-  return new;
-end;
-$$;
-
-revoke execute on function public.lock_alias()
-  from public, anon, authenticated;
-
-create trigger profiles_lock_alias
-before update on public.profiles
-for each row execute procedure public.lock_alias();
+-- El alias es editable; change_alias.sql sincroniza sus comentarios y puntajes.
+-- No recrear profiles_lock_alias ni lock_alias(): fueron retirados.
 
 -- 2. Likes: uno por alumno por herramienta (PK compuesta)
 create table public.tool_likes (
