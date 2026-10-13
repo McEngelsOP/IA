@@ -326,7 +326,7 @@ export function OfficialCurriculum({ career, user, client, sessionMode, initialD
       <p className="oc-list-count" role="status">{displayedCourses.length} cursos · {area ? AREAS[area]?.label : 'Todas las áreas'}</p>
       {cycleKeys.filter(n => displayedCourses.some(c => c.c === n)).map(n => <section key={n} className="oc-cycle-section" aria-label={M.ciclos[n].t}>
         <h3>{M.ciclos[n].t}<small>{M.ciclos[n].s}</small></h3>
-        <div className="oc-course-list">{displayedCourses.filter(c => c.c === n).map(c => <button key={c.id} type="button" data-course={c.id} className={nodeClass(c)} disabled={busy} aria-pressed={mode === 'done' ? done.has(c.id) : mode === 'plan' ? plan.has(c.id) : mode === 'semester' ? semesterDraft.has(c.id) : selected === c.id} onClick={() => selectCourse(c.id)}>
+        <div className="oc-course-list">{displayedCourses.filter(c => c.c === n).map(c => <button key={c.id} type="button" data-course={c.id} className={nodeClass(c)} disabled={busy || (mode === 'plan' && !canPlan(M, c, done, statuses))} aria-pressed={mode === 'done' ? done.has(c.id) : mode === 'plan' ? plan.has(c.id) : mode === 'semester' ? semesterDraft.has(c.id) : selected === c.id} onClick={() => selectCourse(c.id)}>
           <span className="oc-name">{c.n}</span><span className="oc-credits">{number(c.cr)} créditos · {done.has(c.id) ? 'Aprobado' : statuses[c.id]?.status === 'matriculado' ? 'En curso' : cleanPlan.has(c.id) ? 'Plan futuro' : STATUS[statuses[c.id]?.status] || 'Pendiente'}</span>
           {(done.has(c.id) || plan.has(c.id)) && <span className="oc-check"><Icon name="tick"/></span>}
         </button>)}</div>
