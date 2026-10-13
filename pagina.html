@@ -659,7 +659,7 @@ a{text-underline-offset:3px}.page button:not(.ck){min-height:36px}
 @container page (max-width:900px){.h-grid{grid-template-columns:minmax(0,1fr)}.h-grid .h-wide{grid-column:auto}.h-achievements{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @container page (max-width:550px){.h-head{align-items:flex-start;flex-direction:column;gap:12px;margin-bottom:18px}.h-head h2{font-size:24px}.h-head-actions{width:100%;justify-content:flex-start}.h-section-head{align-items:flex-start;flex-direction:column}.h-tabs{width:100%;flex-wrap:wrap;gap:2px}.h-tabs button{flex:1;min-width:max-content;padding:8px 6px;font-size:12px}.h-tabs svg{display:none}.h-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.h-achievements{grid-template-columns:minmax(0,1fr)}.h-number{font-size:36px}.h-summary .sv{font-size:28px}.h-summary .st{padding:16px}.h-summary .sl{min-height:34px}.h-notice{align-items:flex-start}.h-notice .h-btn{flex:none}.h-grade{gap:4px}.h-grade input{width:56px}.h-home .blk{padding:16px}.h-table th,.h-table td{padding:10px 5px}.h-table{font-size:12px}.h-table td:first-child{overflow-wrap:anywhere}.h-error{align-items:flex-start;flex-direction:column}}
 
-@media(min-width:861px){
+/* Focus comparte sus estilos base entre móvil y escritorio. */
 .focus-web .kf{--acc:#f2602f}
 .focus-web .k-grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:14px;max-width:1100px;align-items:start}
 .focus-web .k-pv{position:sticky;top:0}
@@ -797,7 +797,6 @@ a{text-underline-offset:3px}.page button:not(.ck){min-height:36px}
 @media (pointer:coarse){.focus-web .k-sty .k-opt,.focus-web .k-pets .k-opt{min-height:0}}
 .focus-web{--acc:#f2602f;max-width:1100px;margin:0 auto}.focus-web .k-settings{min-width:0}.focus-web .k-sty{grid-template-columns:repeat(4,minmax(0,1fr))}.focus-web .k-stage> .pet{width:150px}.focus-web .pet .all,.focus-web .pet .hd{transform-origin:center;animation-timing-function:steps(1)}.focus-web .kc-in .pet{width:34cqw}.focus-web .k-pv small{font-size:12px}.focus-web .k-hint,.focus-web .k-stat,.focus-web .k-sec h3,.focus-web .k-po small{opacity:1;color:color-mix(in srgb,var(--txt) 74%,var(--bg))}.focus-web .k-stage{box-sizing:border-box}.focus-web .k-clock-stage{width:100%;display:flex;justify-content:center}.focus-web .k-sec h3{font-size:13px;text-transform:none;letter-spacing:normal}.focus-web .k-opt.on{box-shadow:0 0 0 2px var(--ic)}.focus-web .pet .bo,.focus-web .pet .hp{display:none}.focus-web .pet .all{fill:none}.focus-web ::selection{background:var(--on);color:var(--on-t)}
 @media(prefers-reduced-motion:reduce){.focus-web *{animation:none!important;transition:none!important}}
-}
  .h-enrollment{margin:16px 0}.h-enrollment-list{list-style:none;padding:0;margin:16px 0}.h-enrollment-list li{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:10px 0;border-bottom:1px solid var(--bar-b)}.h-enrollment-list small{color:color-mix(in srgb,var(--txt) 74%,var(--bg));font-size:13px}
  .gm-react-game .dg-note,.gm-react-game .ast-note,.gm-react-game .dino-foot,.gm-react-game .ast-foot{color:#b5c0e3}.gm-react-game .mono{font-family:inherit}.gm-react-game button:focus-visible{outline:2px solid #fff;outline-offset:3px}
 
@@ -938,6 +937,39 @@ a{text-underline-offset:3px}.page button:not(.ck){min-height:36px}
  #app .focus-web .k-history input{font-size:16px;min-height:44px;max-width:100%;box-sizing:border-box}
  #app .focus-web .k-error{max-width:100%;box-sizing:border-box}
 }
+
+
+/* Barra móvil: las tres zonas e indicador tienen exactamente la misma altura. */
+@media(max-width:860px){
+ #app #mobile-dock{height:56px;gap:8px;align-items:stretch;bottom:calc(12px + env(safe-area-inset-bottom));isolation:isolate}
+ #app #mobile-dock .mobile-bar{height:56px;box-sizing:border-box;overflow:hidden;border-radius:28px;transition:opacity 160ms ease,transform 180ms cubic-bezier(.22,.7,.25,1)}
+ #app #mobile-dock #mobile-tabs{height:100%;padding:4px;align-items:stretch;box-sizing:border-box;gap:0}
+ #app #mobile-dock #mobile-tabs button{min-height:0;height:100%;min-width:0;width:100%;padding:0;border-radius:24px;display:grid;place-items:center;background:transparent;transform:none;transition:background-color 140ms ease}
+ #app #mobile-dock #mobile-tabs button svg{width:23px;height:23px;transform:none;transition:opacity 140ms ease}
+ #app #mobile-dock #mobile-tabs button:active{background:var(--tile)}
+ #app #mobile-dock .mobile-ind{top:4px;bottom:4px;left:4px;width:calc((100% - 8px)/3);border-radius:24px;transition:transform 200ms cubic-bezier(.22,.7,.25,1);transform:translateX(calc(var(--mobile-index)*100%))}
+ #app #mobile-dock .pf{height:56px;flex-basis:56px}
+ #app #mobile-dock .act{height:56px;width:56px;min-height:56px;min-width:56px;transform:none;transition:background-color 140ms ease}
+ #app #mobile-dock .act:active{transform:none;background:var(--tile-p)}
+ #app #mobile-dock .act svg{transition:transform 180ms cubic-bezier(.22,.7,.25,1)}
+ #app #mobile-dock .menu{right:64px;transition:opacity 160ms ease,transform 180ms cubic-bezier(.22,.7,.25,1);filter:none;transform:translateY(4px)}
+ #app.open #mobile-dock .menu{transform:none}
+ #app.open #mobile-dock .mobile-bar{opacity:0;transform:translateY(3px);filter:none}
+ #app .page{padding-bottom:calc(100px + env(safe-area-inset-bottom));scroll-padding-bottom:calc(100px + env(safe-area-inset-bottom))}
+ #app .focus-web .k-clock-stage{min-width:0}
+ #app .focus-web .k-pv{scroll-margin-top:90px}
+ #app .focus-web .k-sty,#app .focus-web .k-pets{display:grid;gap:8px}
+ #app .focus-web .k-sty{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #app .focus-web .k-pets{grid-template-columns:repeat(3,minmax(0,1fr))}
+ #app .focus-web .k-opt{width:100%;box-sizing:border-box;justify-content:center}
+ #app .focus-web .kc{display:grid;place-items:center;position:relative;isolation:isolate;flex:none;aspect-ratio:1;max-width:100%}
+ #app .focus-web .kc .rg{position:absolute;inset:0;display:block;width:100%;height:100%;overflow:visible;pointer-events:none}
+ #app .focus-web .kc-in{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:0}
+ #app .focus-web .k-stage{overflow:hidden}
+ #app .focus-web .k-stage::before{animation:none;opacity:.6}
+ #app .focus-web .k-chip,#app .focus-web .k-opt,#app .focus-web .k-btn{transition:background-color 150ms ease,color 150ms ease}
+}
+@media(prefers-reduced-motion:reduce){#app #mobile-dock *,#app .focus-web *{transition:none!important;animation:none!important}}
 
 </style>
 </head>
@@ -1721,10 +1753,11 @@ function navFlowPaint(){
 function navViewEnter(changed){
  if(!changed||!NAV_MOTION.ready)return;
  NAV_MOTION.view?.cancel();const el=$('page').querySelector('.view-surface');if(!el||!el.animate)return;
- const reduced=navReduced();NAV_MOTION.view=el.animate(reduced?[{opacity:.88},{opacity:1}]:[
-  {opacity:.72,transform:'translateX(10px) scale(.995)'},
+ const reduced=navReduced(),mobile=mqM.matches;
+ NAV_MOTION.view=el.animate(reduced?[{opacity:.92},{opacity:1}]:[
+  {opacity:.86,transform:mobile?'translateY(3px)':'translateX(6px)'},
   {opacity:1,transform:'none'}
- ],{duration:reduced?140:650,easing:NAV_MOTION.ease});
+ ],{duration:reduced?100:mobile?180:280,easing:NAV_MOTION.ease});
 }
 function syncNavGroup(name){
  const button=[...$('nav').querySelectorAll('[data-n]')].find(b=>b.dataset.n===name);if(!button)return;
@@ -1749,7 +1782,7 @@ $('nav').addEventListener('click',e=>{
 /* General button feedback complements the sidebar selection motion. */
 const WEB_PRESS=new WeakMap();
 function webButtonFeedback(b,keyboard=false){
-  if(!b?.isConnected||b.disabled||b.closest('#nav')||b.classList.contains('gm-card')||!b.animate)return;
+  if(!b?.isConnected||b.disabled||b.closest('#nav, #mobile-dock')||b.classList.contains('gm-card')||!b.animate)return;
   WEB_PRESS.get(b)?.cancel();
   const reduced=navReduced();
   const a=b.animate(reduced?[{opacity:.82},{opacity:1}]:[
