@@ -17,3 +17,48 @@
 .official-tools :is(.roadmap-footer button,.study-advisor-compose button,.study-advisor-message.user){color:var(--on-t);background:var(--on)}
 .official-tools .study-advisor-form{border-color:var(--bar-b)}
 .official-tools :is(.study-advisor-summary,.roadmap-term){font-family:inherit}
+
+
+/* Herramientas móviles: lectura, conversación y planificación sin desbordamientos. */
+@media(max-width:860px){
+ #app .official-tools{width:100%;min-width:0}
+ #app .official-tools .official-advisor{min-width:0;max-width:100%}
+ #app .official-tools .a-hi{max-width:100%;font-size:28px;line-height:1.2}
+ #app .official-tools .a-hcard{padding:20px 16px}
+ #app .official-tools .a-hs{font-size:14px;line-height:1.5;max-width:100%}
+ #app .official-tools .a-cwrap{min-width:0}
+ #app .official-tools .a-cmp{padding:14px 16px;border-radius:20px}
+ #app .official-tools .a-cmp textarea{font-size:16px;min-height:80px}
+ #app .official-tools .a-cb{flex-wrap:wrap;gap:8px}
+ #app .official-tools .a-chip{min-height:44px;max-width:100%;font-size:12px}
+ #app .official-tools .a-go,#app .official-tools .a-ib{min-width:44px;min-height:44px}
+ #app .official-tools .a-tabs{overflow-x:auto;max-width:100%;flex-wrap:nowrap}
+ #app .official-tools .a-tab{min-height:44px;flex:none;font-size:13px}
+ #app .official-tools .a-row{min-height:56px;padding:12px;gap:10px;font-size:14px}
+ #app .official-tools .a-row>span{min-width:0;overflow-wrap:anywhere}
+ #app .official-tools .a-chatv{height:calc(100dvh - 195px);min-height:380px}
+ #app .official-tools .a-bar{gap:8px}.official-tools .a-id{min-width:0}
+ #app .official-tools .a-scroll{min-height:120px}
+ #app .official-tools .a-rep,#app .official-tools .a-um{font-size:14px;line-height:1.6;overflow-wrap:anywhere;white-space:pre-wrap}
+ #app .official-tools .a-bm{gap:8px}.official-tools .a-bm>.a-rep{min-width:0}
+ #app .official-tools .bj-steps{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:16px}
+ #app .official-tools .bj-line{display:none}
+ #app .official-tools .bj-st{min-height:64px;padding:10px 8px;gap:8px;text-align:left;min-width:0}
+ #app .official-tools .bj-st b{font-size:13px}.official-tools .bj-st small{font-size:11px;line-height:1.4}
+ #app .official-tools .b-grid,#app .official-tools .b-cycles{grid-template-columns:minmax(0,1fr)}
+ #app .official-tools .bj-hero{flex-wrap:wrap;gap:16px;padding:18px}
+ #app .official-tools .b-controls{gap:10px;flex-wrap:wrap}
+ #app .official-tools .b-controls .k-sel{width:100%;max-width:100%;min-height:44px;font-size:16px}
+ #app .official-tools .b-crow{gap:8px;flex-wrap:wrap}.official-tools .b-crow>div{flex-basis:100%}
+ #app .official-tools .b-act{flex-wrap:wrap;gap:8px}.official-tools .b-act button{min-height:44px;max-width:100%;white-space:normal}
+ #app .official-tools .rc-fg{grid-template-columns:minmax(0,1fr);gap:12px}
+ #app .official-tools .rc-in{font-size:16px;min-height:44px}
+ #app .official-tools textarea.rc-in{height:auto;min-height:88px;padding:12px;resize:vertical}
+ #app .official-tools .rc-fr{flex-wrap:wrap;gap:10px}.official-tools .rc-fr small{flex-basis:100%;line-height:1.5}
+ #app .official-tools .rc-item{gap:8px;flex-wrap:wrap}
+ #app .official-tools .rc-content{min-width:0;flex-basis:calc(100% - 100px)}
+ #app .official-tools .rc-heart,#app .official-tools .rc-open{min-width:44px;min-height:44px}
+ #app .official-tools .rc-edit>div{display:flex;flex-wrap:wrap;gap:8px}
+ #app .official-tools .rc-pagination{display:flex;flex-wrap:wrap;justify-content:center;gap:10px}
+ #app .official-tools .rc-sorts{flex-wrap:wrap}
+}

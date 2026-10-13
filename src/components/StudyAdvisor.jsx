@@ -21,13 +21,15 @@ const ERROR_MESSAGES = {
   empty_response: 'Los servicios de IA no devolvieron una respuesta. Prueba reformular tu pregunta.'
 }
 
-export default function StudyAdvisor({ planCourses, careerName, onClose, embedded = false }) {
+export default function StudyAdvisor({ planCourses, careerName, onClose, embedded = false, client = supabase }) {
   const [messages, setMessages] = useState([INITIAL_MESSAGE])
   const [draft, setDraft] = useState('')
   const [ratings, setRatings] = useState({})
   const [loadingRatings, setLoadingRatings] = useState(false)
   const [sending, setSending] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
+  const requestLock = useRef(false), alive = useRef(true)
+  useEffect(() => { alive.current = true; return () => { alive.current = false } }, [])
   const listRef = useRef(null)
   const inputRef = useRef(null)
   const [copyStatus, setCopyStatus] = useState('')
@@ -36,12 +38,12 @@ export default function StudyAdvisor({ planCourses, careerName, onClose, embedde
   useEffect(() => {
     let cancelled = false
     if (!planCourses.length) {
-      setRatings({})
+      setRatings({}); setLoadingRatings(false)
       return
     }
     setLoadingRatings(true)
     Promise.all(planCourses.map(async course => {
-      const { data, error } = await supabase.rpc('get_course_difficulty_stats', { cid: course.id })
+      const { data, error } = await client.rpc('get_course_difficulty_stats', { cid: course.id })
       return [course.id, !error && data ? data : null]
     })).then(entries => {
       if (!cancelled) setRatings(Object.fromEntries(entries))
@@ -51,14 +53,14 @@ export default function StudyAdvisor({ planCourses, careerName, onClose, embedde
       if (!cancelled) setLoadingRatings(false)
     })
     return () => { cancelled = true }
-  }, [planCourses])
+  }, [planCourses, client])
 
   useEffect(() => {
     const onKeyDown = event => {
-      if (event.key === 'Escape') onClose()
+      if (event.key === 'Escape' && !requestLock.current) onClose()
     }
     window.addEventListener('keydown', onKeyDown)
-    inputRef.current?.focus()
+    if (!embedded || !window.matchMedia('(pointer:coarse)').matches) inputRef.current?.focus()
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [onClose])
 
@@ -79,9 +81,15 @@ export default function StudyAdvisor({ planCourses, careerName, onClose, embedde
   const sendMessage = async event => {
     event.preventDefault()
     const question = draft.trim()
-    if (!question || sending) return
+    if (!question || question.length > 1200 || requestLock.current) return
+    requestLock.current = true
 
     const userMessage = { role: 'user', content: question }
+    const restoreQuestion = () => {
+      if (!alive.current) return
+      setMessages(current => current.filter(message => message !== userMessage))
+      setDraft(current => current || question)
+    }
     const previousMessages = messages
       .filter(message => message !== INITIAL_MESSAGE)
       .slice(-6)
@@ -104,9 +112,10 @@ export default function StudyAdvisor({ planCourses, careerName, onClose, embedde
     })
 
     try {
-      const { data, error } = await supabase.functions.invoke('study-advisor', {
+      const { data, error } = await client.functions.invoke('study-advisor', {
         body: { question, history: previousMessages, courses, careerName }
       })
+      if (!alive.current) return
       let errorCode = data?.error
       if (error && !errorCode) {
         try { errorCode = (await error.context?.json())?.error } catch { /* respuesta sin cuerpo JSON */ }
@@ -118,15 +127,18 @@ export default function StudyAdvisor({ planCourses, careerName, onClose, embedde
           if (status === 404) errorCode = 'function_missing'
           if (status === 429) errorCode = 'rate_limited'
         }
+        restoreQuestion()
         setErrorMessage(ERROR_MESSAGES[errorCode] || 'No pude obtener una respuesta. Inténtalo de nuevo en un momento.')
         return
       }
       setMessages(current => [...current, { role: 'assistant', content: data.answer }])
     } catch {
+      if (!alive.current) return
+      restoreQuestion()
       setErrorMessage('No pude conectar con el asesor. Revisa tu conexión e inténtalo de nuevo.')
     } finally {
-      setSending(false)
-      inputRef.current?.focus()
+      requestLock.current = false
+      if (alive.current) { setSending(false); if (!window.matchMedia('(pointer:coarse)').matches) inputRef.current?.focus() }
     }
   }
 
@@ -224,4 +236,5 @@ export default function StudyAdvisor({ planCourses, careerName, onClose, embedde
     </div>
   )
 }
+
 

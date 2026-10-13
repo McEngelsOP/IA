@@ -47,12 +47,18 @@ export function layoutEvents(events) {
     return assigned.map(e => ({ ...e, lanes: ends.length }))
   })
 }
+const validTime = value => {
+  if (!/^\d{2}:\d{2}(:\d{2})?$/.test(value || '')) return false
+  const [hour, minute, second = 0] = value.split(':').map(Number)
+  return hour >= 0 && hour < 24 && minute >= 0 && minute < 60 && second >= 0 && second < 60
+}
 export function validateEvent(e) {
   const start = e.date || e.start_date
   if (!e.title.trim() || e.title.trim().length > 160) return 'Escribe un título de hasta 160 caracteres.'
   if (!civil(start) || (e.end_date && (!civil(e.end_date) || e.end_date < start))) return 'Revisa las fechas del evento.'
-  if (!!e.start_time !== !!e.end_time || (e.start_time && (!/^\d{2}:\d{2}(:\d{2})?$/.test(e.start_time) || !/^\d{2}:\d{2}(:\d{2})?$/.test(e.end_time) || minutes(e.start_time) >= minutes(e.end_time) || minutes(e.end_time) >= 1440))) return 'La hora final debe ser posterior a la inicial, dentro del mismo día.'
+  if (!!e.start_time !== !!e.end_time || (e.start_time && (!validTime(e.start_time) || !validTime(e.end_time) || minutes(e.start_time) >= minutes(e.end_time) || minutes(e.end_time) >= 1440))) return 'La hora final debe ser posterior a la inicial, dentro del mismo día.'
   if (e.repeat_rule === 'weekly' && e.repeat_until && (!civil(e.repeat_until) || e.repeat_until < start)) return 'La repetición debe terminar después de la fecha inicial.'
   if (e.repeat_rule === 'weekly' && e.end_date && e.end_date !== start) return 'Un horario semanal debe comenzar y terminar el mismo día.'
   return ''
 }
+

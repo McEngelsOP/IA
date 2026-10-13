@@ -35,6 +35,15 @@ function Icon({ name }) {
 
 function OfficialCurriculum({ career, user, client, sessionMode, initialDone, initialPlan, statuses: initialStatuses, initialGrades, onProgressChange, onGradeChange, onStatusChange, onBusy }) {
   const M = getMalla(career)
+  const [mobile, setMobile] = useState(() => window.matchMedia('(max-width:860px)').matches)
+  const [preferredView, setPreferredView] = useState(null), [cycle, setCycle] = useState('all')
+  const view = preferredView || (mobile ? 'cycles' : 'graph')
+  const surface = useRef(null)
+  useEffect(() => {
+    const media = window.matchMedia('(max-width:860px)'), update = () => setMobile(media.matches)
+    media.addEventListener('change', update)
+    return () => media.removeEventListener('change', update)
+  }, [])
   const [mode, setMode] = useState('open'), [selected, setSelected] = useState(null)
   const [done, setDone] = useState(() => new Set(initialDone)), [plan, setPlan] = useState(() => new Set(initialPlan))
   const [grades, setGrades] = useState(initialGrades), [area, setArea] = useState(null)
@@ -51,6 +60,9 @@ function OfficialCurriculum({ career, user, client, sessionMode, initialDone, in
     ? bfs(selected, id => mode === 'open' ? M.unlocks[id] : M.byId[id]?.r) : new Set(), [M, selected, mode])
   const matches = useMemo(() => query.trim() ? M.cursos.filter(c => norm(c.n).includes(norm(query.trim()))) : [], [M, query])
   const matchSet = new Set(matches.map(c => c.id))
+  const visibleCourses = M.cursos.filter(c => (cycle === 'all' || String(c.c) === cycle) && (!area || c.a === area) && (!query.trim() || matchSet.has(c.id)))
+  const cycleKeys = Object.keys(M.ciclos).map(Number).sort((a, b) => a - b)
+  function focusCourse(id) { surface.current?.querySelector(`[data-course="${id}"]`)?.focus({ preventScroll: true }) }
   const planned = M.cursos.filter(c => plan.has(c.id)), planCredits = planned.reduce((sum, c) => sum + c.cr, 0)
   const planAfter = new Set([...done, ...plan])
   const opensAfter = M.cursos.filter(c => canTake(c, planAfter, completedCredits(M, planAfter)) && !canTake(c, done, credits))
@@ -61,7 +73,7 @@ function OfficialCurriculum({ career, user, client, sessionMode, initialDone, in
   useEffect(() => {
     const c = matches[matchIndex]
     if (c) scroller.current?.scrollTo({ left: Math.max(0, c.x * zoom - 80), top: Math.max(0, c.y * zoom - 100), behavior: 'instant' })
-  }, [matches, matchIndex])
+  }, [matches, matchIndex, zoom, view])
   useEffect(() => {
     if (mode === 'ficha' && course) {
       detail.current?.scrollIntoView({ behavior: 'instant', block: 'nearest' })
@@ -116,7 +128,7 @@ function OfficialCurriculum({ career, user, client, sessionMode, initialDone, in
   async function confirmDone() {
     const id = pending?.id
     if (pending && await saveProgress(pending.next, validPlan(M, plan, pending.next))) {
-      scroller.current?.querySelector(`[data-course="${id}"]`)?.focus({ preventScroll: true })
+      focusCourse(id)
     }
   }
   function togglePlan(id) {
@@ -172,6 +184,7 @@ function OfficialCurriculum({ career, user, client, sessionMode, initialDone, in
   }
   function adjustZoom(next) {
     const z = Math.min(1.8, Math.max(0.6, Math.round(next * 100) / 100)), node = scroller.current
+    if (!node) return
     const left = (node.scrollLeft + node.clientWidth / 2) * z / zoom - node.clientWidth / 2
     const top = (node.scrollTop + node.clientHeight / 2) * z / zoom - node.clientHeight / 2
     setZoom(z)
@@ -198,9 +211,9 @@ function OfficialCurriculum({ career, user, client, sessionMode, initialDone, in
   const list = ids => ids.map(id => M.byId[id]).filter(Boolean).map(c => <button key={c.id} type="button" className="oc-link" onClick={() => { setSelected(c.id); setPending(null); }}>{c.n}</button>)
   const selectedStatus = course && (done.has(course.id) ? statuses[course.id]?.status === 'convalidado' ? 'convalidado' : 'aprobado' : ['aprobado', 'convalidado'].includes(statuses[course.id]?.status) ? null : statuses[course.id]?.status)
 
-  return <section className="oc" aria-label="Malla curricular interactiva" onKeyDown={e => {
+  return <section className="oc" ref={surface} aria-label="Malla curricular interactiva" onKeyDown={e => {
     if (e.key === 'Escape' && pending && !busy) { e.stopPropagation(); cancelPending() }
-    else if (e.key === 'Escape' && selected) { e.stopPropagation(); const id = selected; setSelected(null); scroller.current?.querySelector(`[data-course="${id}"]`)?.focus({ preventScroll: true }) }
+    else if (e.key === 'Escape' && selected) { e.stopPropagation(); const id = selected; setSelected(null); focusCourse(id) }
   }}>
     <div className="oc-header">
       <div><h2>{M.nombre}</h2><p>{M.uni} · {M.ciclosLabel} · {number(M.total)} créditos</p></div>
@@ -208,12 +221,16 @@ function OfficialCurriculum({ career, user, client, sessionMode, initialDone, in
     </div>
     {!isLive && <p className="oc-visitor">Modo visitante. Explora la malla de {M.uni}. Los cambios duran mientras esta página esté abierta. <a href="./login.html">Iniciar sesión</a></p>}
     <div className="oc-modes" role="group" aria-label="Acciones de la malla">{MODES.map(([key, label]) => <button key={key} type="button" className={mode === key ? 'on' : ''} aria-pressed={mode === key} disabled={busy} onClick={() => changeMode(key)}>{label}</button>)}</div>
+    <div className="oc-view-switch" role="group" aria-label="Vista de la malla">
+      <button type="button" aria-pressed={view === 'cycles'} disabled={busy} onClick={() => setPreferredView('cycles')}>Por ciclos</button>
+      <button type="button" aria-pressed={view === 'graph'} disabled={busy} onClick={() => setPreferredView('graph')}>Grafo completo</button>
+    </div>
     <div className="oc-tools">
       <label className="oc-search"><Icon name="search"/><input ref={search} value={query} placeholder="Buscar curso…" aria-label="Buscar curso en la malla" onChange={e => { setQuery(e.target.value); setMatchIndex(0); }} onKeyDown={e => {
-        if (e.key === 'Enter' && matches.length) { e.preventDefault(); setMatchIndex(i => (i + 1) % matches.length) }
+        if (e.key === 'Enter' && view === 'graph' && matches.length) { e.preventDefault(); setMatchIndex(i => (i + 1) % matches.length) }
         if (e.key === 'Escape') { e.stopPropagation(); setQuery('') }
-      }}/>{query && <><span>{matches.length ? `${matchIndex + 1}/${matches.length}` : '0'}</span><button type="button" aria-label="Limpiar búsqueda de cursos" onClick={() => { setQuery(''); search.current?.focus() }}><Icon name="close"/></button></>}</label>
-      <div className="oc-zoom" role="group" aria-label="Tamaño del grafo"><button type="button" onClick={() => adjustZoom(zoom - 0.15)} disabled={zoom <= 0.6} aria-label="Alejar grafo">−</button><button type="button" onClick={() => adjustZoom(1)} aria-label="Restablecer tamaño del grafo">{Math.round(zoom * 100)}%</button><button type="button" onClick={() => adjustZoom(zoom + 0.15)} disabled={zoom >= 1.8} aria-label="Acercar grafo">+</button></div>
+      }}/>{query && <>{view === 'graph' && <span>{matches.length ? `${matchIndex + 1}/${matches.length}` : '0'}</span>}<button type="button" aria-label="Limpiar búsqueda de cursos" onClick={() => { setQuery(''); search.current?.focus() }}><Icon name="close"/></button></>}</label>
+      {view === 'graph' && <div className="oc-zoom" role="group" aria-label="Tamaño del grafo"><button type="button" onClick={() => adjustZoom(zoom - 0.15)} disabled={zoom <= 0.6} aria-label="Alejar grafo">−</button><button type="button" onClick={() => adjustZoom(1)} aria-label="Restablecer tamaño del grafo">{Math.round(zoom * 100)}%</button><button type="button" onClick={() => adjustZoom(zoom + 0.15)} disabled={zoom >= 1.8} aria-label="Acercar grafo">+</button></div>}
     </div>
     <div className="oc-area-row"><span>Áreas</span><button type="button" className="oc-arrow" aria-label="Áreas anteriores" onClick={() => areas.current.scrollBy({ left: -240, behavior: 'instant' })}><Icon name="left"/></button><div className="oc-areas" ref={areas} role="group" aria-label="Áreas de Matemáticas a Electivos"><button type="button" aria-pressed={!area} onClick={() => setArea(null)}>Todas</button>{Object.entries(AREAS).filter(([key]) => M.cursos.some(c => c.a === key)).map(([key, a]) => <button key={key} type="button" aria-pressed={area === key} onClick={() => setArea(area === key ? null : key)}><i style={{ background: a.color }} aria-hidden="true"/>{a.label}</button>)}</div><button type="button" className="oc-arrow" aria-label="Áreas siguientes" onClick={() => areas.current.scrollBy({ left: 240, behavior: 'instant' })}><Icon name="right"/></button></div>
     <div className="oc-status" role="status" aria-live="polite">{busy ? 'Guardando…' : course && ['open', 'req'].includes(mode) ? <><strong>{course.n}</strong> {mode === 'open' ? 'abre' : 'requiere'} {chain.size} {mode === 'open' ? 'cursos en cadena' : 'cursos previos'}{mode === 'req' && course.rc ? ` · ${course.rc} créditos aprobados previos` : ''}.</> : mode === 'plan' ? <>{planned.length} cursos · {number(planCredits)} créditos en tu plan. {HINTS.plan}</> : HINTS[mode]}{mode === 'noreq' && ` ${available.length} cursos disponibles.`}</div>
@@ -225,6 +242,7 @@ function OfficialCurriculum({ career, user, client, sessionMode, initialDone, in
       <div className="oc-actions"><button type="button" className="oc-primary" disabled={busy} onClick={confirmDone}>{busy ? 'Guardando…' : 'Confirmar cambios'}</button><button type="button" disabled={busy} onClick={cancelPending}>Cancelar</button></div>
     </div>}
     {query.trim() && !matches.length && <p className="oc-feedback" role="status">No encontramos cursos con «{query}». Prueba otro nombre o limpia la búsqueda.</p>}
+    {view === 'graph' && <>
     <div className="oc-scroller" ref={scroller} tabIndex="0" role="region" aria-label="Grafo de cursos por ciclo; desplaza para explorar" onPointerDown={e => {
       if (e.pointerType !== 'mouse' || e.button !== 0 || e.target.closest('button')) return
       drag.current = { x: e.clientX, y: e.clientY, left: e.currentTarget.scrollLeft, top: e.currentTarget.scrollTop, moved: false }
@@ -243,10 +261,23 @@ function OfficialCurriculum({ career, user, client, sessionMode, initialDone, in
         </button>)}
       </div></div>
     </div>
-    <div className="oc-bottom"><span>Desliza o arrastra para explorar todos los ciclos.</span><span>{area ? AREAS[area].label : 'Todas las áreas'} · {Math.round(zoom * 100)}%</span></div>
-    {mode === 'plan' && <section className="oc-details" aria-label="Plan del próximo ciclo"><h3>Tu próximo ciclo</h3>{planned.length ? <><p>{planned.length} cursos · {number(planCredits)} créditos. Al aprobarlos, tendrías {opensAfter.length} cursos adicionales disponibles.</p><ul className="oc-plan-list">{planned.map(c => <li key={c.id}><span>{c.n}<small>{number(c.cr)} créditos · {M.ciclos[c.c].t}</small></span><button type="button" disabled={busy} aria-label={`Quitar ${c.n} del plan`} onClick={() => togglePlan(c.id)}><Icon name="close"/></button></li>)}</ul><button type="button" disabled={busy} onClick={() => saveProgress(done, new Set())}>Vaciar plan</button></> : <p>Tu plan está vacío. Selecciona cursos disponibles en el grafo para agregarlos.</p>}</section>}
+    </>}
+    {view === 'cycles' && <div className="oc-cycle-view">
+      <label className="oc-cycle-picker">Ciclo<select value={cycle} onChange={e => setCycle(e.target.value)}><option value="all">Todos los ciclos</option>{cycleKeys.map(n => <option key={n} value={n}>{M.ciclos[n].t}</option>)}</select></label>
+      <p className="oc-list-count" role="status">{visibleCourses.length} cursos · {area ? AREAS[area]?.label : 'Todas las áreas'}</p>
+      {cycleKeys.filter(n => visibleCourses.some(c => c.c === n)).map(n => <section key={n} className="oc-cycle-section" aria-label={M.ciclos[n].t}>
+        <h3>{M.ciclos[n].t}<small>{M.ciclos[n].s}</small></h3>
+        <div className="oc-course-list">{visibleCourses.filter(c => c.c === n).map(c => <button key={c.id} type="button" data-course={c.id} className={nodeClass(c)} disabled={busy} aria-pressed={mode === 'done' ? done.has(c.id) : mode === 'plan' ? plan.has(c.id) : selected === c.id} onClick={() => selectCourse(c.id)}>
+          <span className="oc-name">{c.n}</span><span className="oc-credits">{number(c.cr)} créditos · {done.has(c.id) ? 'Llevado' : plan.has(c.id) ? 'En tu plan' : STATUS[statuses[c.id]?.status] || 'Pendiente'}</span>
+          {(done.has(c.id) || plan.has(c.id)) && <span className="oc-check"><Icon name="tick"/></span>}
+        </button>)}</div>
+      </section>)}
+      {!visibleCourses.length && <p className="oc-list-empty">No hay cursos con estos filtros. Cambia el ciclo, el área o la búsqueda.</p>}
+    </div>}
+    <div className="oc-bottom"><span>{view === 'graph' ? 'Desliza o arrastra para explorar todos los ciclos.' : 'Toca un curso para usar la acción seleccionada.'}</span><span>{area ? AREAS[area].label : 'Todas las áreas'}{view === 'graph' && ` · ${Math.round(zoom * 100)}%`}</span></div>
+    {mode === 'plan' && <section className="oc-details" aria-label="Plan del próximo ciclo"><h3>Tu próximo ciclo</h3>{planned.length ? <><p>{planned.length} cursos · {number(planCredits)} créditos. Al aprobarlos, tendrías {opensAfter.length} cursos adicionales disponibles.</p><ul className="oc-plan-list">{planned.map(c => <li key={c.id}><span>{c.n}<small>{number(c.cr)} créditos · {M.ciclos[c.c].t}</small></span><button type="button" disabled={busy} aria-label={`Quitar ${c.n} del plan`} onClick={() => togglePlan(c.id)}><Icon name="close"/></button></li>)}</ul><button type="button" disabled={busy} onClick={() => saveProgress(done, new Set())}>Vaciar plan</button></> : <p>Tu plan está vacío. Selecciona cursos disponibles para agregarlos.</p>}</section>}
     {mode === 'ficha' && (course ? <section className="oc-details" ref={detail} tabIndex="-1" aria-label={`Ficha de ${course.n}`}>
-      <div className="oc-detail-head"><h3>{course.n}</h3><button type="button" aria-label="Cerrar ficha del curso" onClick={() => { const id = selected; setSelected(null); scroller.current?.querySelector(`[data-course="${id}"]`)?.focus({ preventScroll: true }) }}><Icon name="close"/></button></div>
+      <div className="oc-detail-head"><h3>{course.n}</h3><button type="button" aria-label="Cerrar ficha del curso" onClick={() => { const id = selected; setSelected(null); focusCourse(id) }}><Icon name="close"/></button></div>
       <dl className="oc-facts"><div><dt>Ciclo</dt><dd>{M.ciclos[course.c].t}</dd></div><div><dt>Créditos</dt><dd>{number(course.cr)}</dd></div><div><dt>Área</dt><dd>{AREAS[course.a]?.label}</dd></div><div><dt>Estado</dt><dd>{STATUS[selectedStatus] || 'Pendiente'}</dd></div></dl>
       <h4>¿Qué requiere?</h4><p className="oc-course-links">{course.r.length ? list(course.r) : 'Sin prerrequisitos de cursos.'}</p>{course.rc > 0 && <p>Requiere {course.rc} créditos aprobados previos. Tu avance: {number(credits)} créditos.</p>}{course.requirementNote && <p>{course.requirementNote}</p>}
       <h4>¿Qué abre?</h4><p className="oc-course-links">{M.unlocks[course.id]?.length ? list(M.unlocks[course.id]) : 'No abre otros cursos directamente.'}</p>
@@ -255,7 +286,7 @@ function OfficialCurriculum({ career, user, client, sessionMode, initialDone, in
       <div className="oc-actions"><button type="button" disabled={busy} onClick={() => requestDone(course.id)}>{done.has(course.id) ? 'Desmarcar como llevado' : 'Marcar como llevado'}</button></div>
       {done.has(course.id) || statuses[course.id]?.status === 'desaprobado' ? <form className="oc-grade" onSubmit={saveGrade}><label>Nota / 20<input aria-label={`Nota de ${course.n}`} inputMode="decimal" value={gradeDraft} disabled={busy} placeholder="Sin nota" onChange={e => setGradeDraft(e.target.value)}/></label><button type="submit" className="oc-primary" disabled={busy}>{busy ? 'Guardando…' : 'Guardar nota'}</button><p>Deja el campo vacío para eliminar la nota. La nota también aparece en Inicio.</p></form> : <p>Marca el curso como llevado para registrar su nota.</p>}
       <CourseCommunity key={course.id} course={course} client={client} user={isLive ? user : null} onBusy={value => { locked.current = value; setBusy(value); onBusy(value) }}/>
-    </section> : <div className="oc-details"><h3>Ficha del curso</h3><p>Selecciona un curso en el grafo para consultar sus requisitos, créditos y registro académico.</p></div>)}
+    </section> : <div className="oc-details"><h3>Ficha del curso</h3><p>Selecciona un curso para consultar sus requisitos, créditos y registro académico.</p></div>)}
     <p className="oc-foot">{M.foot}</p>
   </section>
 }
@@ -265,4 +296,5 @@ export function mountOfficialCurriculum(container, props) {
   root.render(<OfficialCurriculum {...props}/>)
   return () => root.unmount()
 }
+
 

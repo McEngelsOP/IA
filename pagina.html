@@ -889,6 +889,56 @@ a{text-underline-offset:3px}.page button:not(.ck){min-height:36px}
 }
 @media(max-width:360px){#app .h-home .h-stats{grid-template-columns:minmax(0,1fr)}}
 
+
+/* Focus móvil: controles primero y relojes contenidos dentro de su sección. */
+.focus-web .k-duration{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+.focus-web .k-duration label{display:grid;gap:8px;font-size:13px}
+.focus-web .k-duration select{min-height:44px;width:100%;font:inherit;font-size:16px;padding:10px 12px;color:var(--txt);background:var(--tile);border:1px solid var(--bar-b);border-radius:12px}
+@media(max-width:860px){
+ #app .focus-web{width:100%;min-width:0}
+ #app .focus-web .k-grid{display:flex;flex-direction:column;gap:14px;width:100%;min-width:0}
+ #app .focus-web .k-grid>section{width:100%;min-width:0}
+ #app .focus-web .k-pv{order:2;position:static}
+ #app .focus-web .k-settings{width:100%;min-width:0}
+ #app .focus-web .k-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ #app .focus-web .k-chip{min-height:48px;padding:10px 8px;font-size:13px;line-height:1.4}
+ #app .focus-web .k-chip em{display:block;margin:3px 0 0}
+ #app .focus-web .k-sec{margin-bottom:20px}
+ #app .focus-web .k-sec h3{font-size:14px}
+ #app .focus-web .k-sty{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #app .focus-web .k-pets{grid-template-columns:repeat(3,minmax(0,1fr))}
+ #app .focus-web .k-opt{min-height:90px;padding:12px 5px;gap:8px}
+ #app .focus-web .k-pt{width:48px}
+ #app .focus-web .k-sel{height:48px;font-size:16px}
+ #app .focus-web .k-hint,#app .focus-web .k-stat{font-size:13px;line-height:1.5}
+ #app .focus-web .k-go{height:auto;min-height:52px;padding:12px}
+ #app .focus-web .k-prev{min-height:0;padding:12px 0}
+ #app .focus-web .kc{width:min(100%,280px);aspect-ratio:1}
+ #app .focus-web .kc-in{width:65%;gap:8px}
+ #app .focus-web .kc-in .pet{width:90px;max-width:58%}
+ #app .focus-web .kc .k-time{font-size:clamp(32px,10vw,44px)}
+ #app .focus-web .kc.long .k-time{font-size:clamp(26px,8vw,34px)}
+ #app .focus-web .kc .kc-sub{font-size:10px;max-width:100%;letter-spacing:.06em}
+ #app .focus-web .km,#app .focus-web .kdw{width:100%;max-width:300px;min-width:0;gap:12px}
+ #app .focus-web .km .k-time{font-size:clamp(46px,16vw,64px)}
+ #app .focus-web .km.long .k-time{font-size:clamp(36px,12vw,48px)}
+ #app .focus-web .kdw .k-time{font-size:42px}
+ #app .focus-web .kdw.long .k-time{font-size:32px}
+ #app .focus-web .km .kc-sub,#app .focus-web .kdw .kc-sub{font-size:11px;letter-spacing:.06em}
+ #app .focus-web .kdp{width:80px}
+ #app .focus-web .dgp{box-sizing:border-box;padding:12px;width:100%}
+ #app .focus-web .k-stage{height:auto;min-height:420px;padding:60px 16px 24px;overflow:visible}
+ #app .focus-web .k-lbl{top:16px;padding-inline:16px;white-space:normal;line-height:1.4;letter-spacing:normal;font-size:13px;opacity:1}
+ #app .focus-web .k-act{width:100%;flex-wrap:wrap;justify-content:center;gap:8px}
+ #app .focus-web .k-act button{min-height:48px;flex:1;min-width:120px;padding:12px 10px}
+ #app .focus-web .k-msg{font-size:14px;line-height:1.5;overflow-wrap:anywhere}
+ #app .focus-web .k-history{padding:16px;margin-top:14px}
+ #app .focus-web .k-history-head{gap:12px;align-items:flex-start;flex-direction:column}
+ #app .focus-web .k-history-head label{width:100%;justify-content:space-between;flex-wrap:wrap}
+ #app .focus-web .k-history input{font-size:16px;min-height:44px;max-width:100%;box-sizing:border-box}
+ #app .focus-web .k-error{max-width:100%;box-sizing:border-box}
+}
+
 </style>
 </head>
 <body id="app" data-side="full">
@@ -1267,14 +1317,14 @@ async function mountCalendar(){
 }
 /* Mod Focus (reloj + compañero) */
 const PRE=FOCUS_PRESETS;
-const HINT={p25:'Ideal para arrancar o cuando cuesta concentrarse.',p45:'Buen equilibrio para lecturas y ejercicios largos.',p90:'Trabajo profundo: proyectos, casos o repaso de parcial.',custom:'Elige las horas y los minutos con las ruedas. Mínimo: 5 minutos.'};
+const HINT={p25:'Ideal para arrancar o cuando cuesta concentrarse.',p45:'Buen equilibrio para lecturas y ejercicios largos.',p90:'Trabajo profundo: proyectos, casos o repaso de parcial.',custom:'Elige horas y minutos. Duración mínima: 5 minutos.'};
 const STY=[['digital','Digital'],['ring','Anillo'],['arc','Arco'],['dots','Puntos']];
 const PN={cat:['Gato','Miso'],rabbit:['Conejo','Nube'],owl:['Búho','Sabio']};
 const MI={digital:'<span class="k-mi">25:00</span>',
 ring:'<svg viewBox="0 0 24 24" width="30" height="30"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="1.2 1.76"/></svg>',
 arc:'<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><circle cx="12" cy="12" r="9" opacity=".25"/><path d="M12 3a9 9 0 0 1 9 9"/></svg>',
 dots:'<svg viewBox="0 0 24 24" width="30" height="30" fill="currentColor">'+[5,12,19].flatMap(x=>[5,12,19].map(y=>`<circle cx="${x}" cy="${y}" r="2.2"/>`)).join('')+'</svg>'};
-const fx={st:'setup',pre:'p45',h:0,m:30,style:'ring',pet:'cat',course:'',total:0,left:0,end:0,paused:false,cq:false,iv:0,session:null,busy:false,error:'',save:'idle',load:'idle',owner:null,generation:0,nonce:null,day:todayLima(),history:null,historyState:'idle',historyError:'',historyRead:0,syncing:false,lastSync:0};
+const fx={st:'setup',pre:'p45',h:0,m:30,style:'ring',pet:'cat',course:'',total:0,left:0,end:0,paused:false,cq:false,iv:0,session:null,busy:false,error:'',save:'idle',load:'idle',owner:null,generation:0,nonce:null,day:todayLima(),history:null,historyState:'idle',historyError:'',historyRead:0,syncing:false,lastSync:0,mutation:0};
 function kReset(){clearInterval(fx.iv);Object.assign(fx,{st:'setup',course:'',session:null,busy:false,error:'',save:'idle',load:'idle',owner:null,paused:false,cq:false,nonce:null,day:todayLima(),history:null,historyState:'idle',historyError:'',historyRead:fx.historyRead+1,generation:fx.generation+1})}
 function kRender(){if(cur==='Mod Focus')renderPage()}
 const kCourseName=id=>homeCareer().cursos.find(c=>c.id===id)?.n||'Estudio general';
@@ -1287,7 +1337,7 @@ function kApply(session){
 }
 async function kMutate(action){
  if(fx.busy)return false;
- const user=HOME.user,gen=fx.generation;fx.busy=true;fx.error='';HOME.saving.add('focus');kRender();
+ const user=HOME.user,gen=fx.generation;fx.mutation++;fx.busy=true;fx.error='';HOME.saving.add('focus');kRender();
  try{
   if(user){const verified=await homeClient.auth.getUser();if(verified.error||verified.data.user?.id!==user.id||HOME.user?.id!==user.id)throw {message:'NO_AUTH'}}
   const result=await action();if(gen!==fx.generation||HOME.user?.id!==user?.id)return false;
@@ -1311,13 +1361,13 @@ async function kLoad(){
 }
 async function kSync(){
  if(fx.syncing||fx.busy||!fx.session||HOME.mode!=='live')return;
- const gen=fx.generation,sid=fx.session.id,confirming=fx.cq;fx.syncing=true;fx.lastSync=Date.now();
- try{const row=await kRpc('focus_session_snapshot',{sid});if(gen!==fx.generation||fx.busy||fx.session?.id!==sid)return;if(row.status==='interrupted'){kBack();kLoadHistory();kRender();return}kApply(row);if(fx.st==='run')fx.cq=confirming;fx.error='';kRender();if(fx.st==='done'&&fx.save==='pending')kComplete()}
+ const gen=fx.generation,sid=fx.session.id,confirming=fx.cq,mutation=fx.mutation;fx.syncing=true;fx.lastSync=Date.now();
+ try{const row=await kRpc('focus_session_snapshot',{sid});if(gen!==fx.generation||mutation!==fx.mutation||fx.busy||fx.session?.id!==sid)return;if(row.status==='interrupted'){kBack();kLoadHistory();kRender();return}kApply(row);if(fx.st==='run')fx.cq=confirming;fx.error='';kRender();if(fx.st==='done'&&fx.save==='pending')kComplete()}
  catch(e){if(gen===fx.generation){fx.error=focusError(e);kRender()}}
  finally{if(gen===fx.generation)fx.syncing=false}
 }
 async function kStart(){
- if(fx.busy||HOME.mode==='loading'||(HOME.user&&fx.load!=='ready'))return;
+ if(fx.busy||fx.st!=='setup'||HOME.mode==='loading'||(HOME.user&&fx.load!=='ready'))return;
  if(fx.course&&!focusCourses().some(c=>c.id===fx.course)){fx.error=focusError({message:'COURSE_NOT_ENROLLED'});kRender();return}
  const args={cid:fx.course||null,seconds:kSecs(),chosen_method:fx.pre,chosen_style:fx.style,chosen_pet:fx.pet};
  if(!HOME.user){fx.total=fx.left=args.seconds;fx.end=Date.now()+fx.total*1000;fx.st='run';fx.paused=false;fx.cq=false;fx.save='guest';clearInterval(fx.iv);fx.iv=setInterval(kTick,250);kRender();$('k-focus-label')?.focus({preventScroll:true});return}
@@ -1396,7 +1446,7 @@ function kSetup(){
   if(fx.course&&!focusCourses().some(c=>c.id===fx.course))fx.course='';
   const disabled=fx.busy||(HOME.user&&fx.load!=='ready');
   return `<div class="k-grid"><section class="blk"><h2 class="bt">${svg('target',18)}Vista previa</h2><div class="k-prev" id="kprev">${prevHTML()}</div><p class="k-stat">${HOME.user?'Tu tiempo de estudio se guarda en tu cuenta.':'Puedes usar el reloj sin cuenta; el historial requiere iniciar sesión.'}</p></section>
-  <section class="blk"><fieldset class="k-settings"${fx.busy?' disabled':''}><div class="k-sec"><h3>Método</h3><div class="k-row">${PRE.map(p=>`<button class="k-chip${fx.pre===p[0]?' on':''}" aria-pressed="${fx.pre===p[0]}" data-a="kpre" data-v="${p[0]}">${p[1]}${p[0]==='p45'?'<em>Sugerido</em>':''}</button>`).join('')}</div><p class="k-hint">${HINT[fx.pre]}</p>${fx.pre==='custom'?`<div class="k-ws">${wheel('wh',[0,1,2,3],fx.h,'Horas')}${wheel('wm',Array.from({length:12},(_,i)=>i*5),fx.m,'Minutos')}</div>`:''}</div>
+  <section class="blk"><fieldset class="k-settings"${fx.busy?' disabled':''}><div class="k-sec"><h3>Método</h3><div class="k-row">${PRE.map(p=>`<button class="k-chip${fx.pre===p[0]?' on':''}" aria-pressed="${fx.pre===p[0]}" data-a="kpre" data-v="${p[0]}">${p[1]}${p[0]==='p45'?'<em>Sugerido</em>':''}</button>`).join('')}</div><p class="k-hint">${HINT[fx.pre]}</p>${fx.pre==='custom'?`${mqM.matches?`<div class="k-duration"><label>Horas<select id="k-hours">${[0,1,2,3].map(n=>`<option value="${n}"${fx.h===n?' selected':''}>${n}</option>`).join('')}</select></label><label>Minutos<select id="k-minutes">${Array.from({length:12},(_,i)=>i*5).map(n=>`<option value="${n}"${fx.m===n?' selected':''}>${n}</option>`).join('')}</select></label></div>`:`<div class="k-ws">${wheel('wh',[0,1,2,3],fx.h,'Horas')}${wheel('wm',Array.from({length:12},(_,i)=>i*5),fx.m,'Minutos')}</div>`}`:''}</div>
   <div class="k-sec"><h3>Estilo de reloj</h3><div class="k-row">${STY.map(x=>`<button class="k-opt${fx.style===x[0]?' on':''}" aria-pressed="${fx.style===x[0]}" data-a="kst" data-v="${x[0]}">${MI[x[0]]}${x[1]}</button>`).join('')}</div></div>
   <div class="k-sec"><h3>Tu compañero</h3><div class="k-row">${Object.keys(PN).map(k=>`<button class="k-opt${fx.pet===k?' on':''}" aria-pressed="${fx.pet===k}" data-a="kpt" data-v="${k}">${pet(k,'idle')}${PN[k][0]}</button>`).join('')}</div></div>
   <div class="k-sec"><label for="kcs" class="k-course-label">Curso (opcional)</label><select class="k-sel" id="kcs" aria-describedby="k-course-help"><option value="">Sin curso</option>${focusCourses().map(c=>`<option value="${esc(c.id)}"${fx.course===c.id?' selected':''}>${esc(c.n)}</option>`).join('')}</select><p class="k-hint" id="k-course-help">${focusCourses().length?'Solo los cursos marcados como Matriculado en tu carrera, en orden alfabético.':HOME.user?'Aún no tienes cursos marcados como Matriculado. Actualízalos en la ficha del curso; mientras tanto puedes estudiar sin elegir uno.':'Inicia sesión para elegir tus cursos matriculados.'}</p></div>
@@ -1405,7 +1455,7 @@ function webSetup(){
   if(fx.course&&!focusCourses().some(c=>c.id===fx.course))fx.course='';
   const disabled=fx.busy||(HOME.user&&fx.load!=='ready');
   return `<div class="k-grid kf"><section class="blk k-pv"><h2 class="bt">${svg('target',18)}Vista previa</h2><div class="k-prev" id="kprev">${prevHTML()}</div><p class="k-stat">${HOME.user?'Tu tiempo de estudio se guarda en tu cuenta.':'Puedes usar el reloj sin cuenta; el historial requiere iniciar sesión.'}</p></section>
-  <section class="blk"><fieldset class="k-settings"${fx.busy?' disabled':''}><div class="k-sec"><h3>Método</h3><div class="k-row">${PRE.map(p=>`<button class="k-chip${fx.pre===p[0]?' on':''}" aria-pressed="${fx.pre===p[0]}" data-a="kpre" data-v="${p[0]}">${p[1]}${p[0]==='p45'?'<em>Sugerido</em>':''}</button>`).join('')}</div><p class="k-hint">${HINT[fx.pre]}</p>${fx.pre==='custom'?`<div class="k-ws">${wheel('wh',[0,1,2,3],fx.h,'Horas')}${wheel('wm',Array.from({length:12},(_,i)=>i*5),fx.m,'Minutos')}</div>`:''}</div>
+  <section class="blk"><fieldset class="k-settings"${fx.busy?' disabled':''}><div class="k-sec"><h3>Método</h3><div class="k-row">${PRE.map(p=>`<button class="k-chip${fx.pre===p[0]?' on':''}" aria-pressed="${fx.pre===p[0]}" data-a="kpre" data-v="${p[0]}">${p[1]}${p[0]==='p45'?'<em>Sugerido</em>':''}</button>`).join('')}</div><p class="k-hint">${HINT[fx.pre]}</p>${fx.pre==='custom'?`${mqM.matches?`<div class="k-duration"><label>Horas<select id="k-hours">${[0,1,2,3].map(n=>`<option value="${n}"${fx.h===n?' selected':''}>${n}</option>`).join('')}</select></label><label>Minutos<select id="k-minutes">${Array.from({length:12},(_,i)=>i*5).map(n=>`<option value="${n}"${fx.m===n?' selected':''}>${n}</option>`).join('')}</select></label></div>`:`<div class="k-ws">${wheel('wh',[0,1,2,3],fx.h,'Horas')}${wheel('wm',Array.from({length:12},(_,i)=>i*5),fx.m,'Minutos')}</div>`}`:''}</div>
   <div class="k-sec"><h3>Estilo de reloj</h3><div class="k-sty">${STY.map(x=>`<button class="k-opt${fx.style===x[0]?' on':''}" aria-pressed="${fx.style===x[0]}" data-a="kst" data-v="${x[0]}"><span class="k-th">${MI[x[0]]}</span>${x[1]}</button>`).join('')}</div></div>
   <div class="k-sec"><h3>Tu compañero</h3><div class="k-pets">${Object.keys(PN).map(k=>`<button class="k-opt k-po${fx.pet===k?' on':''}" aria-pressed="${fx.pet===k}" data-a="kpt" data-v="${k}"><span class="k-pt">${webPet(k,'idle')}</span><b>${PN[k][0]}</b><small>${PN[k][1]}</small></button>`).join('')}</div></div>
   <div class="k-sec"><label for="kcs" class="k-course-label">Curso (opcional)</label><select class="k-sel" id="kcs" aria-describedby="k-course-help"><option value="">Sin curso</option>${focusCourses().map(c=>`<option value="${esc(c.id)}"${fx.course===c.id?' selected':''}>${esc(c.n)}</option>`).join('')}</select><p class="k-hint" id="k-course-help">${focusCourses().length?'Solo los cursos marcados como Matriculado en tu carrera, en orden alfabético.':HOME.user?'Aún no tienes cursos marcados como Matriculado. Actualízalos en la ficha del curso; mientras tanto puedes estudiar sin elegir uno.':'Inicia sesión para elegir tus cursos matriculados.'}</p></div>
@@ -1509,7 +1559,7 @@ async function mountMailbox(){
  try{
   const {mountOfficialMailbox}=await import('./src/components/OfficialMailbox.jsx');
   if(render!==curriculumRender||!container.isConnected)return;
-  curriculumUnmount=mountOfficialMailbox(container,{category:kid,courses:HOME.mode==='live'?homeCareer().cursos:[],onCategory:name=>go(name,'Buzón de sugerencias')});container.removeAttribute('aria-busy');
+  curriculumUnmount=mountOfficialMailbox(container,{draftKey:HOME.user?.id||'guest',category:kid,courses:HOME.mode==='live'?homeCareer().cursos:[],onCategory:name=>go(name,'Buzón de sugerencias')});container.removeAttribute('aria-busy');
  }catch{if(render===curriculumRender&&container.isConnected)container.innerHTML=homeEmpty('No se pudo abrir el buzón','Reintenta para volver a abrirlo.',false)+'<button class="h-btn" data-a="hretry">Reintentar</button>'}
 }
 function toolSurface(tool){
@@ -1972,6 +2022,11 @@ document.addEventListener('keydown',e=>{if(!ARC.open)return;const s=ARC.game;if(
  if(!s&&(e.key==='ArrowRight'||e.key==='ArrowLeft')){e.preventDefault();gmStopAuto();gmMove(e.key==='ArrowRight'?1:-1)}
 },true);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden||!ARC.open)return;gmSoundSuspend();if(ARC.stage==='intro'){cancelAnimationFrame(ARC.raf);arReady();return}gmStopAuto();if(ARC.game?.id==='reaction'&&['waiting','ready'].includes(ARC.game.phase)){gmClearTimers();gmReaction();}});
+$('page').addEventListener('change',e=>{
+ if(fx.busy||fx.st!=='setup')return;
+ if(e.target.id==='k-hours'){fx.h=Math.max(0,Math.min(3,Number(e.target.value)||0));kPrev()}
+ if(e.target.id==='k-minutes'){fx.m=Math.max(0,Math.min(55,Math.round((Number(e.target.value)||0)/5)*5));kPrev()}
+});
 $('page').addEventListener('input',e=>{const form=e.target.closest('[data-home-grade]');if(form&&e.target.name==='grade')HOME.drafts[form.dataset.homeGrade]=e.target.value});
 $('page').addEventListener('change',e=>{if(e.target.id==='h-cycle'){HOME.cycle=e.target.value;homeRender();$('h-cycle')?.focus({preventScroll:true})}});
 $('page').addEventListener('submit',e=>{const form=e.target.closest('[data-home-grade]');if(form){e.preventDefault();homeSaveGrade(form)}});

@@ -97,3 +97,35 @@
 
 
 .oc-grade select{font:inherit;color:var(--txt);background:var(--bg);border:1px solid var(--bar-b);border-radius:8px;padding:10px;min-width:170px}.oc-community{border-top:1px solid var(--bar-b);margin-top:24px;padding-top:12px}.oc-community p{max-width:75ch}.oc-stars{display:flex;gap:8px;border:0;padding:0;margin:14px 0}.oc-stars legend{font-size:14px;margin-bottom:10px}.oc-stars label{display:flex;position:relative;align-items:center;justify-content:center;width:40px;height:40px;color:color-mix(in srgb,var(--txt) 74%,var(--bg));cursor:pointer}.oc-stars label.selected{color:var(--ic)}.oc-stars input{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer}.oc-stars label:focus-within{outline:2px solid var(--ic);outline-offset:3px;border-radius:6px}.oc-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}.oc-professor-form{display:flex;gap:12px;align-items:end;flex-wrap:wrap}.oc-professor-form label{display:grid;gap:8px}.oc-professor-form input{font:inherit;background:var(--bg);color:var(--txt);border:1px solid var(--bar-b);padding:10px;border-radius:8px;max-width:100%;box-sizing:border-box}.oc-professors{list-style:none;padding:0;margin:24px 0}.oc-professors>li{padding:20px 0;border-top:1px solid var(--bar-b)}.oc-professors h5{font-size:16px;margin:0 0 12px;overflow-wrap:anywhere}.oc-professor-tags{border:0;padding:0;display:flex;flex-wrap:wrap;gap:10px}.oc-professor-tags legend{font-size:14px;margin-bottom:12px}.oc-professor-tags label{display:flex;align-items:center;gap:7px;padding:8px 10px;background:var(--tile-p);border-radius:8px;font-size:14px}.oc-professor-tags input{accent-color:var(--ic)}.oc-professor-tags small{font-variant-numeric:tabular-nums;color:color-mix(in srgb,var(--txt) 74%,var(--bg))}
+
+
+/* Vista por ciclos: acciones compartidas, lectura y controles cómodos en móvil. */
+.oc-view-switch{display:flex;gap:6px;padding:0 22px 16px}
+.oc-view-switch button{min-height:44px;font-size:13px;background:var(--tile);border:0}
+.oc-view-switch button[aria-pressed=true]{background:var(--on);color:var(--on-t)}
+.oc-cycle-view{padding:16px 22px}
+.oc-cycle-picker{display:flex;align-items:center;gap:12px;font-size:14px}
+.oc-cycle-picker select{font:inherit;background:var(--tile);color:var(--txt);border:1px solid var(--bar-b);border-radius:12px;padding:10px 12px;min-height:44px;min-width:0;max-width:100%}
+.oc-list-count{font-size:13px;color:var(--oc-muted);margin:12px 0 24px}
+.oc-cycle-section{margin:24px 0}.oc-cycle-section h3{font-size:16px;font-weight:600;margin:0 0 12px}
+.oc-cycle-section h3 small{display:block;font-weight:400;font-size:12px;color:var(--oc-muted);margin-top:4px}
+.oc-course-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:10px}
+.oc .oc-course-list button.oc-node{position:relative;width:100%;height:auto;min-height:72px;padding:14px 32px 14px 14px;box-shadow:none;gap:8px}
+.oc-course-list .oc-name{font-size:14px;line-height:1.4;display:block;overflow:visible;padding:0}
+.oc-course-list .oc-credits{font-size:12px;white-space:normal;line-height:1.4}
+.oc-course-list .oc-check{right:12px;top:16px}.oc-course-list .oc-check svg{width:16px;height:16px}
+.oc-list-empty{font-size:14px;line-height:1.6;color:var(--oc-muted);margin:20px 0}
+@media(max-width:860px){
+ .oc-progress{flex-wrap:wrap;white-space:normal}
+ .oc-view-switch{padding:0 16px 16px}.oc-view-switch button{flex:1}
+ .oc-tools{flex-wrap:wrap}.oc-search{width:100%;min-height:44px}.oc-search input{font-size:16px}
+ .oc-zoom{margin-left:auto}.oc-zoom button{min-width:44px;min-height:44px}
+ .oc .oc-modes button,.oc .oc-areas button,.oc button.oc-arrow,.oc .oc-actions button,.oc .oc-detail-head button,.oc-plan-list button{min-height:44px;min-width:44px}
+ .oc-cycle-view{padding:16px}.oc-course-list{grid-template-columns:minmax(0,1fr)}
+ .oc-scroller{height:clamp(280px,52dvh,460px);touch-action:pan-x pan-y pinch-zoom}
+ .oc-details,.oc-confirm{scroll-margin-top:90px;scroll-margin-bottom:110px}
+ .oc-facts dd,.oc-plan-list li>span{overflow-wrap:anywhere;min-width:0}
+ .oc-grade label,.oc-professor-form label{width:100%;min-width:0}
+ .oc-grade select,.oc-grade input,.oc-professor-form input{width:100%;min-width:0;font-size:16px;min-height:44px}
+ .oc-grade button{min-height:44px}.oc-stars label{width:44px;height:44px}
+}

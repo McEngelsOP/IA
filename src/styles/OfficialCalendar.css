@@ -33,3 +33,45 @@
 .sc .sc-editor{scroll-margin-top:80px}.sc .hl.rem>p{color:var(--on-t)}
 .sc .fl.on .ck,.sc .ev2.y-examen{color:var(--on-t)}
 .page .sc .ev2{min-height:0}
+
+
+/* Agenda móvil: acceso directo a eventos y tareas sin comprimir la semana. */
+.sc-datebar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.sc-datebar .sc-zone{margin:0}.sc-datebar label{display:flex;align-items:center;gap:8px;font-size:12px}
+.sc-datebar input{min-height:44px;padding:8px 10px;border:1px solid var(--bar-b);border-radius:12px;background:var(--tile);color:var(--txt);font:inherit;min-width:0;max-width:100%}
+.sc-view-agenda .sc-agenda{margin-top:0;border-top:0;padding-top:0}
+.sc .sc-agenda-row{min-height:64px}.sc .sc-agenda-row b{font-size:15px;line-height:1.4}.sc .sc-agenda-row small{font-size:13px;line-height:1.5}
+@media(max-width:860px){
+ #app .sc .cw{grid-template-columns:minmax(0,1fr);gap:14px}
+ #app .sc.sc-editing .cside{order:-1}
+ #app .sc .ch{gap:10px;flex-wrap:wrap}
+ #app .sc .ch .nv{width:100%;gap:8px}
+ #app .sc .cl{font-size:16px;line-height:1.4;min-width:0;text-wrap:balance}
+ #app .sc .ch .hb,#app .sc .tdb{min-width:44px;min-height:44px;flex:none}
+ #app .sc .seg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));width:100%;order:3}
+ #app .sc .seg button{min-height:44px;padding:8px 5px;font-size:13px;min-width:0}
+ #app .sc .ch .mk{margin-left:auto;min-height:44px;padding:10px 14px}
+ #app .sc .sc-datebar{align-items:flex-start;gap:10px}
+ #app .sc .sc-datebar label{width:100%;justify-content:space-between;font-size:13px}
+ #app .sc .sc-datebar input{font-size:16px;max-width:70%}
+ #app .sc .wkw{max-width:100%;overscroll-behavior-x:contain;touch-action:pan-x pan-y pinch-zoom}
+ #app .sc-view-week .wk{min-width:760px}
+ #app .sc-view-day .wk{min-width:0}
+ #app .sc .mg{min-width:0;gap:0}
+ #app .sc .mc{min-height:66px;padding:5px 2px;align-items:center;overflow:hidden}
+ #app .sc .mc b{width:28px;height:28px;font-size:13px}
+ #app .sc .mc .mt{width:100%;padding:2px;font-size:10px}
+ #app .sc .mc small{font-size:10px}
+ #app .sc .mini button{width:100%;height:44px;min-width:0;border-radius:12px}
+ #app .sc .sc-task>.ck,#app .sc .sc-task>.hb{min-width:44px;min-height:44px;flex:none}
+ #app .sc .sc-task>span{font-size:14px;line-height:1.45}
+ #app .sc .fl{min-height:44px;width:100%;text-align:left}
+ #app .sc .sc-editor{scroll-margin-top:90px;scroll-margin-bottom:110px}
+ #app .sc .sc-editor input,#app .sc .sc-editor select,#app .sc .sc-editor textarea{font-size:16px;min-height:44px}
+ #app .sc .sc-editor .sc-check input{min-height:24px;width:24px;height:24px}
+ #app .sc .sc-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+ #app .sc .sc-actions button{min-height:44px;min-width:0}
+ #app .sc .sc-confirm button{min-height:44px;width:100%}
+ #app .sc .sc-agenda-row>svg{flex:none;width:20px;height:20px}
+}
+@media(max-width:360px){#app .sc .sc-time{flex-direction:column;gap:0}#app .sc .sc-time label{width:100%}}

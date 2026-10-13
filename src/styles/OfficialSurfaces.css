@@ -459,3 +459,29 @@
 
 @media(min-width:0px){.official-mailbox.z-wrap{max-width:1080px;margin:0 auto;display:flex;flex-direction:column;gap:14px}}
 
+
+/* Buzón móvil: formulario vertical y botones al alcance del pulgar. */
+@media(max-width:860px){
+ #app .official-mailbox{width:100%;min-width:0;display:flex;flex-direction:column;gap:14px}
+ #app .official-mailbox .z-grid{grid-template-columns:minmax(0,1fr)}
+ #app .official-mailbox .z-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));width:100%;box-sizing:border-box}
+ #app .official-mailbox .z-tabs button{min-width:0;min-height:44px;padding:8px 5px;font-size:13px}
+ #app .official-mailbox .z-hero{padding:16px;align-items:flex-start;gap:12px}
+ #app .official-mailbox .z-hero h2{font-size:22px}
+ #app .official-mailbox .z-hi{width:44px;height:44px}
+ #app .official-mailbox .z-sec{padding:16px;gap:12px}
+ #app .official-mailbox .z-og,#app .official-mailbox .z-fg{grid-template-columns:minmax(0,1fr)}
+ #app .official-mailbox .z-o{min-height:72px;padding:14px;flex-direction:row;align-items:center;gap:12px}
+ #app .official-mailbox .z-o>span:nth-child(2){flex:1;min-width:0}
+ #app .official-mailbox .z-o b{font-size:14px}.official-mailbox .z-o small{font-size:13px;line-height:1.5}
+ #app .official-mailbox .z-sh{flex-wrap:wrap;gap:10px}
+ #app .official-mailbox .z-sh .k-btn{min-height:44px;margin-left:auto}
+ #app .official-mailbox .k-sel{min-height:48px;font-size:16px;width:100%;min-width:0;box-sizing:border-box}
+ #app .official-mailbox .z-ta{font-size:16px;min-height:180px;padding:12px;box-sizing:border-box}
+ #app .official-mailbox .k-chip{min-height:44px;padding:10px 14px}
+ #app .official-mailbox .z-meta{flex-wrap:wrap;font-size:12px;gap:6px;opacity:1}
+ #app .official-mailbox .z-foot{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));padding:16px;gap:10px}
+ #app .official-mailbox .z-fs{grid-column:1/-1;min-width:0;font-size:13px;line-height:1.5}
+ #app .official-mailbox .z-foot button{min-height:48px;padding:10px;min-width:0;white-space:normal}
+ #app .official-mailbox .z-side{position:static}
+}

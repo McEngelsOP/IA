@@ -34,3 +34,20 @@
 .sg-room-side .h-btn{margin:6px 0;max-width:100%}.sg-invite input{font-size:12px;font-variant-numeric:tabular-nums}.sg-confirm{border-top:1px solid var(--bar-b);padding-top:12px;margin-top:16px}.sg-confirm p{font-size:13px;overflow-wrap:anywhere}.sg-confirm .mk{max-width:100%}
 @container page (max-width:900px){.sg-list-layout.editing{grid-template-columns:minmax(0,1fr)}.sg-chat-grid{grid-template-columns:minmax(0,1fr)}.sg-room-side{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.sg-heading{align-items:start;flex-direction:column;gap:14px}}
 @container page (max-width:520px){.sg h2{font-size:22px}.sg-toolbar{align-items:stretch}.sg-search,.sg-course{width:100%;box-sizing:border-box}.sg-course select{max-width:none;width:100%;min-width:0}.sg-toolbar .seg{align-self:start}.sg-list{padding-inline:16px}.sg-room-row{align-items:start;flex-wrap:wrap;gap:12px}.sg-room-row>div{flex-basis:100%}.sg-room-side{display:flex}.sg-room-head{align-items:start;flex-direction:column;gap:12px}.sg-transcript{padding:16px;height:46dvh;min-height:270px}.sg-compose{padding:14px 16px}.sg-compose>div{align-items:end}.sg-compose span{max-width:170px}.sg-heading .sg-actions{gap:8px}.sg-message{max-width:94%}}
+
+
+/* Ajustes puntuales de grupos para lectura, teclado móvil y controles táctiles. */
+@media(max-width:860px){
+ .sg{width:100%;min-width:0}.sg-heading,.sg-room-head{gap:12px}
+ .sg :is(input,select,textarea){font-size:16px}
+ .sg :is(button,.h-btn){min-height:44px}
+ .sg-course{flex-wrap:wrap;min-width:0}.sg-course select{min-width:0;max-width:100%}
+ .sg .sg-list-layout.editing,.sg .sg-chat-grid{grid-template-columns:minmax(0,1fr)}
+ .sg .sg-transcript{height:clamp(220px,42dvh,420px);min-height:220px;overscroll-behavior-y:contain}
+ .sg .sg-compose>div{align-items:flex-start;flex-wrap:wrap}
+ .sg .sg-compose textarea{font-size:16px;min-height:88px}
+ .sg .sg-message{max-width:94%;min-width:0}
+ .sg .sg-form,.sg .sg-chat{scroll-margin-top:90px;scroll-margin-bottom:110px}
+ .sg .sg-actions{gap:8px}.sg .sg-pages{gap:10px;flex-wrap:wrap}
+ .sg .sg-invite input{font-size:16px}.sg .sg-confirm button{max-width:100%;white-space:normal}
+}
