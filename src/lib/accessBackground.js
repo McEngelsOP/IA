@@ -1,11 +1,14 @@
 /* Decorative media never participates in authentication readiness. */
-export function initializeAccessBackground({
-  document = window.document,
-  reduce = window.matchMedia('(prefers-reduced-motion: reduce)'),
-  connection = window.navigator.connection,
-  mobile = document.defaultView?.matchMedia?.('(max-width:860px)') || { matches: false, addEventListener() {} },
-  requestAnimationFrame = window.requestAnimationFrame.bind(window),
-} = {}) {
+export function initializeAccessBackground(options = {}) {
+  // Resolve dependent options in the body; optional-chain defaults are miscompiled
+  // by the production minifier and can prevent authentication from initializing.
+  const document = options.document || window.document
+  const view = document.defaultView || (typeof window !== 'undefined' ? window : null)
+  const reduce = options.reduce || view.matchMedia('(prefers-reduced-motion: reduce)')
+  const connection = options.connection || view?.navigator?.connection
+  const mobile = options.mobile || (typeof view?.matchMedia === 'function'
+    ? view.matchMedia('(max-width:860px)') : { matches: false, addEventListener() {} })
+  const requestAnimationFrame = options.requestAnimationFrame || view.requestAnimationFrame.bind(view)
   const $ = id => document.getElementById(id)
   const landscape = $('landscape')
   // Older browsers without lvh keep the first viewport size through keyboard/bar changes.

@@ -292,7 +292,11 @@ $('resetForm').addEventListener('submit', async event => {
   finally { if (!acceptedSession) setBusy(false) }
 })
 
-initializeAccessBackground()
+try { initializeAccessBackground() } catch {
+  // A decorative-media failure must never leave login navigation blocked.
+  document.body.dataset.paused = 'true'
+  document.body.dataset.backgroundError = 'true'
+}
 setInterval(updateResend, 1000)
 document.addEventListener('visibilitychange', updateResend)
 if (client) client.auth.onAuthStateChange(event => { if (event === 'PASSWORD_RECOVERY') recovering = true })
@@ -330,5 +334,6 @@ async function initialize() {
   finally { checkingSession = false; if (!acceptedSession) setBusy(false) }
 }
 foot(); initialize()
+
 
 
