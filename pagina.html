@@ -860,6 +860,35 @@ a{text-underline-offset:3px}.page button:not(.ck){min-height:36px}
 }
 @media(prefers-reduced-motion:reduce){.mobile-bar,.mobile-ind{transition:none}}
 
+
+/* Inicio móvil: resumen legible y controles sin competir con el menú lateral. */
+@media(max-width:860px){
+ #app .h-home{min-width:0;width:100%}
+ #app .h-home .h-summary{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:20px}
+ #app .h-home .h-summary .st{grid-column:auto;padding:14px;min-width:0}
+ #app .h-home .h-summary .sv{font-size:clamp(24px,7vw,32px);line-height:1.15;overflow-wrap:anywhere}
+ #app .h-home .h-summary .sl{font-size:13px;line-height:1.4;min-height:0;margin-top:8px}
+ #app .h-home .h-sum-foot{font-size:12px;line-height:1.45;overflow-wrap:anywhere}
+ #app .h-home .h-head{gap:12px;margin-bottom:20px}
+ #app .h-home .h-head h2{font-size:24px;line-height:1.2}
+ #app .h-home .h-head-actions{width:auto}
+ #app .h-home .h-grid{grid-template-columns:minmax(0,1fr);gap:12px}
+ #app .h-home .h-grid .h-wide{grid-column:auto}
+ #app .h-home .h-tabs{width:100%;flex-wrap:wrap;overflow:visible;gap:4px;border-radius:18px;padding:5px}
+ #app .h-home .h-tabs button{flex:1 1 auto;min-width:0;min-height:44px;padding:10px 12px;font-size:13px}
+ #app .h-home .h-table{min-width:0;width:100%;font-size:13px;table-layout:fixed}
+ #app .h-home .h-table th,#app .h-home .h-table td{padding:12px 4px;overflow-wrap:anywhere}
+ #app .h-home .h-table th:first-child{width:42%}
+ #app .h-home .h-grade{flex-wrap:wrap;justify-content:flex-end;gap:6px}
+ #app .h-home .h-grade input{min-height:44px;width:54px;box-sizing:border-box;font-size:16px}
+ #app .h-home .h-save{min-width:44px;min-height:44px}
+ #app .h-home .h-section-head{gap:12px;align-items:flex-start;flex-direction:column}
+ #app .h-home .h-cycle select{min-height:44px;font-size:16px}
+ #app .h-home .h-distribution{gap:5px}
+ #app.dopen #mobile-dock,#app.dopen .h-home .h-tabs,#app.dopen .h-home .h-head-actions{visibility:hidden;pointer-events:none}
+}
+@media(max-width:360px){#app .h-home .h-stats{grid-template-columns:minmax(0,1fr)}}
+
 </style>
 </head>
 <body id="app" data-side="full">
@@ -1541,7 +1570,13 @@ function renderNav(){$('nav').innerHTML=NAV.map(x=>{
 $('dh').innerHTML=`<button class="brand" id="brand">${svg('spark',22)}</button><span>Menú</span><button class="hb" id="bRail" aria-label="Reducir a iconos" title="Reducir a iconos">${svg('railc',18)}</button><button class="hb" id="bHide" aria-label="Ocultar menú" title="Ocultar menú">${svg('x',18)}</button>`;
 $('trig').innerHTML=svg('spark',20);
 $('uni').innerHTML=`<div class="um">${svg('landmark',20)}</div><div><b>Universidad ESAN</b><span>Somos el pasado, presente y futuro</span></div>`;
-function syncSide(){$('side').inert=app.dataset.side==='hidden'&&!app.classList.contains('dopen');$('side').setAttribute('aria-hidden',$('side').inert)}
+function syncSide(){
+ const hidden=app.dataset.side==='hidden',drawer=app.classList.contains('dopen');
+ $('side').inert=hidden&&!drawer;$('side').setAttribute('aria-hidden',String($('side').inert));
+ const blocking=mqM.matches&&drawer;
+ $('page').inert=blocking;$('mobile-dock').inert=blocking;
+ $('mobile-dock').setAttribute('aria-hidden',String(blocking));
+}
 function applySide(){
   const s=mqM.matches?'hidden':mode;
   app.dataset.side=s;app.classList.toggle('mob',mqM.matches);
