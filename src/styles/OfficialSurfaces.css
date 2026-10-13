@@ -1,5 +1,5 @@
-/* Desktop-only sections, derived from the supplied HTML references. */
-@media(min-width:861px){
+/* Superficies actuales compartidas por escritorio y móvil. */
+@media(min-width:0px){
 .official-mailbox .z-wrap{max-width:1080px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
 .official-mailbox .z-wrap.z-narrow{max-width:640px}
 .official-mailbox .z-tabs{align-self:flex-start;max-width:100%;overflow-x:auto;scrollbar-width:none}
@@ -419,7 +419,7 @@
 .official-tools .bj-cr .bj-trk{grid-column:1/-1;order:3}
 .official-tools .bj-hero{padding:18px}}
 }
-@media(min-width:861px){
+@media(min-width:0px){
 .official-tools{--nav-ease:cubic-bezier(.22,.7,.25,1)}
 .official-tools .official-advisor{font-family:inherit;color:var(--txt)}
 .official-tools .a-page{gap:14px}.official-tools .a-hcard{min-height:180px;box-sizing:border-box}
@@ -457,4 +457,5 @@
 @media(prefers-reduced-motion:reduce){.official-tools *,.official-mailbox *{animation:none!important;transition:none!important}}
 }
 
-@media(min-width:861px){.official-mailbox.z-wrap{max-width:1080px;margin:0 auto;display:flex;flex-direction:column;gap:14px}}
+@media(min-width:0px){.official-mailbox.z-wrap{max-width:1080px;margin:0 auto;display:flex;flex-direction:column;gap:14px}}
+
