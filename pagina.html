@@ -800,6 +800,36 @@ a{text-underline-offset:3px}.page button:not(.ck){min-height:36px}
 }
  .h-enrollment{margin:16px 0}.h-enrollment-list{list-style:none;padding:0;margin:16px 0}.h-enrollment-list li{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:10px 0;border-bottom:1px solid var(--bar-b)}.h-enrollment-list small{color:color-mix(in srgb,var(--txt) 74%,var(--bg));font-size:13px}
  .gm-react-game .dg-note,.gm-react-game .ast-note,.gm-react-game .dino-foot,.gm-react-game .ast-foot{color:#b5c0e3}.gm-react-game .mono{font-family:inherit}.gm-react-game button:focus-visible{outline:2px solid #fff;outline-offset:3px}
+
+/* Experiencia adaptable: misma cuenta y funciones, navegación al alcance del pulgar. */
+.mobile-dock{display:none}
+@media(max-width:860px){
+ .mobile-dock{position:fixed;z-index:5;left:max(12px,env(safe-area-inset-left));right:max(12px,env(safe-area-inset-right));bottom:calc(12px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) 54px;gap:4px;padding:5px;background:var(--bar);border:1px solid var(--bar-b);border-radius:30px;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);box-shadow:0 8px 24px var(--sh)}
+ .mobile-dock button{min-height:54px;border:0;border-radius:25px;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11px;color:var(--txt)}
+ .mobile-dock button[aria-current=page],.mobile-dock button[aria-expanded=true]{background:var(--ind)}
+ .mobile-dock button:active{background:var(--tile-p)}
+ #app .page{padding-top:calc(88px + env(safe-area-inset-top));padding-bottom:calc(104px + env(safe-area-inset-bottom));scroll-padding-bottom:104px;overscroll-behavior:contain}
+ #app .side{bottom:calc(92px + env(safe-area-inset-bottom));max-width:calc(100% - 24px)}
+ #app.dopen .scrim{background:rgba(0,0,0,.24)}
+ .top .title{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ .page input,.page select,.page textarea,#setup-root .setup-panel input,#setup-root .setup-panel select{font-size:16px}
+ .page button:not(.ck){min-height:44px}
+ .page .h-tabs{flex-wrap:nowrap;overflow-x:auto;justify-content:flex-start;scrollbar-width:none}
+ .page .h-tabs button{flex:none;padding:10px 14px;font-size:13px}
+ .h-table-wrap{overflow-x:auto;overscroll-behavior-x:contain}.h-table{min-width:360px}
+ .menu{max-width:calc(100vw - 24px);max-height:calc(100dvh - 180px);overflow:auto}
+ #setup-root .setup-backdrop{padding:0}#setup-root .setup-panel{width:100%;max-height:100dvh;height:100dvh;border-radius:0;padding:calc(20px + env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) calc(20px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
+ #setup-root .setup-progress{gap:4px;margin-bottom:24px}#setup-root .setup-progress small{font-size:10px;overflow-wrap:anywhere}
+ #setup-root .setup-semesters{grid-template-columns:repeat(5,minmax(0,1fr))}
+ #setup-root .setup-course-list,#setup-root .setup-choices,#setup-root .setup-mapping,#setup-root .setup-dates,#setup-root .setup-preferences{grid-template-columns:minmax(0,1fr)}
+ #setup-root .setup-pets{gap:6px}#setup-root .setup-pets>button{padding:12px 4px}#setup-root .setup-pets .pet{width:64px}
+ #setup-root .setup-summary>div{grid-template-columns:1fr;gap:6px}
+ #setup-root .setup-footer{bottom:calc(-20px - env(safe-area-inset-bottom));padding-bottom:calc(20px + env(safe-area-inset-bottom));margin-bottom:calc(-20px - env(safe-area-inset-bottom));gap:8px;flex-wrap:wrap}#setup-root .setup-footer>span{flex-basis:100%}#setup-root .setup-panel #setup-root .setup-primary{margin-left:auto;padding:12px 16px}
+ #app[data-keyboard=true] .mobile-dock{display:none}
+}
+@media(pointer:coarse){.it,.hb,.trig{min-height:44px;min-width:44px}.page button{touch-action:manipulation}}
+@media(prefers-reduced-motion:reduce){.mobile-dock,.mobile-dock button{transition:none}}
+
 </style>
 </head>
 <body id="app" data-side="full">
@@ -819,6 +849,7 @@ a{text-underline-offset:3px}.page button:not(.ck){min-height:36px}
   </div>
 </header>
 <main class="page" id="page" aria-labelledby="title"></main>
+<nav class="mobile-dock" id="mobile-dock" aria-label="Navegación móvil"></nav>
 <div id="bmod"></div>
 <div class="toast" id="toast" role="status"></div>
 
@@ -959,7 +990,7 @@ async function setupLoad(user,revision=HOME.revision){
   SETUP.record=result.data;SETUP.error='';SETUP.owner=user.id;
   if(result.data?.completed_at)setupApply(result.data.preferences);
   homeRender();renderProfile();
-  if(!result.data?.completed_at&&!SETUP.deferred&&!mqM.matches)setupOpen();
+  if(!result.data?.completed_at&&!SETUP.deferred)setupOpen();
  }catch{if(revision===HOME.revision){SETUP.error='No pudimos cargar la configuración inicial. Reintenta para continuar.';homeRender()}}
 }
 function setupApply(p={}){
@@ -972,7 +1003,7 @@ function setupClose(restore=true){
  if(restore&&SETUP.focus?.isConnected)SETUP.focus.focus({preventScroll:true});
 }
 async function setupOpen(){
- if(SETUP.opening||SETUP.unmount||HOME.mode!=='live'||HOME.saving.size||mqM.matches)return;
+ if(SETUP.opening||SETUP.unmount||HOME.mode!=='live'||HOME.saving.size)return;
  if(SETUP.error||SETUP.owner!==HOME.user.id){await setupLoad(HOME.user);if(!SETUP.error&&!SETUP.record?.completed_at&&SETUP.deferred)setupOpen();return}
  if(SETUP.record?.completed_at)return;
  SETUP.opening=true;const revision=HOME.revision;SETUP.focus=document.activeElement;setMenu(false);
@@ -980,7 +1011,7 @@ async function setupOpen(){
  try{
   const {mountInitialSetup}=await import('./src/components/InitialSetup.jsx');
   if(revision!==HOME.revision||!container.isConnected)return;
-  SETUP.background=['page','side','top','bmod','toast','scrim','arc'].map(id=>$(id)).filter(Boolean).map(el=>({el,inert:el.inert}));SETUP.background.forEach(({el})=>el.inert=true);document.body.style.overflow='hidden';
+  SETUP.background=['page','side','top','mobile-dock','bmod','toast','scrim','arc'].map(id=>$(id)).filter(Boolean).map(el=>({el,inert:el.inert}));SETUP.background.forEach(({el})=>el.inert=true);document.body.style.overflow='hidden';
   SETUP.unmount=mountInitialSetup(container,{client:homeClient,user:HOME.user,career:homeCareer(),saved:SETUP.record,renderPet:key=>pet(key,'idle'),
    onBusy:value=>{if(revision===HOME.revision){if(value)HOME.saving.add('setup');else HOME.saving.delete('setup')}},
    onClose:()=>{SETUP.deferred=true;setupClose();homeRender();setupLoad(HOME.user)},
@@ -1078,7 +1109,7 @@ function dash(){
  const m=homeModel(),active=HOME.mode==='live',empty=homeReady(m),pct=m.total?m.approvedCredits/m.total*100:0;
  const metrics=[[active?homeNum(pct)+'%':'—','Avance de la malla',active?`${m.done.length} de ${m.courses.length} cursos llevados`:'Tus cursos completados'],[active?homeNum(m.approvedCredits,Number.isInteger(m.approvedCredits)?0:2):'—','Créditos completados',`De ${homeNum(m.total)} créditos de tu malla`],[active?homeNum(m.weighted,2):'—','Ponderado general','Notas ponderadas por créditos'],[active?String(m.active.length):'—','Cursos matriculados','Según tu registro académico']];
  const content=empty||({graficos:homeGraphs,ponderado:homeWeighted,stats:homeStats,logros:homeAchievements,historia:homeHistory}[HOME.tab])(m);
- return `<div class="h-home"><div class="h-head"><div><h2>Tu avance, en un solo lugar.</h2><p class="h-muted">${active?homeEsc(m.career.nombre):'Tus notas, tus logros y todo lo que vas construyendo.'}</p></div><div class="h-head-actions">${HOME.mode==='live'?`<button class="h-btn" data-a="hreload"${HOME.saving.size?' disabled':''}>${svg('trend',16)}Actualizar</button>`:''}</div></div>${HOME.mode==='live'&&!mqM.matches&&(SETUP.error||(!SETUP.record?.completed_at&&SETUP.deferred))?`<div class="h-notice" role="status"><p>${homeEsc(SETUP.error||'Termina la configuración inicial para preparar tu malla y tu horario.')}</p><button class="h-btn" data-a="hsetup">${SETUP.error?'Reintentar':'Retomar configuración'}</button></div>`:''}${HOME.error?`<div class="h-error" role="alert"><p>${homeEsc(HOME.error)}</p><button class="h-btn" data-a="hretry">Reintentar</button></div>`:''}<div class="bento h-summary">${metrics.map((s,i)=>`<div class="blk st${i?'':' hl'}"><div class="sv">${s[0]}</div><div class="sl">${s[1]}</div>${i===0?`<div class="bar2"><i style="width:${Math.min(100,pct)}%"></i></div>`:''}<div class="h-sum-foot">${s[2]}</div></div>`).join('')}</div>${active?homeEnrollment(m):''}<div class="h-tabs" role="tablist" aria-label="Mi panel en Inicio">${HOME_TABS.map(([id,icon,label])=>`<button id="h-tab-${id}" role="tab" aria-selected="${HOME.tab===id}" aria-controls="h-panel" tabindex="${HOME.tab===id?0:-1}" data-a="htab" data-tab="${id}">${svg(icon,16)}${label}</button>`).join('')}</div><div id="h-panel" role="tabpanel" aria-labelledby="h-tab-${HOME.tab}" tabindex="0"${HOME.mode==='loading'?' aria-busy="true"':''}>${empty?`<section class="blk">${content}</section>`:content}</div><p class="h-foot">${HOME.mode==='live'?'Solo tú puedes ver tus notas, tus logros y tu historia académica.':'Inicia sesión con tu cuenta para consultar tu información académica.'}</p></div>`;
+ return `<div class="h-home"><div class="h-head"><div><h2>Tu avance, en un solo lugar.</h2><p class="h-muted">${active?homeEsc(m.career.nombre):'Tus notas, tus logros y todo lo que vas construyendo.'}</p></div><div class="h-head-actions">${HOME.mode==='live'?`<button class="h-btn" data-a="hreload"${HOME.saving.size?' disabled':''}>${svg('trend',16)}Actualizar</button>`:''}</div></div>${HOME.mode==='live'&&(SETUP.error||(!SETUP.record?.completed_at&&SETUP.deferred))?`<div class="h-notice" role="status"><p>${homeEsc(SETUP.error||'Termina la configuración inicial para preparar tu malla y tu horario.')}</p><button class="h-btn" data-a="hsetup">${SETUP.error?'Reintentar':'Retomar configuración'}</button></div>`:''}${HOME.error?`<div class="h-error" role="alert"><p>${homeEsc(HOME.error)}</p><button class="h-btn" data-a="hretry">Reintentar</button></div>`:''}<div class="bento h-summary">${metrics.map((s,i)=>`<div class="blk st${i?'':' hl'}"><div class="sv">${s[0]}</div><div class="sl">${s[1]}</div>${i===0?`<div class="bar2"><i style="width:${Math.min(100,pct)}%"></i></div>`:''}<div class="h-sum-foot">${s[2]}</div></div>`).join('')}</div>${active?homeEnrollment(m):''}<div class="h-tabs" role="tablist" aria-label="Mi panel en Inicio">${HOME_TABS.map(([id,icon,label])=>`<button id="h-tab-${id}" role="tab" aria-selected="${HOME.tab===id}" aria-controls="h-panel" tabindex="${HOME.tab===id?0:-1}" data-a="htab" data-tab="${id}">${svg(icon,16)}${label}</button>`).join('')}</div><div id="h-panel" role="tabpanel" aria-labelledby="h-tab-${HOME.tab}" tabindex="0"${HOME.mode==='loading'?' aria-busy="true"':''}>${empty?`<section class="blk">${content}</section>`:content}</div><p class="h-foot">${HOME.mode==='live'?'Solo tú puedes ver tus notas, tus logros y tu historia académica.':'Inicia sesión con tu cuenta para consultar tu información académica.'}</p></div>`;
 }
 function homeTab(id){
  if(!HOME_TABS.some(t=>t[0]===id))return;
@@ -1424,7 +1455,7 @@ async function mountStudyGroups(){
   curriculumUnmount=mountOfficialStudyGroups(container,{client:homeClient,user:HOME.user,courses:homeCareer().cursos,onBusy:value=>{if(revision===HOME.revision){if(value)HOME.saving.add('groups');else HOME.saving.delete('groups')}}});container.removeAttribute('aria-busy');
  }catch{if(render===curriculumRender&&container.isConnected)container.innerHTML=homeEmpty('No se pudo abrir Grupos de estudio','Reintenta para consultar las salas.',false)+'<button class="h-btn" data-a="hretry">Reintentar</button>'}
 }
-function buzon(category){if(!mqM.matches)return '<div id="official-mailbox" aria-busy="true"><p role="status">Preparando el buzón…</p></div>';return '<section class="blk">'+homeEmpty('Buzón de sugerencias','La recepción de sugerencias aún no está habilitada. No hay mensajes enviados ni archivados desde esta sección.',false)+'</section>'}
+function buzon(category){return '<div id="official-mailbox" aria-busy="true"><p role="status">Preparando el buzón…</p></div>'}
 async function mountMailbox(){
  const container=$('official-mailbox'),render=curriculumRender;
  try{
@@ -1481,7 +1512,7 @@ function go(name,parent){
  if(HOME.saving.size){toast('Espera a que termine el guardado');return}
  const changed=cur!==(parent||name)||kid!==(parent?name:null);
  cur=parent||name;kid=parent?name:null;if(parent)ex[parent]=true;
- $('title').textContent=name;renderNav();$('page').scrollTop=0;renderPage();navViewEnter(changed);
+ $('title').textContent=name;renderMobileDock();renderNav();$('page').scrollTop=0;renderPage();navViewEnter(changed);
 }
 function renderNav(){$('nav').innerHTML=NAV.map(x=>{
   const open=!!ex[x.n];
@@ -1498,11 +1529,11 @@ function applySide(){
   if(s!=='hidden')app.classList.remove('dopen');
   $('trig').setAttribute('aria-expanded',app.classList.contains('dopen'));
   $('brand').setAttribute('aria-label',s==='rail'?'Expandir menú':'Menú');$('brand').tabIndex=s==='rail'?0:-1;
-  syncSide();
+  syncSide();renderMobileDock();
 }
 function setDrawer(o,restore){
   if(o&&app.dataset.side!=='hidden')return;
-  app.classList.toggle('dopen',o);
+  app.classList.toggle('dopen',o);renderMobileDock();
   $('trig').setAttribute('aria-expanded',o);
   $('trig').setAttribute('aria-label',o?'Cerrar menú':'Abrir menú');
   syncSide();
@@ -1532,7 +1563,7 @@ const isDark=()=>root.dataset.theme?root.dataset.theme==='dark':mq.matches;
 /* Selector de tema: el indicador se estira hacia la opción elegida (el borde que avanza va primero) */
 function renderProfile(){const d=isDark();
   $('menu').innerHTML=`<div class="tg" data-s="${d?'dark':'light'}" role="radiogroup" aria-label="Tema"><span class="thm" aria-hidden="true"></span>${[['dark','moon','Oscuro'],['light','sun','Claro']].map(t=>`<button class="tgb ${t[0]}" role="radio" aria-checked="${(t[0]==='dark')===d}" data-t="${t[0]}">${svg(t[1],16)}<span>${t[2]}</span></button>`).join('')}</div>`
-  +[['arcade','gamepad','ARCADE'],...(!mqM.matches&&HOME.mode==='live'&&SETUP.owner===HOME.user?.id&&!SETUP.record?.completed_at?[['setup','wrench','Configuración inicial']]:[]),['out','logout','Cerrar sesión']].map(r=>`<button class="it" role="menuitem" data-a="${r[0]}">${ic(r[1])}<span class="l">${r[2]}</span></button>`).join('')}
+  +[['arcade','gamepad','ARCADE'],...(HOME.mode==='live'&&SETUP.owner===HOME.user?.id&&!SETUP.record?.completed_at?[['setup','wrench','Configuración inicial']]:[]),['out','logout','Cerrar sesión']].map(r=>`<button class="it" role="menuitem" data-a="${r[0]}">${ic(r[1])}<span class="l">${r[2]}</span></button>`).join('')}
 function syncTg(){const g=$('menu').querySelector('.tg');if(!g)return;const d=isDark();g.dataset.s=d?'dark':'light';g.querySelectorAll('.tgb').forEach(b=>b.setAttribute('aria-checked',(b.dataset.t==='dark')===d))}
 function setTheme(dark){if(dark===isDark())return;root.classList.add('tt');root.dataset.theme=dark?'dark':'light';syncTg();clearTimeout(ttm);ttm=setTimeout(()=>root.classList.remove('tt'),900)}
 $('menu').onclick=e=>{const t=e.target.closest('.tgb');if(t){setTheme(t.dataset.t==='dark');return}
@@ -1902,6 +1933,22 @@ const webSession=homeClient?createWebSessionGuard(homeClient,{authKey:webAuthSto
  onResume:()=>{document.body.style.visibility=''},
  onExpired:reason=>location.replace(new URL('./login.html?reason='+reason,location.href).href)
 }):null;
+
+/* La plataforma es informativa; el diseño responde al espacio y al tipo de entrada. */
+function renderMobileDock(){
+ const dock=$('mobile-dock');if(!dock)return;
+ dock.innerHTML=TABS.map(([label,icon,name])=>`<button type="button" data-mobile-page="${name}"${cur===name?' aria-current="page"':''}>${svg(icon,21)}<span>${label}</span></button>`).join('')+`<button type="button" data-mobile-menu aria-label="${app.classList.contains('dopen')?'Cerrar':'Abrir'} todas las secciones" aria-controls="side" aria-expanded="${app.classList.contains('dopen')}">${svg('listc',21)}<span>Menú</span></button>`;
+}
+$('mobile-dock').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.hasAttribute('data-mobile-menu'))setDrawer(!app.classList.contains('dopen'));else{setMenu(false);setDrawer(false);go(b.dataset.mobilePage)}});
+const ua=navigator.userAgent;
+root.dataset.platform=/android/i.test(ua)?'android':/iPad|iPhone|iPod/.test(ua)||navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1?'ios':'desktop';
+root.dataset.input=matchMedia('(pointer:coarse)').matches?'touch':'pointer';
+function syncViewport(){const v=window.visualViewport;app.dataset.keyboard=String(!!v&&window.innerHeight-v.height>140&&/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName));}
+window.visualViewport?.addEventListener('resize',syncViewport);
+document.addEventListener('focusin',syncViewport);document.addEventListener('focusout',()=>requestAnimationFrame(syncViewport));
+mqM.addEventListener('change',()=>{setMenu(false);renderMobileDock();renderProfile();if(!HOME.saving.size&&!SETUP.unmount)renderPage()});
+renderMobileDock();
+
 homeInit();
 window.addEventListener('focus',()=>{if(HOME.mode==='profile'&&HOME.user&&!HOME.saving.size)homeLoad(HOME.user)});
 if(homeClient)homeClient.auth.onAuthStateChange((event,session)=>{
@@ -1912,6 +1959,7 @@ if(homeClient)homeClient.auth.onAuthStateChange((event,session)=>{
 </script>
 </body>
 </html>
+
 
 
 
