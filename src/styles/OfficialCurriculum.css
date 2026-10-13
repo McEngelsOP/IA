@@ -148,3 +148,34 @@
  .oc .oc-scroller{height:420px;height:clamp(320px,55dvh,520px)}
  .oc .oc-bottom{line-height:1.5;overflow-wrap:anywhere}
 }
+
+/* Academic actions and selected states stay distinct in both themes. */
+.oc-workspace-controls{padding:0 22px 16px;display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.oc-workspace-controls .oc-modes{padding:0;gap:6px}
+.oc .oc-modes button{display:flex;align-items:center;justify-content:center;gap:7px;border:1px solid var(--bar-b);min-height:44px}
+.oc .oc-modes button.on,.oc .oc-submodes button[aria-pressed=true],.oc .oc-view-switch button[aria-pressed=true],.oc .oc-areas button[aria-pressed=true]{background:#254c3f;color:#fff;border:1px solid #254c3f;font-weight:600;box-shadow:0 2px 5px var(--sh)}
+.oc .oc-modes button.on:hover,.oc .oc-submodes button[aria-pressed=true]:hover,.oc .oc-areas button[aria-pressed=true]:hover{background:#18392e;color:#fff}
+.oc-explore-select,.oc-semester-number{display:flex;align-items:center;gap:10px;font-size:14px}
+.oc select{color:var(--txt);background:var(--cut);font:inherit;border:1px solid var(--bar-b);border-radius:10px;padding:10px 12px;min-height:44px;max-width:100%}
+.oc-submodes{display:flex;gap:6px}.oc .oc-semester-edit{margin-left:auto;font-size:13px;min-height:44px}
+.oc-legend{display:flex;flex-wrap:wrap;gap:16px;align-items:center;padding:14px 22px;font-size:13px;border-bottom:1px solid var(--bar-b)}
+.oc-legend>span{display:flex;align-items:center;gap:7px}.oc-legend>span::before{content:'';width:12px;height:12px;border-radius:3px;flex:none}
+.oc-legend .passed::before{background:#23764a}.oc-legend .enrolled::before{background:#2463a0}.oc-legend .planned::before{background:#aa6410}
+.oc-legend label{margin-left:auto;display:flex;align-items:center;gap:9px;min-height:44px;cursor:pointer}.oc-legend input{width:18px;height:18px;accent-color:#254c3f}
+.oc button.oc-node.is-done{background:color-mix(in srgb,#23764a 18%,var(--cut));border:2px solid var(--oc-green)}
+.oc button.oc-node.is-enrolled{background:color-mix(in srgb,#2463a0 18%,var(--cut));border:2px solid #2463a0}
+.oc button.oc-node.is-planned{background:color-mix(in srgb,#aa6410 18%,var(--cut));border:2px solid var(--oc-amber);color:var(--txt)}
+.oc-node.is-planned .oc-credits{color:var(--oc-muted)}
+.oc button.oc-node.is-unavailable:not(.is-enrolled):not(.is-done){border-style:dashed}
+.oc button.oc-node.is-muted:not(.is-selected){background:var(--bg);border-color:var(--bar-b);color:var(--oc-muted);box-shadow:none}
+.oc button.oc-node.is-selected{background:#254c3f!important;color:#fff!important;border:2px solid #143428!important;outline:2px solid var(--ic);outline-offset:2px}
+.oc-node.is-selected .oc-credits{color:#fff!important}
+.oc [hidden]{display:none!important}
+.oc-semester-number{margin-top:16px;flex-wrap:wrap}
+:root[data-theme=dark] .oc button.oc-node.is-enrolled{border-color:#8dbef0}
+:root[data-theme=dark] .oc .oc-modes button.on,:root[data-theme=dark] .oc .oc-areas button[aria-pressed=true],:root[data-theme=dark] .oc .oc-submodes button[aria-pressed=true],:root[data-theme=dark] .oc .oc-view-switch button[aria-pressed=true]{background:#b7ddcb;color:#102c20;border-color:#b7ddcb}
+@media(max-width:860px){.oc-workspace-controls{padding:0 16px 16px;gap:10px}.oc-workspace-controls .oc-modes{display:flex;width:100%}.oc-workspace-controls .oc-modes button{flex:1;white-space:normal;min-width:0;padding:9px 6px}.oc-explore-select{flex:1;min-width:0}.oc-explore-select select{min-width:0;font-size:16px}.oc .oc-semester-edit{margin-left:0;width:100%}.oc-legend{padding:10px 16px;gap:12px}.oc-legend label{width:100%;margin-left:0}.oc-semester-number select{font-size:16px}}
+
+.oc button.oc-node:disabled{cursor:not-allowed;opacity:1}
+.oc[aria-busy=true] button:disabled{cursor:wait}
+.oc-legend label:has(input:disabled){cursor:default;color:var(--oc-muted)}
