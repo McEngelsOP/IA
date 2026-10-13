@@ -10,6 +10,10 @@ const INITIAL_MESSAGE = {
 }
 
 const ERROR_MESSAGES = {
+  personal_configuration_missing: 'No tienes claves personales activas. Abre Mi IA en tu perfil o cambia al servicio de la app.',
+  credentials_unavailable: 'No pudimos consultar tu configuración de IA. Reintenta.',
+  user_rate_limited: 'Alcanzaste tu límite de consultas. Reintenta más tarde.',
+  global_rate_limited: 'La cuota compartida está agotada. Puedes configurar tus claves en Mi IA.',
   configuration_missing: 'El asesor aún no está configurado en el servidor.',
   unauthorized: 'Tu sesión venció. Vuelve a iniciar sesión para consultar al asesor.',
   function_missing: 'El asesor aún no está disponible. Contacta al administrador.',
@@ -236,5 +240,3 @@ export default function StudyAdvisor({ planCourses, careerName, onClose, embedde
     </div>
   )
 }
-
-

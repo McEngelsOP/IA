@@ -18,7 +18,7 @@ Las piezas principales son `TextToTasks.jsx`, `OfficialCalendar.jsx`, `OfficialC
 
 `supabase/text_tasks_semester.sql` añade `calendar_tasks.course_id` manteniendo la RLS existente de propiedad del alumno. La RPC `set_semester_courses` usa `SECURITY INVOKER`, comprueba `auth.uid()` y actualiza matrícula y `student_setup.draft.enrolled` en una misma transacción. Respeta RLS y rechaza cursos ya completados; conserva estados ajenos a la matrícula retirada. Su ejecución está concedida solo a `authenticated`.
 
-La Edge Function `text-to-tasks` verifica la sesión, consulta carrera y cursos matriculados y reutiliza la moderación, `advisor_usage`, `advisor_provider_reserve` y `advisor_provider_report` del asesor. Las claves permanecen en secretos del servidor. Gemini, Groq y OpenRouter comparten límites y pausas; el siguiente proveedor puede atender cuota agotada, timeout, indisponibilidad, HTTP 401/403/404/410 o respuestas malformadas. Una negativa explícita de seguridad detiene el intento.
+La Edge Function `text-to-tasks` verifica la sesión, consulta carrera y cursos matriculados y reutiliza la moderación del asesor. La ruta compartida conserva `advisor_usage`, `advisor_provider_reserve` y `advisor_provider_report`, con claves en secretos del servidor. La ruta personal usa solo las claves propias activas y sus cuotas, sin fallback al servicio compartido; se documenta en [Mi IA](personal-ai-keys.md). Gemini, Groq y OpenRouter admiten cambio al siguiente proveedor de la ruta ante cuota agotada, timeout, indisponibilidad, HTTP 401/403/404/410 o respuestas malformadas. Una negativa explícita de seguridad detiene el intento.
 
 **Comprobar proveedores de IA** solo aparece para administradores y el servidor vuelve a verificar `is_app_admin`. Realiza una petición real por proveedor configurado con los secretos existentes, consume cuota y devuelve estado/modelo, sin exponer claves.
 
@@ -29,7 +29,7 @@ supabase functions deploy text-to-tasks
 supabase functions deploy study-advisor
 ```
 
-En el entorno revisado se desplegaron `text-to-tasks` v2 y `study-advisor` v11. La publicación del frontend en Vercel sigue sin confirmarse: la inspección del proyecto `lyra-ia` devolvió 403 por permisos.
+En el entorno revisado están desplegadas `text-to-tasks` v3, `study-advisor` v12 y `personal-ai` v1. La publicación anterior del frontend en Vercel se confirmó para el commit `78eda7b`; la publicación de la extensión de claves personales aún no está confirmada.
 
 ## Verificación y límites de la evidencia
 
@@ -42,6 +42,6 @@ node tests/textTasks.browser.mjs
 
 La prueba de navegador requiere Playwright y Chromium disponibles; admite `PLAYWRIGHT_MODULE` y `REVIEW_BROWSER` para indicar sus ubicaciones. La revisión final de interfaz concluyó «Ship», sin correcciones obligatorias.
 
-La prueba real de APIs externas quedó bloqueada por la revisión automática de aprobación al intentar usar credenciales históricas. Existe metadata previa de éxito de Gemini; la disponibilidad real de Groq y OpenRouter permanece sin confirmar. Las pruebas simuladas no certifican esa disponibilidad.
+Dos comprobaciones reales del servicio compartido confirmaron respuestas de Groq y OpenRouter. Gemini devolvió timeout o indisponibilidad. La generación real de tareas respondió mediante Groq. Las verificaciones posteriores de claves personales aprobaron 29 pruebas relacionadas, el build de producción y el navegador en 1366, 390 y 320 px; su alcance y pruebas de seguridad se detallan en [Mi IA](personal-ai-keys.md). La disponibilidad observada puede cambiar.
 
 No se declara aprobada la suite completa: su ejecución más amplia encontró la dependencia ausente `@electric-sql/pglite` y un problema de saltos de línea del catálogo por la materialización local. Estas limitaciones son distintas de las verificaciones relacionadas aprobadas.

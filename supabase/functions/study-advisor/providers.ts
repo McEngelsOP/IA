@@ -1,5 +1,5 @@
 export const DEFAULT_GEMINI_MODEL = "gemini-3.5-flash-lite";
-const DEFAULTS: Record<string, string> = {
+export const DEFAULTS: Record<string, string> = {
   gemini: DEFAULT_GEMINI_MODEL,
   groq: "openai/gpt-oss-20b",
   openrouter: "openrouter/free",
@@ -13,7 +13,7 @@ const refusalReasons = new Set([
   "SAFETY", "BLOCKLIST", "PROHIBITED_CONTENT", "SPII", "IMAGE_SAFETY",
   "content_filter", "safety", "refusal",
 ]);
-type Provider = { name: string; model: string; key: string };
+export type Provider = { name: string; model: string; key: string };
 type Gate = { allowed: boolean; retryAfterSeconds?: number };
 type Outcome = {
   answer?: string; source?: string; model?: string; error?: string;

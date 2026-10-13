@@ -1096,7 +1096,7 @@ function homeReset(mode='guest',clearFocus=true){
  HOME_WIDGETS.calendarLoading=mode==='loading';HOME_WIDGETS.focusLoading=mode==='loading';HOME_WIDGETS.calendarError=false;HOME_WIDGETS.focusError=false;
  if(clearFocus)kReset();
 }
-function homeRender(){if(['Inicio','Malla Curricular','Calendario/Horarios','Grupos de estudio','Mod Focus','Herramientas'].includes(cur))renderPage()}
+function homeRender(){if(['Inicio','Malla Curricular','Calendario/Horarios','Grupos de estudio','Mod Focus','Herramientas','Mi IA'].includes(cur))renderPage()}
 async function homeLoad(user){
  homeReset('loading',HOME.user?.id!==user.id);HOME.user=user;renderProfile();
  const revision=HOME.revision;
@@ -1375,12 +1375,13 @@ let curriculumUnmount=null,curriculumRender=0;
 function renderPage(){
  curriculumRender++;curriculumUnmount?.();curriculumUnmount=null;
  const y=$('page').scrollTop;
- const html=cur==='Inicio'?dash():cur==='Malla Curricular'?malla():cur==='Calendario/Horarios'?cal2():cur==='Grupos de estudio'?salas():cur==='Mod Focus'?focus():cur==='Herramientas'?toolSurface(kid):cur==='Buzón de sugerencias'?buzon(kid):'';
+ const html=cur==='Inicio'?dash():cur==='Malla Curricular'?malla():cur==='Calendario/Horarios'?cal2():cur==='Grupos de estudio'?salas():cur==='Mod Focus'?focus():cur==='Herramientas'?toolSurface(kid):cur==='Mi IA'?personalAiSurface():cur==='Buzón de sugerencias'?buzon(kid):'';
  $('page').innerHTML='<div class="view-surface">'+html+'</div>';$('page').scrollTop=y;
  if($('wh'))kWheels();
  if($('official-curriculum'))mountCurriculum();
  if($('official-calendar'))mountCalendar();
  if($('official-tool'))mountTool();
+ if($('personal-ai-settings'))mountPersonalAi();
  if($('official-mailbox'))mountMailbox();
  if($('official-study-groups'))mountStudyGroups();
  if(cur==='Mod Focus'){if(fx.st==='run')kPaint(fx.left);kLoad()}
@@ -1647,6 +1648,18 @@ async function mountMailbox(){
   curriculumUnmount=mountOfficialMailbox(container,{draftKey:HOME.user?.id||'guest',category:kid,courses:HOME.mode==='live'?homeCareer().cursos:[],onCategory:name=>go(name,'Buzón de sugerencias')});container.removeAttribute('aria-busy');
  }catch{if(render===curriculumRender&&container.isConnected)container.innerHTML=homeEmpty('No se pudo abrir el buzón','Reintenta para volver a abrirlo.',false)+'<button class="h-btn" data-a="hretry">Reintentar</button>'}
 }
+function personalAiSurface(){
+ if(HOME.mode!=='live')return '<section class="blk">'+homeEmpty('Mi IA','Inicia sesión para configurar tus claves personales.')+'</section>';
+ return '<div id="personal-ai-settings" aria-busy="true">Cargando tu configuración de IA…</div>';
+}
+async function mountPersonalAi(){
+ const container=$('personal-ai-settings'),render=curriculumRender,revision=HOME.revision;
+ try{
+  const {mountPersonalAISettings}=await import('./src/components/PersonalAISettings.jsx');
+  if(render!==curriculumRender||revision!==HOME.revision||!container.isConnected)return;
+  curriculumUnmount=mountPersonalAISettings(container,{client:homeClient,user:HOME.user,onClose:()=>go('Inicio'),onBusy:value=>{if(revision===HOME.revision){if(value)HOME.saving.add('personal-ai');else HOME.saving.delete('personal-ai')}}});container.removeAttribute('aria-busy');
+ }catch{if(render===curriculumRender&&container.isConnected)container.innerHTML=homeEmpty('Configuración no disponible','Reintenta para consultar tus claves.',false)+'<button class="h-btn" data-a="hretry">Reintentar</button>'}
+}
 function toolSurface(tool){
  if(!['Asesor IA','Brújula IA','Recursos'].includes(tool))return '';
  if(HOME.mode==='loading')return '<section class="blk" role="status">Cargando tus datos…</section>';
@@ -1752,11 +1765,12 @@ const isDark=()=>root.dataset.theme?root.dataset.theme==='dark':mq.matches;
 /* Selector de tema: el indicador se estira hacia la opción elegida (el borde que avanza va primero) */
 function renderProfile(){const d=isDark();
   $('menu').innerHTML=`<div class="tg" data-s="${d?'dark':'light'}" role="radiogroup" aria-label="Tema"><span class="thm" aria-hidden="true"></span>${[['dark','moon','Oscuro'],['light','sun','Claro']].map(t=>`<button class="tgb ${t[0]}" role="radio" aria-checked="${(t[0]==='dark')===d}" data-t="${t[0]}">${svg(t[1],16)}<span>${t[2]}</span></button>`).join('')}</div>`
-  +[['arcade','gamepad','ARCADE'],...(HOME.mode==='live'&&SETUP.owner===HOME.user?.id&&!SETUP.record?.completed_at?[['setup','wrench','Configuración inicial']]:[]),['out','logout','Cerrar sesión']].map(r=>`<button class="it" role="menuitem" data-a="${r[0]}">${ic(r[1])}<span class="l">${r[2]}</span></button>`).join('')}
+  +[...(HOME.mode==='live'?[['personal-ai','sparkles','Mi IA · claves personales']]:[]),['arcade','gamepad','ARCADE'],...(HOME.mode==='live'&&SETUP.owner===HOME.user?.id&&!SETUP.record?.completed_at?[['setup','wrench','Configuración inicial']]:[]),['out','logout','Cerrar sesión']].map(r=>`<button class="it" role="menuitem" data-a="${r[0]}">${ic(r[1])}<span class="l">${r[2]}</span></button>`).join('')}
 function syncTg(){const g=$('menu').querySelector('.tg');if(!g)return;const d=isDark();g.dataset.s=d?'dark':'light';g.querySelectorAll('.tgb').forEach(b=>b.setAttribute('aria-checked',(b.dataset.t==='dark')===d))}
 function setTheme(dark){if(dark===isDark())return;root.classList.add('tt');root.dataset.theme=dark?'dark':'light';syncTg();clearTimeout(ttm);ttm=setTimeout(()=>root.classList.remove('tt'),900)}
 $('menu').onclick=e=>{const t=e.target.closest('.tgb');if(t){setTheme(t.dataset.t==='dark');return}
   const b=e.target.closest('.it');if(!b)return;const a=b.dataset.a;
+  if(a==='personal-ai'){setMenu(false);go('Mi IA');return}
   if(a==='arcade'){setMenu(false);arcOpen();return}
   if(a==='setup'){setMenu(false);setupOpen();return}
   homeSignOut();};

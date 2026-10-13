@@ -1,4 +1,5 @@
-import { configuredProviders, generateAdvisorAnswer } from "./providers.ts";
+import { loadAiRoute } from './aiRouting.ts';
+import { generateAdvisorAnswer } from "./providers.ts";
 import { checkProfanity } from "./profanityFilter.ts";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -216,15 +217,19 @@ export function createAdvisorHandler({
       ].join("\n\n");
       return reply(answer, await usage(false), "curriculum");
     }
-    const providers = configuredProviders(env);
     const serverKey = env("SUPABASE_SERVICE_ROLE_KEY");
-    if (!providers.length || !serverKey) return json({ error: "configuration_missing" }, 503);
+    if (!serverKey) return json({ error: "configuration_missing" }, 503);
     // Este cliente solo reserva y registra intentos del proveedor. El historial
     // y la cuota del alumno conservan el cliente autenticado y su RLS.
     const providerClient = createClient(url, serverKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
-    const quota = await usage(true);
+    let route;
+    try { route = await loadAiRoute({ client, server: providerClient, userId: user.id, env }); }
+    catch { return json({ error: 'credentials_unavailable' }, 503); }
+    const providers = route.providers;
+    if (!providers.length) return json({ error: route.personal ? 'personal_configuration_missing' : 'configuration_missing' }, 503);
+    const quota = await route.usage(true);
     if (!quota) return json({ error: "quota_unavailable" }, 503);
     if (!quota.allowed)
       return json({ error: quota.reason, usage: quota }, 429, {
@@ -278,19 +283,8 @@ export function createAdvisorHandler({
       context,
       history,
       fetch,
-      reserve: async (provider, activeModel) => {
-        const { data, error } = await providerClient.rpc("advisor_provider_reserve", {
-          p_provider: provider, p_model: activeModel,
-        });
-        return error || !data ? null : data;
-      },
-      report: async (provider, activeModel, status, wait, duration) => {
-        const { error } = await providerClient.rpc("advisor_provider_report", {
-          p_provider: provider, p_model: activeModel, p_status: status,
-          p_retry_after_seconds: wait, p_duration_ms: duration,
-        });
-        if (error) throw new Error("provider_report_failed");
-      },
+      reserve: route.reserve,
+      report: route.report,
     });
     if (result.answer) return reply(result.answer, quota, result.source || "advisor");
     if (result.error === "content_blocked")
@@ -309,4 +303,3 @@ export function createAdvisorHandler({
     return json({ error: result.error || "provider_unavailable", usage: quota }, 503);
   };
 }
-
