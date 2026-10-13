@@ -8,6 +8,18 @@ export function initializeAccessBackground({
 } = {}) {
   const $ = id => document.getElementById(id)
   const landscape = $('landscape')
+  // Older browsers without lvh keep the first viewport size through keyboard/bar changes.
+  let sceneWidth = 0
+  function sizeScene() {
+    const view = document.defaultView
+    if (!view) return
+    const width = Math.round(view.innerWidth)
+    if (!Number.isFinite(width) || width <= 0 || !Number.isFinite(view.innerHeight) || width === sceneWidth) return
+    sceneWidth = width
+    document.documentElement?.style.setProperty('--scene-height', `${view.innerHeight}px`)
+  }
+  sizeScene()
+  document.defaultView?.addEventListener?.('resize', sizeScene)
   let manualPause = false
   let backgroundStarted = false, backgroundFailed = false, playRevision = 0
   function motion() {
