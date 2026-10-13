@@ -89,44 +89,27 @@ export const edgePath = (e, byId) => {
 export const completedCredits = (malla, done) =>
   malla.cursos.reduce((total, course) => total + (done.has(course.id) ? course.cr : 0), 0)
 
-export const canTake = (course, done, credits) => !done.has(course.id)
+export const enrolledIds = statuses => new Set(Object.keys(statuses || {}).filter(id => statuses[id]?.status === 'matriculado'))
+
+export const canTake = (course, done, credits, statuses = {}) => !!course && !done.has(course.id)
+  && statuses[course.id]?.status !== 'matriculado'
   && course.r.every(id => done.has(id)) && (!course.rc || credits >= course.rc)
 
-// Preview changes before asking the student to confirm a prerequisite cascade.
-// Removing a course preserves its prerequisites and removes only dependent courses.
+// Future prerequisites may be in progress; approval remains a condition, not a fact.
+export function canPlan(malla, course, done, statuses = {}) {
+  if (!course || done.has(course.id) || statuses[course.id]?.status === 'matriculado') return false
+  const afterCurrent = new Set([...done, ...enrolledIds(statuses)])
+  return canTake(course, afterCurrent, completedCredits(malla, afterCurrent))
+}
+
+// Only the explicitly selected course changes. Never fabricate prerequisite approvals.
 export function previewCompleted(malla, done, id) {
   const next = new Set(done)
   if (!malla.byId[id]) return { next, added: [], removed: [], blocked: null }
-  if (next.has(id)) {
-    next.delete(id)
-    let changed = true
-    while (changed) {
-      changed = false
-      const credits = completedCredits(malla, next)
-      for (const course of malla.cursos) {
-        if (next.has(course.id) && (course.r.some(req => !next.has(req))
-          || (course.rc && credits - course.cr < course.rc))) {
-          next.delete(course.id)
-          changed = true
-        }
-      }
-    }
-  } else {
-    next.add(id)
-    bfs(id, key => malla.byId[key]?.r).forEach(key => next.add(key))
-    const credits = completedCredits(malla, next)
-    const blocked = malla.cursos.find(course => next.has(course.id) && course.rc && credits - course.cr < course.rc)
-    if (blocked) return { next: new Set(done), added: [], removed: [], blocked }
-  }
-  return {
-    next,
-    added: malla.cursos.filter(course => next.has(course.id) && !done.has(course.id)),
-    removed: malla.cursos.filter(course => done.has(course.id) && !next.has(course.id)),
-    blocked: null
-  }
+  next.has(id) ? next.delete(id) : next.add(id)
+  return { next, added: malla.cursos.filter(c => next.has(c.id) && !done.has(c.id)), removed: malla.cursos.filter(c => done.has(c.id) && !next.has(c.id)), blocked: null }
 }
 
-export function validPlan(malla, plan, done) {
-  const credits = completedCredits(malla, done)
-  return new Set([...plan].filter(id => malla.byId[id] && canTake(malla.byId[id], done, credits)))
+export function validPlan(malla, plan, done, statuses = {}) {
+  return new Set([...plan].filter(id => canPlan(malla, malla.byId[id], done, statuses)))
 }

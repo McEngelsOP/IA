@@ -1003,6 +1003,7 @@ import { createWebSessionGuard, webAuthStorageKey } from './src/lib/webSession.j
 import { CARRERAS } from './src/data/carreras.js';
 import { CAREER_KEYS, careerLabel } from './src/data/careerOptions.js';
 import { LOGROS } from './src/lib/logros.js';
+import { buildMalla, validPlan } from './src/lib/curriculumGraph.js';
 
 const I={
 home:'<path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
@@ -1058,7 +1059,7 @@ const HOME_PASS=10.5;
 const homeEsc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const homeNum=(n,d=0)=>Number.isFinite(n)?n.toLocaleString('es-PE',{minimumFractionDigits:d,maximumFractionDigits:d}):'—';
 const homeDate=value=>{const date=new Date(value);return Number.isNaN(date.getTime())?'':date.toLocaleDateString('es-PE',{day:'numeric',month:'short',year:'numeric',timeZone:'America/Lima'})};
-const HOME={tab:'graficos',cycle:'1',mode:'loading',user:null,career:'ia',careerDraft:'',done:new Set(),plan:new Set(),grades:{},drafts:{},feedback:{},statuses:{},achievements:{},profile:null,error:'',saving:new Set(),revision:0};
+const HOME={tab:'graficos',cycle:'all',mode:'loading',user:null,career:'ia',careerDraft:'',done:new Set(),plan:new Set(),grades:{},drafts:{},feedback:{},statuses:{},achievements:{},profile:null,error:'',saving:new Set(),revision:0};
 const SETUP={record:null,error:'',unmount:null,opening:false,owner:null,deferred:false,focus:null,background:[]};
 let homeClient=null;
 try{
@@ -1088,7 +1089,7 @@ function homeReset(mode='guest',clearFocus=true){
  setupClose(false);SETUP.record=null;SETUP.error='';SETUP.owner=null;
  if(clearFocus)SETUP.deferred=false;
  HOME.revision++;HOME.mode=mode;HOME.user=null;HOME.career='ia';HOME.careerDraft='';HOME.profile=null;
- HOME.done=new Set();HOME.plan=new Set();HOME.grades={};HOME.drafts={};HOME.feedback={};HOME.statuses={};HOME.achievements={};HOME.error='';HOME.saving=new Set();
+ HOME.cycle='all';HOME.done=new Set();HOME.plan=new Set();HOME.grades={};HOME.drafts={};HOME.feedback={};HOME.statuses={};HOME.achievements={};HOME.error='';HOME.saving=new Set();
  if(clearFocus)kReset();
 }
 function homeRender(){if(['Inicio','Malla Curricular','Calendario/Horarios','Grupos de estudio','Mod Focus','Herramientas'].includes(cur))renderPage()}
@@ -1113,9 +1114,9 @@ async function homeLoad(user){
   HOME.profile=profile;HOME.career=profile.carrera;HOME.done=new Set(progress?.done||[]);HOME.plan=new Set(progress?.plan||[]);
   for(const row of grades||[]){const value=Number(row.grade);if(row.grade!==null&&Number.isFinite(value)&&value>=0&&value<=20)HOME.grades[row.course_id]=value}
   HOME.statuses=Object.fromEntries((statuses||[]).map(r=>[r.course_id,r]));
+  HOME.plan=validPlan(buildMalla(homeCareer()),HOME.plan,HOME.done,HOME.statuses);
   HOME.achievements=Object.fromEntries((achievements||[]).map(r=>[r.logro,r.earned_at]));
-  const completed=homeModel().perCycle;
-  HOME.cycle=String(completed.at(-1)?.num??Object.keys(homeCareer().ciclos).map(Number).find(n=>n>0)??1);
+  HOME.cycle='all';
   HOME.mode='live';homeRender();
   await setupLoad(user,revision);
  }catch{
@@ -1130,6 +1131,7 @@ async function setupLoad(user,revision=HOME.revision){
   if(result.error)throw result.error;
   SETUP.record=result.data;SETUP.error='';SETUP.owner=user.id;
   if(result.data?.completed_at)setupApply(result.data.preferences);
+  if(result.data?.preferences?.semester)HOME.cycle=String(result.data.preferences.semester);
   homeRender();renderProfile();
   if(!result.data?.completed_at&&!SETUP.deferred)setupOpen();
  }catch{if(revision===HOME.revision){SETUP.error='No pudimos cargar la configuración inicial. Reintenta para continuar.';homeRender()}}
@@ -1605,7 +1607,7 @@ async function mountTool(){
  try{
   const {mountOfficialTools}=await import('./src/components/OfficialTools.jsx');
   if(render!==curriculumRender||revision!==HOME.revision||!container.isConnected)return;
-  curriculumUnmount=mountOfficialTools(container,{tool:kid,client:homeClient,user:HOME.user,career:homeCareer(),preferences:SETUP.record?.preferences||{},done:[...HOME.done],plan:[...HOME.plan],onClose:()=>go('Inicio'),onPlan:plan=>{if(revision===HOME.revision)HOME.plan=new Set(plan)},onBusy:value=>{if(revision===HOME.revision){if(value)HOME.saving.add('tool');else HOME.saving.delete('tool')}}});container.removeAttribute('aria-busy');
+  curriculumUnmount=mountOfficialTools(container,{tool:kid,client:homeClient,user:HOME.user,career:homeCareer(),preferences:SETUP.record?.preferences||{},statuses:HOME.statuses,done:[...HOME.done],plan:[...HOME.plan],onClose:()=>go('Inicio'),onPlan:plan=>{if(revision===HOME.revision)HOME.plan=new Set(plan)},onBusy:value=>{if(revision===HOME.revision){if(value)HOME.saving.add('tool');else HOME.saving.delete('tool')}}});container.removeAttribute('aria-busy');
  }catch{if(render===curriculumRender&&container.isConnected)container.innerHTML=homeEmpty('Herramienta no disponible','Reintenta para abrirla.',false)+'<button class="h-btn" data-a="hretry">Reintentar</button>'}
 }
 
@@ -1624,7 +1626,8 @@ async function mountCurriculum(){
   const current=()=>revision===HOME.revision;
   curriculumUnmount=mountOfficialCurriculum(container,{
    career:HOME.career,user:HOME.user,client:homeClient,sessionMode:HOME.mode,
-   initialDone:HOME.done,initialPlan:HOME.plan,statuses:HOME.statuses,initialGrades:HOME.grades,
+   initialDone:HOME.done,initialPlan:HOME.plan,statuses:HOME.statuses,initialGrades:HOME.grades,currentSemester:SETUP.record?.preferences?.semester,
+   onSemesterChange:semester=>{if(current()){SETUP.record={...(SETUP.record||{}),preferences:{...(SETUP.record?.preferences||{}),semester}};HOME.cycle=String(semester)}},
    onProgressChange:(done,plan)=>{if(current()){HOME.done=new Set(done);HOME.plan=new Set(plan)}},
    onStatusChange:(id,row)=>{if(current()){if(row)HOME.statuses[id]=row;else delete HOME.statuses[id]}},
    onGradeChange:(id,value)=>{if(current()){if(value===null)delete HOME.grades[id];else HOME.grades[id]=value}},
@@ -2108,6 +2111,7 @@ if(homeClient)homeClient.auth.onAuthStateChange((event,session)=>{
 </script>
 </body>
 </html>
+
 
 
 
