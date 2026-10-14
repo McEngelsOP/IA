@@ -49,6 +49,11 @@
 .sc .ev2.sc-short small{display:none}
 .sc .ev2:focus-visible{z-index:2}
 .sc-view-day .wk{min-width:0}
+.sc .sc-overlap-group{position:absolute;box-sizing:border-box;border:1px dashed var(--ic);border-radius:10px;background:var(--panel);overflow:auto;padding:5px;z-index:1;scrollbar-width:thin}
+.sc .sc-overlap-label{display:block;font-size:11px;line-height:1.4;color:var(--txt);padding:3px 2px 7px}
+.sc .sc-overlap-list{display:flex;flex-direction:column;gap:6px}
+.sc .ev2.sc-cluster-item{position:relative;inset:auto;width:100%;height:auto;min-height:64px;flex:none;text-align:left}
+.sc .ev2.sc-cluster-item b{-webkit-line-clamp:3}
 
 
 /* Agenda móvil: acceso directo a eventos y tareas sin comprimir la semana. */

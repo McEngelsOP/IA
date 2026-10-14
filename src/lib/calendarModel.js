@@ -47,6 +47,21 @@ export function layoutEvents(events) {
     return assigned.map(e => ({ ...e, lanes: ends.length }))
   })
 }
+
+// Una sola columna por día. Los cruces se presentan como una lista dentro
+// del mismo intervalo, sin convertir cada curso en una franja lateral.
+export function timedEventGroups(events) {
+  const sorted = events.filter(e => e.start_time && e.end_time)
+    .map(e => ({ ...e, start: minutes(e.start_time), end: minutes(e.end_time) }))
+    .sort((a, b) => a.start - b.start || a.end - b.end)
+  const groups = []
+  for (const event of sorted) {
+    const last = groups.at(-1)
+    if (last && event.start < last.end) { last.events.push(event); last.end = Math.max(last.end, event.end) }
+    else groups.push({ id: event.id, start: event.start, end: event.end, events: [event] })
+  }
+  return groups
+}
 const validTime = value => {
   if (!/^\d{2}:\d{2}(:\d{2})?$/.test(value || '')) return false
   const [hour, minute, second = 0] = value.split(':').map(Number)
