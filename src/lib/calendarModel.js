@@ -62,3 +62,22 @@ export function validateEvent(e) {
   return ''
 }
 
+// Solo columnas editables: layoutEvents añade start/end/lane/lanes al dibujar.
+export function eventPayload(event) {
+  return {
+    title: event.title.trim(), description: event.description || '',
+    date: event.date || null, start_date: event.start_date || null, end_date: event.end_date || null,
+    color: event.color || 'gris', event_type: event.event_type || 'personal',
+    start_time: event.start_time || null, end_time: event.end_time || null,
+    location: (event.location || '').trim(), course_id: event.course_id || null,
+    repeat_rule: event.repeat_rule || 'none',
+    repeat_until: event.repeat_rule === 'weekly' ? event.repeat_until || null : null,
+  }
+}
+export const CALENDAR_PIXELS_PER_MINUTE = 1.5
+export function eventGeometry(event, firstHour) {
+  return { top: (event.start - firstHour * 60) * CALENDAR_PIXELS_PER_MINUTE,
+    height: Math.max(12, (event.end - event.start) * CALENDAR_PIXELS_PER_MINUTE - 4) }
+}
+
+
