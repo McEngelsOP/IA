@@ -12,7 +12,8 @@ export default defineConfig({
       input: {
         pagina: 'pagina.html',
         login: 'login.html',
-        mobile: 'ios-android.html'
+        mobile: 'ios-android.html',
+        promocional: 'Pagina promocional/index.html'
       }
     }
   },
@@ -21,3 +22,4 @@ export default defineConfig({
     open: '/login.html'
   }
 })
+

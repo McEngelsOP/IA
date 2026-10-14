@@ -5,5 +5,12 @@
       "destination": "/login.html",
       "permanent": false
     }
+  ],
+  "rewrites": [
+    {
+      "source": "/promocional",
+      "destination": "/Pagina%20promocional/index.html"
+    }
   ]
 }
+
