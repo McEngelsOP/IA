@@ -1005,6 +1005,7 @@ import { CARRERAS } from './src/data/carreras.js';
 import { CAREER_KEYS, careerLabel } from './src/data/careerOptions.js';
 import { LOGROS } from './src/lib/logros.js';
 import { buildMalla, validPlan } from './src/lib/curriculumGraph.js';
+import { createWebNavigation } from './src/lib/webNavigation.js';
 import { mountHomeEnhancements } from './src/lib/homeEnhancements.js';
 
 const I={
@@ -1307,8 +1308,11 @@ function dash(){
  const content=empty||({graficos:homeGraphs,ponderado:homeWeighted,stats:homeStats,logros:homeAchievements,historia:homeHistory}[HOME.tab])(m);
  return `<div class="h-home">${homeHero(m,active,pct)}${HOME.mode==='live'&&(SETUP.error||(!SETUP.record?.completed_at&&SETUP.deferred))?`<div class="h-notice" role="status"><p>${homeEsc(SETUP.error||'Termina la configuración inicial para preparar tu malla y tu horario.')}</p><button class="h-btn" data-a="hsetup">${SETUP.error?'Reintentar':'Retomar configuración'}</button></div>`:''}${HOME.error?`<div class="h-error" role="alert"><p>${homeEsc(HOME.error)}</p><button class="h-btn" data-a="hretry">Reintentar</button></div>`:''}<div class="bento h-summary">${metrics.map((s,i)=>`<div class="blk st${i?'':' hl'}"><div class="sv">${s[0]}</div><div class="sl">${s[1]}</div>${i===0?`<div class="bar2"><i style="width:${Math.min(100,pct)}%"></i></div>`:''}<div class="h-sum-foot">${s[2]}</div></div>`).join('')}</div>${active?homeEnrollment(m):''}<div class="h-tabs" role="tablist" aria-label="Mi panel en Inicio">${HOME_TABS.map(([id,icon,label])=>`<button id="h-tab-${id}" role="tab" aria-selected="${HOME.tab===id}" aria-controls="h-panel" tabindex="${HOME.tab===id?0:-1}" data-a="htab" data-tab="${id}">${svg(icon,16)}${label}</button>`).join('')}</div><div id="h-panel" role="tabpanel" aria-labelledby="h-tab-${HOME.tab}" tabindex="0"${HOME.mode==='loading'?' aria-busy="true"':''}>${empty?`<section class="blk">${content}</section>`:content}</div><p class="h-foot">${HOME.mode==='live'?'Solo tú puedes ver tus notas, tus logros y tu historia académica.':'Inicia sesión con tu cuenta para consultar tu información académica.'}</p></div>`;
 }
+let webNavigation=null;
 function homeTab(id){
  if(!HOME_TABS.some(t=>t[0]===id))return;
+ if(HOME.tab===id)return;
+ webNavigation?.push({page:cur,kid,tab:id,scroll:$('page').scrollTop});
  HOME.tab=id;
  const panel=$('h-panel');
  if(cur==='Inicio'&&panel){
@@ -1717,11 +1721,13 @@ async function mountCurriculum(){
 }
 /* Menú lateral: full · rail · hidden */
 let mode='full';
-function go(name,parent){
- if(HOME.saving.size){toast('Espera a que termine el guardado');return}
+function go(name,parent,options={}){
+ if(options.history!==false&&HOME.saving.size){toast('Espera a que termine el guardado');return}
  const changed=cur!==(parent||name)||kid!==(parent?name:null);
+ if(changed&&options.history!==false)webNavigation?.push({page:parent||name,kid:parent?name:null,tab:HOME.tab,scroll:0});
  cur=parent||name;kid=parent?name:null;if(parent)ex[parent]=true;
  $('title').textContent=name;renderMobileDock();renderNav();$('page').scrollTop=0;renderPage();if(cur==='Inicio'&&HOME.mode==='live'&&HOME.user)void homeWidgetLoad(HOME.user,HOME.revision);navViewEnter(changed);
+ if(Number.isFinite(options.scroll))requestAnimationFrame(()=>{$('page').scrollTop=options.scroll});
 }
 function renderNav(){$('nav').innerHTML=NAV.map(x=>{
   const open=!!ex[x.n];
@@ -2149,6 +2155,11 @@ $('page').addEventListener('keydown',e=>{
  homeTab(HOME_TABS[next][0]);
 });
 renderProfile();setMenu(false);applySide();go('Inicio');NAV_MOTION.ready=true;
+webNavigation=createWebNavigation({
+ scroller:$('page'),ready:()=>HOME.mode!=='loading',initial:{page:'Inicio',kid:null,tab:HOME.tab,scroll:0},
+ valid:s=>NAV.some(n=>n.n===s.page&&(!s.kid||n.kids?.some(k=>k[0]===s.kid)))&&HOME_TABS.some(t=>t[0]===s.tab),
+ restore:s=>{HOME.tab=s.tab;setMenu(false);setDrawer(false);go(s.kid||s.page,s.kid?s.page:undefined,{history:false,scroll:s.scroll})}
+});
 const webSession=homeClient?createWebSessionGuard(homeClient,{authKey:webAuthStorageKey(),
  onLock:()=>{document.body.style.visibility='hidden';homeReset();curriculumRender++;curriculumUnmount?.();curriculumUnmount=null},
  onSuspend:()=>{document.body.style.visibility='hidden'},

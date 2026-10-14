@@ -135,7 +135,8 @@ async function enterHome() {
   acceptedSession = true; clearPasswords(); cleanCallback()
   $('accessStatus').textContent = 'Sesión iniciada. Ya puedes consultar tu avance académico.'
   await new Promise(resolve => requestAnimationFrame(resolve))
-  location.replace(destination)
+  history.replaceState({ ...history.state, esanLoginEntry: true }, '')
+  location.assign(destination)
 }
 async function mailScreen(kind, code, masked) {
   mailKind = kind; mailCode = code; resendAt = Date.now() + 45000
@@ -329,10 +330,15 @@ async function initialize() {
     if (!webSession.check()) return
     cleanCallback()
     if (recovering) { clearPasswords(); await show('resetScreen', false) }
-    else await enterHome()
+    else if (!history.state?.esanLoginEntry) await enterHome()
   } catch { recovering = false; feedback('No pudimos comprobar tu sesión. Reintenta el acceso o solicita un nuevo enlace.', 'error') }
   finally { checkingSession = false; if (!acceptedSession) setBusy(false) }
 }
+window.addEventListener('pageshow', event => {
+  if (!event.persisted || !history.state?.esanLoginEntry) return
+  acceptedSession = false; checkingSession = false; busy = false
+  clearPasswords(); setBusy(false); void show('loginScreen', false)
+})
 foot(); initialize()
 
 
