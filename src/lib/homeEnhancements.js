@@ -10,8 +10,33 @@ function apply(){var on=st.on&&!mobileGlow.matches;R.dataset.glow=on?"on":"off";
 function save(){try{localStorage.setItem(K,JSON.stringify(st))}catch(e){}}
 apply();
 if(mobileGlow.addEventListener)mobileGlow.addEventListener("change",apply);else if(mobileGlow.addListener)mobileGlow.addListener(apply);
-var raf=0,ex=0,ey=0,blk=null;
-addEventListener("pointermove",function(e){if(!st.on||mobileGlow.matches||e.pointerType==="touch")return;var b=e.target.closest&&e.target.closest(".page .blk,.page .h-hero,.page .oc-node");if(!b)return;blk=b;ex=e.clientX;ey=e.clientY;if(raf)return;raf=requestAnimationFrame(function(){raf=0;if(!blk||!blk.isConnected)return;var r=blk.getBoundingClientRect();blk.style.setProperty("--mx",ex-r.left+"px");blk.style.setProperty("--my",ey-r.top+"px")})},{passive:true});
+var raf=0,ex=0,ey=0,hasPointer=false,glowSelector=".page .blk,.page .h-hero,.page .oc-node";
+function paintGlow(){
+ raf=0;if(!hasPointer||!st.on||mobileGlow.matches)return;
+ var target=document.elementFromPoint(ex,ey);
+ while(target&&target!==document.body){
+  if(target.matches&&target.matches(glowSelector)){
+   if(getComputedStyle(target).position==="static")target.style.position="relative";
+   var r=target.getBoundingClientRect();
+   if(r.width&&r.height){
+    // Gradients use the padding box; pointer coordinates use the viewport.
+    var x=(ex-r.left)*target.offsetWidth/r.width-target.clientLeft;
+    var y=(ey-r.top)*target.offsetHeight/r.height-target.clientTop;
+    target.style.setProperty("--mx",x+"px");target.style.setProperty("--my",y+"px");
+   }
+  }
+  target=target.parentElement;
+ }
+}
+function scheduleGlow(){if(!raf)raf=requestAnimationFrame(paintGlow)}
+addEventListener("pointermove",function(e){
+ if(!st.on||mobileGlow.matches||e.pointerType==="touch")return;
+ ex=e.clientX;ey=e.clientY;hasPointer=true;scheduleGlow();
+},{passive:true});
+addEventListener("scroll",scheduleGlow,{passive:true,capture:true});
+addEventListener("resize",scheduleGlow,{passive:true});
+document.addEventListener("pointerleave",function(){hasPointer=false});
+
 function ctl(){
 var d=document.createElement("div");d.className="gl";d.setAttribute("role","group");d.setAttribute("aria-label","Iluminación al pasar el cursor");
 d.innerHTML='<button type="button" class="gl-sw" role="switch" aria-checked="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6L7 7M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"/></svg><span class="l">Brillo al pasar</span><span class="gl-t" aria-hidden="true"></span></button>'

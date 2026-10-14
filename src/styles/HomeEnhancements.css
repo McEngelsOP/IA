@@ -308,7 +308,9 @@
  #app .h-home .hmg i.l1{opacity:.3}#app .h-home .hmg i.l2{opacity:.5}#app .h-home .hmg i.l3{opacity:.75}
 }
 
-/* Visible feedback: hover on pointers, short illumination on touch. */
+/* Each glow is positioned in its own surface, including forms and nested cards. */
+#app .page .z-main{position:relative}
+/* Visible feedback for desktop pointers. */
 #app .page .blk::after,#app .page .h-hero::after,#app .page .oc-node::after{
  content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
  background:radial-gradient(220px circle at var(--mx,50%) var(--my,50%),rgba(242,96,47,.24),transparent 75%);

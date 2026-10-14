@@ -1309,8 +1309,18 @@ function dash(){
 }
 function homeTab(id){
  if(!HOME_TABS.some(t=>t[0]===id))return;
- HOME.tab=id;homeRender();const button=$('h-tab-'+id);button?.focus({preventScroll:true});
- const motion=matchMedia('(prefers-reduced-motion:reduce)').matches?'auto':'smooth';button?.scrollIntoView({block:'nearest',inline:'nearest',behavior:motion});
+ HOME.tab=id;
+ const panel=$('h-panel');
+ if(cur==='Inicio'&&panel){
+  const m=homeModel(),empty=homeReady(m);
+  const content=empty||({graficos:homeGraphs,ponderado:homeWeighted,stats:homeStats,logros:homeAchievements,historia:homeHistory}[id])(m);
+  panel.innerHTML=empty?`<section class="blk">${content}</section>`:content;
+  panel.setAttribute('aria-labelledby','h-tab-'+id);
+  document.querySelectorAll('.h-tabs [role="tab"]').forEach(tab=>{
+   const selected=tab.dataset.tab===id;tab.setAttribute('aria-selected',String(selected));tab.tabIndex=selected?0:-1;
+  });
+ }else homeRender();
+ $('h-tab-'+id)?.focus({preventScroll:true});
 }
 function homeAction(button){
  if(button.dataset.a==='hmalla'){go('Malla Curricular');return}
