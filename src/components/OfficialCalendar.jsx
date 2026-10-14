@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { EVENT_TYPES, DAYS, civil, addDays, monday, monthDays, labelDate, todayLima, minutes, timeLabel, eventsOn, layoutEvents, validateEvent } from '../lib/calendarModel'
 import '../styles/OfficialCalendar.css'
 import TextToTasks from './TextToTasks'
+import ExcelScheduleImport from './ExcelScheduleImport'
 
 const FIELDS = 'id,student_id,title,description,date,start_date,end_date,color,event_type,start_time,end_time,location,course_id,repeat_rule,repeat_until'
 const TASK_FIELDS = 'id,student_id,title,due_date,completed,course_id'
@@ -108,6 +109,7 @@ function OfficialCalendar({ client, user, courses, onBusy }) {
   if (state === 'error') return <section className="blk sc"><h2 className="bt">Calendario no disponible</h2><p role="alert">{error}</p><button className="h-btn primary" onClick={load}>Reintentar</button></section>
   return <div className={`sc sc-view-${view}${draft || taskDraft ? ' sc-editing' : ''}`} onKeyDown={e => { if (e.key === 'Escape' && (draft || taskDraft) && !busy) { e.stopPropagation(); closeEditor() } }}>
     <div className="sc-status" aria-live="polite">{busy ? 'Guardando…' : message}</div>{error && <p className="sc-error" role="alert">{error}</p>}
+    <ExcelScheduleImport client={client} user={user} events={events} disabled={busy} onBusy={value => { lock.current = value; setBusy(value); onBusy(value) }} onSaved={saved => setEvents(old => [...old.filter(t => !saved.some(s => s.id === t.id)), ...saved])}/>
     <TextToTasks client={client} user={user} courses={courses} disabled={busy} onBusy={value => { lock.current = value; setBusy(value); onBusy(value) }} onSaved={saved => setTasks(old => [...old.filter(t => !saved.some(s => s.id === t.id)), ...saved])}/>
     <div className="cw"><section className="blk"><div className="ch"><div className="nv"><button className="hb" aria-label="Período anterior" onClick={() => navigate(-1)}><Icon name="left"/></button><h2 className="cl">{heading}</h2><button className="hb" aria-label="Período siguiente" onClick={() => navigate(1)}><Icon name="right"/></button></div><button className="tdb" onClick={() => setDay(today)}>Hoy</button><div className="seg" role="group" aria-label="Vista del calendario">{[['agenda', 'Agenda'], ['day', 'Día'], ['week', 'Semana'], ['month', 'Mes']].map(([id, label]) => <button key={id} className={view === id ? 'on' : ''} aria-pressed={view === id} onClick={() => setView(id)}>{label}</button>)}</div><button className="mk" ref={createButton} disabled={busy} onClick={createEvent}><Icon name="plus"/>Crear evento</button></div>
       <div className="sc-datebar"><p className="sc-zone">Hora de Lima · UTC−5</p><label>Ir a fecha<input type="date" value={day} onChange={e => { if (civil(e.target.value)) setDay(e.target.value) }}/></label></div>
@@ -126,3 +128,4 @@ function OfficialCalendar({ client, user, courses, onBusy }) {
   </div>
 }
 export function mountOfficialCalendar(container, props) { const root = createRoot(container); root.render(<OfficialCalendar {...props}/>); return () => root.unmount() }
+

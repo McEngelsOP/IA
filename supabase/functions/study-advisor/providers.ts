@@ -48,7 +48,7 @@ function retryAfter(response: Response, body: any): number {
 }
 
 export async function generateAdvisorAnswer({
-  providers, system, context, history, fetch, reserve, report, validateAnswer = () => true,
+  providers, system, context, history, fetch, reserve, report, validateAnswer = () => true, maxOutputTokens = 1800,
 }: {
   providers: Provider[];
   system: string;
@@ -56,6 +56,7 @@ export async function generateAdvisorAnswer({
   history: { role: string; content: string }[];
   fetch: typeof globalThis.fetch;
   validateAnswer?: (answer: string) => boolean;
+  maxOutputTokens?: number;
   reserve: (provider: string, model: string) => Promise<Gate | null>;
   report: (provider: string, model: string, status: string, wait: number, duration: number) => Promise<void>;
 }): Promise<Outcome> {
@@ -88,7 +89,7 @@ export async function generateAdvisorAnswer({
             ...history.map((item) => ({ role: item.role === "assistant" ? "model" : "user", parts: [{ text: item.content }] })),
             { role: "user", parts: [{ text: context }] },
           ],
-          generationConfig: { temperature: 0.25, maxOutputTokens: 1800 },
+          generationConfig: { temperature: 0.25, maxOutputTokens: Math.min(6000, Math.max(256, maxOutputTokens)) },
           safetySettings: ["HARASSMENT", "HATE_SPEECH", "SEXUALLY_EXPLICIT", "DANGEROUS_CONTENT"].map((category) => ({
             category: `HARM_CATEGORY_${category}`, threshold: "BLOCK_MEDIUM_AND_ABOVE",
           })),
@@ -96,7 +97,7 @@ export async function generateAdvisorAnswer({
           model,
           messages: [{ role: "system", content: system }, ...history, { role: "user", content: context }],
           temperature: 0.25,
-          max_completion_tokens: 1800,
+          max_completion_tokens: Math.min(6000, Math.max(256, maxOutputTokens)),
           ...(provider.name === "groq" && model.startsWith("openai/gpt-oss") ? { reasoning_effort: "low", include_reasoning: false } : {}),
           // Sin reintentos internos que cambien de modelo tras un rechazo de seguridad.
           ...(provider.name === "openrouter" ? { provider: { allow_fallbacks: false }, plugins: [] } : {}),
@@ -163,3 +164,4 @@ export async function generateAdvisorAnswer({
   }
   return { error: lastError, retryAfterSeconds: Math.max(1, waits.length ? Math.min(...waits) : 60), attempts };
 }
+
