@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
-import { CARRERAS } from '../data/carreras'
+import { CARRERAS } from '../lib/careerLoader'
 import { AREAS } from '../data/areas'
 import { buildMalla, bfs, edgePath, COL_W, LEFT, completedCredits, canTake, previewCompleted, validPlan, canPlan, enrolledIds } from '../lib/curriculumGraph'
 import '../styles/OfficialCurriculum.css'

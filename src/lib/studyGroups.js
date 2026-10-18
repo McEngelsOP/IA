@@ -34,3 +34,11 @@ export function validRoom(draft, courses) {
   return ''
 }
 
+
+// Automatic updates keep a bounded transcript; explicitly loading earlier
+// messages preserves the requested history. The server remains authoritative.
+export function chatWindow(current, incoming, preserveEarlier = false) {
+ const messages = mergeMessages(current,incoming)
+ const trimmed = !preserveEarlier && messages.length > 200
+ return { messages: trimmed ? messages.slice(-200) : messages, trimmed }
+}

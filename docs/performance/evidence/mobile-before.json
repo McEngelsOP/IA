@@ -1,0 +1,46 @@
+[
+  {
+    "route": "login.html",
+    "cache": "cold",
+    "device": "mobile",
+    "runs": 5,
+    "lcp_ms": 624,
+    "cls": 0.000170383347616423,
+    "js_gzip_bytes": 63122,
+    "critical_bytes": 494480,
+    "unexpected_errors": 0
+  },
+  {
+    "route": "login.html",
+    "cache": "warm",
+    "device": "mobile",
+    "runs": 5,
+    "lcp_ms": 300,
+    "cls": 0,
+    "js_gzip_bytes": 63122,
+    "critical_bytes": 494480,
+    "unexpected_errors": 0
+  },
+  {
+    "route": "pagina.html",
+    "cache": "cold",
+    "device": "mobile",
+    "runs": 5,
+    "lcp_ms": 1408,
+    "cls": 0.14964986272683764,
+    "js_gzip_bytes": 119454,
+    "critical_bytes": 141344,
+    "unexpected_errors": 0
+  },
+  {
+    "route": "pagina.html",
+    "cache": "warm",
+    "device": "mobile",
+    "runs": 5,
+    "lcp_ms": 496,
+    "cls": 0,
+    "js_gzip_bytes": 119454,
+    "critical_bytes": 141344,
+    "unexpected_errors": 0
+  }
+]

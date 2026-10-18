@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { EVENT_TYPES, DAYS, civil, addDays, monday, monthDays, labelDate, todayLima, minutes, timeLabel, eventsOn, layoutEvents, validateEvent } from '../lib/calendarModel'
 import '../styles/OfficialCalendar.css'
+import { calendarWindow, readCalendarPages, readUpcomingClasses } from '../lib/calendarQueries.js'
+import { privateReads } from '../lib/sessionCache.js'
 
 const FIELDS = 'id,student_id,title,description,date,start_date,end_date,color,event_type,start_time,end_time,location,course_id,repeat_rule,repeat_until'
 const TASK_FIELDS = 'id,student_id,title,due_date,completed'
@@ -16,52 +18,54 @@ function OfficialCalendar({ client, user, courses, onBusy }) {
   const [hidden, setHidden] = useState(new Set()), [draft, setDraft] = useState(null), [taskDraft, setTaskDraft] = useState(null)
   const [busy, setBusy] = useState(false), [error, setError] = useState(''), [message, setMessage] = useState(''), [deleting, setDeleting] = useState(false)
   const lock = useRef(false), alive = useRef(true), generation = useRef(0), editor = useRef(null), createButton = useRef(null), previousFocus = useRef(null)
-  useEffect(() => { alive.current = true; load(); return () => { alive.current = false; generation.current++ } }, [])
+  const windowRange = calendarWindow(day), rangeKey = windowRange.start + ':' + windowRange.end
+  const request = useRef(null), pendingWrite = useRef(null)
+  useEffect(() => { alive.current = true; load(); return () => { alive.current = false; generation.current++; request.current?.abort(); privateReads.forgetPending(user.id, 'calendar:' + rangeKey); privateReads.forgetPending(user.id, 'calendar-upcoming:' + todayLima()) } }, [rangeKey, user.id])
   useEffect(() => { if (draft || taskDraft) { editor.current?.scrollIntoView({ block: 'start', behavior: 'instant' }); editor.current?.querySelector('input')?.focus({ preventScroll: true }) } }, [draft?.id, !!draft, taskDraft?.id, !!taskDraft])
   async function verify() {
     const result = await client.auth.getUser()
     if (result.error || result.data.user?.id !== user.id) throw new Error('session')
   }
-  async function readRows(table, fields) {
-    const rows = []
-    for (let offset = 0; ; offset += 500) {
-      const result = await client.from(table).select(fields).eq('student_id', user.id).order('created_at').order('id').range(offset, offset + 499)
-      if (result.error) return result
-      rows.push(...(result.data || []))
-      if (!alive.current || (result.data || []).length < 500) return { data: rows, error: null }
-    }
-  }
   async function load() {
     if (lock.current) return
     const revision = ++generation.current
+    request.current?.abort()
+    const controller = new AbortController(); request.current = controller
     setState('loading'); setError('')
     try {
-      await verify()
-      const results = await Promise.all([
-        readRows('calendar_events', FIELDS),
-        readRows('calendar_tasks', TASK_FIELDS)
-      ])
-      if (results.some(r => r.error)) throw new Error('read')
-      if (alive.current && revision === generation.current) { setEvents(results[0].data || []); setTasks(results[1].data || []); setState('ready') }
-    } catch { if (alive.current && revision === generation.current) { setState('error'); setError('No pudimos cargar tu calendario. Reintenta; si el problema continúa, la configuración de la cuenta necesita revisión.') } }
+      const results = await privateReads.read(user.id, 'calendar:' + rangeKey, async () => {
+        const signal = controller.signal
+        if (signal.aborted) throw new DOMException('Aborted', 'AbortError')
+        return Promise.all([
+          readCalendarPages(client, user.id, 'calendar_events', FIELDS, { ...windowRange, signal }),
+          readCalendarPages(client, user.id, 'calendar_tasks', TASK_FIELDS, { ...windowRange, signal }),
+          privateReads.read(user.id, 'calendar-upcoming:' + todayLima(), () => readUpcomingClasses(client, user.id, FIELDS, todayLima(), signal))
+        ])
+      })
+      if (alive.current && revision === generation.current) { setEvents([...new Map([...results[0],...results[2]].map(row=>[row.id,row])).values()]); setTasks(results[1]); setState('ready') }
+    } catch (e) { if (alive.current && revision === generation.current && e.name !== 'AbortError') { setState('error'); setError('No pudimos cargar tu calendario. Reintenta; si el problema continúa, la configuración de la cuenta necesita revisión.') } }
   }
   async function write(table, payload, id, remove = false) {
     if (lock.current) return false
+    let wrote = false
     lock.current = true; setBusy(true); onBusy(true); setError(''); setMessage('')
     try {
       await verify()
+      const fingerprint = JSON.stringify([table,payload,id,remove])
+      if (pendingWrite.current?.fingerprint !== fingerprint) pendingWrite.current = { fingerprint, id: crypto.randomUUID() }
       let query = client.from(table)
-      query = remove ? query.delete() : id ? query.update(payload) : query.insert({ ...payload, student_id: user.id, id: crypto.randomUUID() })
+      query = remove ? query.delete() : id ? query.update(payload) : query.upsert({ ...payload, student_id: user.id, id: pendingWrite.current.id }, { onConflict: 'id' })
       if (id) query = query.eq('student_id', user.id).eq('id', id)
-      const result = await query.select(table === 'calendar_events' ? FIELDS : TASK_FIELDS).single()
-      if (result.error || !result.data) throw new Error('write')
+      const result = await query.select(table === 'calendar_events' ? FIELDS : TASK_FIELDS).maybeSingle()
+      if (result.error || (!remove && !result.data)) throw new Error('write')
       if (!alive.current) return false
+      privateReads.clear(user.id); pendingWrite.current = null; wrote = true
       const setter = table === 'calendar_events' ? setEvents : setTasks
-      setter(previous => remove ? previous.filter(e => e.id !== id) : id ? previous.map(e => e.id === id ? result.data : e) : [...previous, result.data])
+      setter(previous => remove ? previous.filter(e => e.id !== id) : id ? previous.map(e => e.id === id ? result.data : e) : [...previous.filter(e => e.id !== result.data.id), result.data])
       setMessage(remove ? 'Eliminado de tu cuenta.' : 'Guardado en tu cuenta.')
       return true
     } catch { if (alive.current) setError('No se pudo guardar. Tus datos anteriores y el borrador se conservan. Reintenta o vuelve a iniciar sesión.'); return false }
-    finally { lock.current = false; onBusy(false); if (alive.current) setBusy(false) }
+    finally { lock.current = false; onBusy(false); if (alive.current) { setBusy(false); if (wrote) load() } }
   }
   function closeEditor() { if (lock.current) return; setDraft(null); setTaskDraft(null); setDeleting(false); (previousFocus.current?.isConnected ? previousFocus.current : createButton.current)?.focus({ preventScroll: true }) }
   function editEvent(e) { if (lock.current) return; previousFocus.current = document.activeElement; setTaskDraft(null); setDraft({ ...e, start_time: timeLabel(e.start_time), end_time: timeLabel(e.end_time), repeat_until: e.repeat_until || '', course_id: e.course_id || '' }); setDeleting(false); setError(''); setMessage('') }

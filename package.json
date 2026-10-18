@@ -5,8 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "build": "node scripts/splitCurricula.mjs --check && vite build",
+    "preview": "vite preview",
+    "generate:careers": "node scripts/generateCurricula.mjs && node scripts/splitCurricula.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "test:performance": "python tests/performance_browser.py"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.38.0",
@@ -15,9 +18,12 @@
     "read-excel-file": "6.0.1"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.3.14",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "@vitejs/plugin-react": "^4.2.0",
+    "lighthouse": "13.5.0",
+    "playwright": "1.64.1",
     "vite": "^5.0.0"
   }
 }

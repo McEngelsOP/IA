@@ -1,0 +1,82 @@
+[
+  {
+    "route": "login.html",
+    "run": 0,
+    "lcp": 759.664,
+    "cls": 0.000170383347616423,
+    "tbt": 17.69100000000003,
+    "errors": null
+  },
+  {
+    "route": "login.html",
+    "run": 1,
+    "lcp": 654.538,
+    "cls": 0.000170383347616423,
+    "tbt": 33.03600000000006,
+    "errors": null
+  },
+  {
+    "route": "login.html",
+    "run": 2,
+    "lcp": 607.786,
+    "cls": 0.000170383347616423,
+    "tbt": 24.25199999952315,
+    "errors": null
+  },
+  {
+    "route": "login.html",
+    "run": 3,
+    "lcp": 652.514,
+    "cls": 0.000170383347616423,
+    "tbt": 23.853000000000065,
+    "errors": null
+  },
+  {
+    "route": "login.html",
+    "run": 4,
+    "lcp": 710.264,
+    "cls": 0.000170383347616423,
+    "tbt": 44.19799999952329,
+    "errors": null
+  },
+  {
+    "route": "pagina.html",
+    "run": 0,
+    "lcp": 1277.332,
+    "cls": 0.14790195511578658,
+    "tbt": 0,
+    "errors": null
+  },
+  {
+    "route": "pagina.html",
+    "run": 1,
+    "lcp": 1615.744,
+    "cls": 0.14707762890515436,
+    "tbt": 0,
+    "errors": null
+  },
+  {
+    "route": "pagina.html",
+    "run": 2,
+    "lcp": 1304.125,
+    "cls": 0.14944149554630726,
+    "tbt": 9.586999999999989,
+    "errors": null
+  },
+  {
+    "route": "pagina.html",
+    "run": 3,
+    "lcp": 1440.583,
+    "cls": 0.14782024551877057,
+    "tbt": 0,
+    "errors": null
+  },
+  {
+    "route": "pagina.html",
+    "run": 4,
+    "lcp": 1461.696,
+    "cls": 0.14846080096609907,
+    "tbt": 0,
+    "errors": null
+  }
+]

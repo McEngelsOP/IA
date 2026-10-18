@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="es">
 <head>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#100f14">
@@ -974,6 +975,7 @@ a{text-underline-offset:3px}.page button:not(.ck){min-height:36px}
 </style>
 </head>
 <body id="app" data-side="full">
+<script>if(matchMedia("(max-width:860px)").matches){document.body.dataset.side="hidden";document.body.classList.add("mob")}</script>
 
 <div class="scrim" id="scrim"></div>
 <aside class="side" id="side" aria-label="Menú">
@@ -1000,7 +1002,8 @@ a{text-underline-offset:3px}.page button:not(.ck){min-height:36px}
 import { FOCUS_PRESETS, enrolledFocusCourses, focusRemaining, focusDuration, focusMotivation, focusError, todayLima } from './src/lib/focusModel.js';
 import { getSupabaseClient } from './src/lib/getSupabaseClient.js';
 import { createWebSessionGuard, webAuthStorageKey } from './src/lib/webSession.js';
-import { CARRERAS } from './src/data/carreras.js';
+import { privateReads } from './src/lib/sessionCache.js';
+import { CARRERAS, loadCareer } from './src/lib/careerLoader.js';
 import { CAREER_KEYS, careerLabel } from './src/data/careerOptions.js';
 import { LOGROS } from './src/lib/logros.js';
 import { buildMalla, validPlan } from './src/lib/curriculumGraph.js';
@@ -1090,7 +1093,7 @@ function homeReset(mode='guest',clearFocus=true){
  if(clearFocus)SETUP.deferred=false;
  HOME.revision++;HOME.mode=mode;HOME.user=null;HOME.career='ia';HOME.careerDraft='';HOME.profile=null;
  HOME.cycle='all';HOME.done=new Set();HOME.plan=new Set();HOME.grades={};HOME.drafts={};HOME.feedback={};HOME.statuses={};HOME.achievements={};HOME.error='';HOME.saving=new Set();
- if(clearFocus)kReset();
+ if(clearFocus){kReset();privateReads.clear();}
 }
 function homeRender(){if(['Inicio','Malla Curricular','Calendario/Horarios','Grupos de estudio','Mod Focus','Herramientas'].includes(cur))renderPage()}
 async function homeLoad(user){
@@ -1111,6 +1114,8 @@ async function homeLoad(user){
   if(!profile||!CARRERAS[profile.carrera]){
    HOME.mode='profile';HOME.profile=profile;homeRender();return;
   }
+  await loadCareer(profile.carrera);
+  if(revision!==HOME.revision)return;
   HOME.profile=profile;HOME.career=profile.carrera;HOME.done=new Set(progress?.done||[]);HOME.plan=new Set(progress?.plan||[]);
   for(const row of grades||[]){const value=Number(row.grade);if(row.grade!==null&&Number.isFinite(value)&&value>=0&&value<=20)HOME.grades[row.course_id]=value}
   HOME.statuses=Object.fromEntries((statuses||[]).map(r=>[r.course_id,r]));
@@ -1164,13 +1169,13 @@ async function setupOpen(){
  finally{SETUP.opening=false}
 }
 async function homeInit(){
- if(!homeClient){homeReset();homeRender();return}
+ if(!homeClient){await loadCareer('ia');homeReset();homeRender();return}
  const revision=HOME.revision;
  try{
   const {data,error}=await homeClient.auth.getSession();
   if(revision!==HOME.revision)return;
   if(error)throw error;
-  if(!data.session){homeReset();homeRender();return}
+  if(!data.session){await loadCareer('ia');if(revision!==HOME.revision)return;homeReset();homeRender();return}
   if(!webSession.restore(data.session))return;
   const verified=await homeClient.auth.getUser();
   if(revision!==HOME.revision)return;
@@ -1359,7 +1364,7 @@ ring:'<svg viewBox="0 0 24 24" width="30" height="30"><circle cx="12" cy="12" r=
 arc:'<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><circle cx="12" cy="12" r="9" opacity=".25"/><path d="M12 3a9 9 0 0 1 9 9"/></svg>',
 dots:'<svg viewBox="0 0 24 24" width="30" height="30" fill="currentColor">'+[5,12,19].flatMap(x=>[5,12,19].map(y=>`<circle cx="${x}" cy="${y}" r="2.2"/>`)).join('')+'</svg>'};
 const fx={st:'setup',pre:'p45',h:0,m:30,style:'ring',pet:'cat',course:'',total:0,left:0,end:0,paused:false,cq:false,iv:0,session:null,busy:false,error:'',save:'idle',load:'idle',owner:null,generation:0,nonce:null,day:todayLima(),history:null,historyState:'idle',historyError:'',historyRead:0,syncing:false,lastSync:0,mutation:0};
-function kReset(){clearInterval(fx.iv);Object.assign(fx,{st:'setup',course:'',session:null,busy:false,error:'',save:'idle',load:'idle',owner:null,paused:false,cq:false,nonce:null,day:todayLima(),history:null,historyState:'idle',historyError:'',historyRead:fx.historyRead+1,generation:fx.generation+1})}
+function kReset(){clearInterval(fx.iv);clearTimeout(fx.deadline);Object.assign(fx,{st:'setup',course:'',session:null,busy:false,error:'',save:'idle',load:'idle',owner:null,paused:false,cq:false,nonce:null,day:todayLima(),history:null,historyState:'idle',historyError:'',historyRead:fx.historyRead+1,generation:fx.generation+1})}
 function kRender(){if(cur==='Mod Focus')renderPage()}
 const kCourseName=id=>homeCareer().cursos.find(c=>c.id===id)?.n||'Estudio general';
 async function kRpc(name,args){const result=await homeClient.rpc(name,args);if(result.error)throw result.error;return result.data}
@@ -1367,7 +1372,7 @@ function kApply(session){
  clearInterval(fx.iv);fx.session=session;fx.course=session.course_id||'';fx.pre=session.method;fx.style=session.clock_style;fx.pet=session.companion;fx.total=session.planned_seconds;fx.left=session.remaining_seconds;fx.end=Date.now()+fx.left*1000;fx.paused=session.status==='paused';fx.cq=false;
  fx.h=Math.floor(fx.total/3600);fx.m=Math.floor((fx.total%3600)/300)*5;
  fx.st=['completed','interrupted'].includes(session.status)||!fx.left?'done':'run';fx.save=session.status==='completed'?'saved':session.status==='interrupted'?'interrupted':'pending';
- if(fx.st==='run')fx.iv=setInterval(kTick,250);
+ kSchedule();
 }
 async function kMutate(action){
  if(fx.busy)return false;
@@ -1404,7 +1409,7 @@ async function kStart(){
  if(fx.busy||fx.st!=='setup'||HOME.mode==='loading'||(HOME.user&&fx.load!=='ready'))return;
  if(fx.course&&!focusCourses().some(c=>c.id===fx.course)){fx.error=focusError({message:'COURSE_NOT_ENROLLED'});kRender();return}
  const args={cid:fx.course||null,seconds:kSecs(),chosen_method:fx.pre,chosen_style:fx.style,chosen_pet:fx.pet};
- if(!HOME.user){fx.total=fx.left=args.seconds;fx.end=Date.now()+fx.total*1000;fx.st='run';fx.paused=false;fx.cq=false;fx.save='guest';clearInterval(fx.iv);fx.iv=setInterval(kTick,250);kRender();$('k-focus-label')?.focus({preventScroll:true});return}
+ if(!HOME.user){fx.total=fx.left=args.seconds;fx.end=Date.now()+fx.total*1000;fx.st='run';fx.paused=false;fx.cq=false;fx.save='guest';kSchedule();kRender();$('k-focus-label')?.focus({preventScroll:true});return}
  const key=JSON.stringify(args);if(fx.nonce?.key!==key)fx.nonce={key,id:crypto.randomUUID()};
  const ok=await kMutate(()=>kRpc('start_focus_session',{...args,request_id:fx.nonce.id}));
  if(ok){fx.nonce=null;fx.lastSync=Date.now();$('k-focus-label')?.focus({preventScroll:true});if(fx.st==='done'&&fx.save==='pending')kComplete()}
@@ -1419,7 +1424,7 @@ async function kComplete(){
 }
 async function kChange(action){
  if(fx.busy)return false;
- if(!fx.session){if(action==='pause'){fx.left=focusRemaining(fx.end);fx.paused=true}else if(action==='resume'){fx.end=Date.now()+fx.left*1000;fx.paused=false}else if(action==='interrupt')kBack();kRender();return true}
+ if(!fx.session){if(action==='pause'){fx.left=focusRemaining(fx.end);fx.paused=true}else if(action==='resume'){fx.end=Date.now()+fx.left*1000;fx.paused=false}else if(action==='interrupt')kBack();kSchedule();kRender();return true}
  const ok=await kMutate(()=>kRpc('update_focus_session',{sid:fx.session.id,action}));
  if(ok&&action==='interrupt'){kBack();kLoadHistory();toast('Tiempo de estudio registrado.')}
  else if(ok&&fx.st==='done'&&fx.save==='pending')kComplete();
@@ -1431,7 +1436,7 @@ async function kBeforeSignOut(){
  if(fx.st==='done'&&fx.save==='pending')return kComplete();
  return true;
 }
-function kBack(){clearInterval(fx.iv);fx.st='setup';fx.session=null;fx.save='idle';fx.error='';fx.cq=false;fx.paused=false}
+function kBack(){clearInterval(fx.iv);clearTimeout(fx.deadline);fx.st='setup';fx.session=null;fx.save='idle';fx.error='';fx.cq=false;fx.paused=false}
 function kFeedback(){return `${fx.error?`<p class="k-error" role="alert">${esc(fx.error)}</p>`:''}<p class="k-hint" role="status">${fx.busy?'Guardando…':''}</p>`}
 function kHistory(){
  const head=`<div class="k-history-head"><h2 class="bt">${svg('cal',18)}Tu estudio, día a día</h2><label>Fecha<input type="date" id="k-day" aria-label="Fecha del historial" value="${fx.day}" max="${todayLima()}"></label></div>`;
@@ -1471,7 +1476,20 @@ function pet(k,m){
   return `<svg class="pet ${m}" viewBox="0 0 170 150" aria-hidden="true"><ellipse cx="80" cy="144" rx="46" ry="5" opacity=".15"/><g class="all">${tail}<ellipse cx="80" cy="104" rx="42" ry="34"/><g class="hd">${ears}<circle cx="80" cy="54" r="30"/><g class="eyes"><circle class="ew" cx="67" cy="52" r="${r}"/><circle class="ew" cx="93" cy="52" r="${r}"/><circle class="pp" cx="69" cy="52" r="3.6"/><circle class="pp" cx="95" cy="52" r="3.6"/></g><g class="hp"><path d="M58 54q9-11 18 0M84 54q9-11 18 0"/></g>${k==='owl'?'<path class="bk" d="M76 62h8l-4 9z"/>':'<path class="mo" d="M74 66q6 6 12 0"/>'}</g><g class="bo"><rect x="52" y="108" width="56" height="28" rx="5"/><path d="M80 108v28"/><path class="pgf" d="M80 108h28v28H80z"/></g><circle cx="64" cy="112" r="7"/><circle cx="96" cy="112" r="7"/></g></svg>`}
 function clockHTML(st,t){return webClock(st,t,fx.st==='setup')}
 function kPaint(L){webPaint(L)}
-function kTick(){if(fx.st!=='run'||fx.paused)return;fx.left=focusRemaining(fx.end);if(cur==='Mod Focus')kPaint(fx.left);if(!fx.left){fx.st='done';clearInterval(fx.iv);kRender();if(!fx.busy)kComplete()}else if(fx.session&&Date.now()-fx.lastSync>30000&&!document.hidden)kSync()}
+function kSchedule(){
+ clearInterval(fx.iv);clearTimeout(fx.deadline);
+ if(fx.st!=='run'||fx.paused||document.hidden)return;
+ if(cur==='Mod Focus')fx.iv=setInterval(kTick,1000);
+ fx.deadline=setTimeout(kTick,Math.max(0,fx.end-Date.now()));
+}
+function kTick(){
+ if(fx.st!=='run'||fx.paused||document.hidden)return;
+ const previous=fx.left;fx.left=focusRemaining(fx.end);
+ if(cur==='Mod Focus'&&fx.left!==previous)kPaint(fx.left);
+ if(!fx.left){fx.st='done';clearInterval(fx.iv);clearTimeout(fx.deadline);kRender();if(!fx.busy)kComplete()}
+ else if(cur==='Mod Focus'&&fx.session&&Date.now()-fx.lastSync>30000)kSync();
+}
+
 const wheel=(id,vals,sel,lb)=>`<div class="k-w"><div class="k-wh" id="${id}" role="spinbutton" tabindex="0" aria-label="${lb}" aria-valuemin="0" aria-valuemax="${id==='wh'?3:55}" aria-valuenow="${sel}">${vals.map(v=>`<div class="k-wi${v===sel?' on':''}" aria-hidden="true" data-a="wi" data-v="${v}">${String(v).padStart(2,'0')}</div>`).join('')}</div><small>${lb.toLowerCase()}</small></div>`;
 function kWheels(){$('wh').scrollTop=fx.h*40;$('wm').scrollTop=fx.m/5*40}
 function prevHTML(){const p=PN[fx.pet];return `${webClock(fx.style,kSecs(),true)}<p class="k-hint">${p[1]} te acompañará${fx.course?' mientras estudias '+esc(kCourseName(fx.course)):''}.</p>`}
@@ -1569,8 +1587,8 @@ $('page').addEventListener('scroll',e=>{const t=e.target;if(!t.classList||!t.cla
   t.setAttribute('aria-valuenow',t.id==='wh'?fx.h:fx.m);[...t.children].forEach((c,j)=>c.classList.toggle('on',j===i));kPrev()},true);
 $('page').onchange=e=>{if(fx.busy)return;if(e.target.id==='kcs'){fx.course=e.target.value;kPrev()}else if(e.target.id==='k-day'&&/^\d{4}-\d{2}-\d{2}$/.test(e.target.value)&&e.target.value<=todayLima()){fx.day=e.target.value;kLoadHistory()}};
 $('page').addEventListener('keydown',e=>{const w=e.target.closest('.k-wh');if(!w||fx.busy)return;const keys=['ArrowUp','ArrowDown','Home','End'];if(!keys.includes(e.key))return;e.preventDefault();const step=w.id==='wh'?1:5,max=w.id==='wh'?3:55,current=w.id==='wh'?fx.h:fx.m;const value=e.key==='Home'?0:e.key==='End'?max:Math.max(0,Math.min(max,current+(e.key==='ArrowUp'?step:-step)));w.scrollTop=value/step*40;if(w.id==='wh')fx.h=value;else fx.m=value;w.setAttribute('aria-valuenow',value);kPrev()});
-window.addEventListener('focus',()=>{if(fx.session&&!fx.busy)kSync()});
-document.addEventListener('visibilitychange',()=>{if(!document.hidden&&fx.session&&!fx.busy){kTick();kSync()}});
+window.addEventListener('focus',()=>{if(!document.hidden&&fx.session&&!fx.busy&&Date.now()-fx.lastSync>30000)kSync()});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){kTick();if(fx.session&&!fx.busy&&Date.now()-fx.lastSync>30000)kSync()}kSchedule()});
 
 const selQ=b=>'[data-a="'+b.dataset.a+'"]'+['k','i','d','g','v'].filter(x=>b.dataset[x]!=null).map(x=>`[data-${x}="${b.dataset[x]}"]`).join('');
 const focusCourses=()=>HOME.mode==='live'?enrolledFocusCourses(homeCareer().cursos,HOME.statuses,HOME.done):[];
@@ -1645,7 +1663,7 @@ function go(name,parent){
  if(HOME.saving.size){toast('Espera a que termine el guardado');return}
  const changed=cur!==(parent||name)||kid!==(parent?name:null);
  cur=parent||name;kid=parent?name:null;if(parent)ex[parent]=true;
- $('title').textContent=name;renderMobileDock();renderNav();$('page').scrollTop=0;renderPage();navViewEnter(changed);
+ kSchedule();$('title').textContent=name;renderMobileDock();renderNav();$('page').scrollTop=0;renderPage();navViewEnter(changed);
 }
 function renderNav(){$('nav').innerHTML=NAV.map(x=>{
   const open=!!ex[x.n];

@@ -29,8 +29,9 @@ export default function StudyAdvisor({ planCourses, careerName, onClose, embedde
   const [loadingRatings, setLoadingRatings] = useState(false)
   const [sending, setSending] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
+  const requestAbort = useRef(null)
   const requestLock = useRef(false), alive = useRef(true)
-  useEffect(() => { alive.current = true; return () => { alive.current = false } }, [])
+  useEffect(() => { alive.current = true; return () => { alive.current = false; requestAbort.current?.abort() } }, [])
   const listRef = useRef(null)
   const inputRef = useRef(null)
   const [copyStatus, setCopyStatus] = useState('')
@@ -38,13 +39,14 @@ export default function StudyAdvisor({ planCourses, careerName, onClose, embedde
 
   useEffect(() => {
     let cancelled = false
+    const controller = new AbortController()
     if (!planCourses.length) {
       setRatings({}); setLoadingRatings(false)
       return
     }
     setLoadingRatings(true)
     Promise.all(planCourses.map(async course => {
-      const { data, error } = await client.rpc('get_course_difficulty_stats', { cid: course.id })
+      const { data, error } = await client.rpc('get_course_difficulty_stats', { cid: course.id }).abortSignal(controller.signal)
       return [course.id, !error && data ? data : null]
     })).then(entries => {
       if (!cancelled) setRatings(Object.fromEntries(entries))
@@ -53,7 +55,7 @@ export default function StudyAdvisor({ planCourses, careerName, onClose, embedde
     }).finally(() => {
       if (!cancelled) setLoadingRatings(false)
     })
-    return () => { cancelled = true }
+    return () => { cancelled = true; controller.abort() }
   }, [planCourses, client])
 
   useEffect(() => {
@@ -112,9 +114,11 @@ export default function StudyAdvisor({ planCourses, careerName, onClose, embedde
       }
     })
 
+    const controller = new AbortController(); requestAbort.current = controller
+    const timeout = setTimeout(() => controller.abort(), 45000)
     try {
       const { data, error } = await client.functions.invoke('study-advisor', {
-        body: { question, history: previousMessages, courses, careerName }
+        body: { question, history: previousMessages, courses, careerName }, signal: controller.signal
       })
       if (!alive.current) return
       let errorCode = data?.error
@@ -138,6 +142,7 @@ export default function StudyAdvisor({ planCourses, careerName, onClose, embedde
       restoreQuestion()
       setErrorMessage('No pude conectar con el asesor. Revisa tu conexión e inténtalo de nuevo.')
     } finally {
+      clearTimeout(timeout); requestAbort.current = null
       requestLock.current = false
       if (alive.current) { setSending(false); if (!window.matchMedia('(pointer:coarse)').matches) inputRef.current?.focus() }
     }

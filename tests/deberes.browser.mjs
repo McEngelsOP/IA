@@ -19,6 +19,7 @@ await context.route('https://setup-fixture.supabase.co/**', async route => {
   else if (path.endsWith('/progress')) data = [{ done: ['com0', 'mat0', 'prog1'], plan: [] }]
   else if (path.endsWith('/grades')) data = [{ course_id: 'prog1', grade: 15 }]
   else if (path.endsWith('/student_setup')) data = [{ draft: {}, preferences: { semester: 2, companion: 'cat', credits: 16 }, completed_at: user.created_at }]
+  else if (path.endsWith('/rpc/save_academic_course_status')) { statuses = statuses.filter(s => s.course_id !== payload.p_course).concat({course_id:payload.p_course,status:payload.p_status}); data = {done:['com0','mat0','prog1'],plan:[],statuses} }
   else if (path.endsWith('/course_status')) { if (payload) { statuses = statuses.filter(s => s.course_id !== payload.course_id).concat(payload) }; data = statuses }
   else if (path.endsWith('/professors')) { if (payload) { teachers.push({ id: crypto.randomUUID(), name: payload.name, professor_tags: [] }) }; data = teachers }
   else if (path.endsWith('/professor_tags')) { if (payload) teachers.find(t => t.id === payload.professor_id).professor_tags.push(payload); data = [] }
@@ -40,10 +41,10 @@ await page.goto((process.env.REVIEW_BASE_URL || 'http://127.0.0.1:5181') + '/pag
 await page.locator('.h-enrollment-list').waitFor(); assert.equal(await page.locator('.h-enrollment-list li').count(), 2)
 await capture({ path: out + '/inicio-desktop.png' })
 await page.getByRole('button', { name: 'Actualizar matrícula', exact: true }).click()
-await page.getByRole('button', { name: 'Ficha del curso', exact: true }).click()
+await page.getByRole('combobox', { name: 'Qué explorar', exact: true }).selectOption('ficha')
 await page.locator('[data-course="fia"]').click()
 await page.getByLabel('Estado académico').selectOption('matriculado'); await page.getByRole('button', { name: 'Guardar estado', exact: true }).click()
-await page.getByText('Estado guardado. Inicio y Mod Focus usan esta matrícula.').waitFor()
+await page.getByText('Estado y plan actualizados. Inicio y Focus usan esta matrícula.').waitFor()
 await page.getByLabel('4 de 5 estrellas').click(); await page.getByText('Dificultad guardada.', { exact: true }).waitFor()
 await page.getByLabel('Añadir profesor', { exact: true }).fill('Docente de ejemplo'); await page.getByRole('button', { name: 'Añadir profesor', exact: true }).click()
 await page.getByText('DOCENTE DE EJEMPLO', { exact: true }).waitFor()

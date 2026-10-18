@@ -1,0 +1,642 @@
+[
+  {
+    "view": "login",
+    "size": [
+      1920,
+      947
+    ],
+    "ok": true
+  },
+  {
+    "view": "login-error",
+    "size": [
+      1920,
+      947
+    ],
+    "ok": true
+  },
+  {
+    "view": "register",
+    "size": [
+      1920,
+      947
+    ],
+    "ok": true
+  },
+  {
+    "view": "register-error",
+    "size": [
+      1920,
+      947
+    ],
+    "ok": true
+  },
+  {
+    "view": "forgot",
+    "size": [
+      1920,
+      947
+    ],
+    "ok": true
+  },
+  {
+    "view": "forgot-error",
+    "size": [
+      1920,
+      947
+    ],
+    "ok": true
+  },
+  {
+    "view": "mail",
+    "size": [
+      1920,
+      947
+    ],
+    "ok": true
+  },
+  {
+    "view": "mail-error",
+    "size": [
+      1920,
+      947
+    ],
+    "ok": true
+  },
+  {
+    "view": "reset",
+    "size": [
+      1920,
+      947
+    ],
+    "ok": true
+  },
+  {
+    "view": "reset-error",
+    "size": [
+      1920,
+      947
+    ],
+    "ok": true
+  },
+  {
+    "view": "login",
+    "size": [
+      1536,
+      730
+    ],
+    "ok": true
+  },
+  {
+    "view": "login-error",
+    "size": [
+      1536,
+      730
+    ],
+    "ok": true
+  },
+  {
+    "view": "register",
+    "size": [
+      1536,
+      730
+    ],
+    "ok": true
+  },
+  {
+    "view": "register-error",
+    "size": [
+      1536,
+      730
+    ],
+    "ok": true
+  },
+  {
+    "view": "forgot",
+    "size": [
+      1536,
+      730
+    ],
+    "ok": true
+  },
+  {
+    "view": "forgot-error",
+    "size": [
+      1536,
+      730
+    ],
+    "ok": true
+  },
+  {
+    "view": "mail",
+    "size": [
+      1536,
+      730
+    ],
+    "ok": true
+  },
+  {
+    "view": "mail-error",
+    "size": [
+      1536,
+      730
+    ],
+    "ok": true
+  },
+  {
+    "view": "reset",
+    "size": [
+      1536,
+      730
+    ],
+    "ok": true
+  },
+  {
+    "view": "reset-error",
+    "size": [
+      1536,
+      730
+    ],
+    "ok": true
+  },
+  {
+    "view": "login",
+    "size": [
+      1366,
+      657
+    ],
+    "ok": true
+  },
+  {
+    "view": "login-error",
+    "size": [
+      1366,
+      657
+    ],
+    "ok": true
+  },
+  {
+    "view": "register",
+    "size": [
+      1366,
+      657
+    ],
+    "ok": true
+  },
+  {
+    "view": "register-error",
+    "size": [
+      1366,
+      657
+    ],
+    "ok": true
+  },
+  {
+    "view": "forgot",
+    "size": [
+      1366,
+      657
+    ],
+    "ok": true
+  },
+  {
+    "view": "forgot-error",
+    "size": [
+      1366,
+      657
+    ],
+    "ok": true
+  },
+  {
+    "view": "mail",
+    "size": [
+      1366,
+      657
+    ],
+    "ok": true
+  },
+  {
+    "view": "mail-error",
+    "size": [
+      1366,
+      657
+    ],
+    "ok": true
+  },
+  {
+    "view": "reset",
+    "size": [
+      1366,
+      657
+    ],
+    "ok": true
+  },
+  {
+    "view": "reset-error",
+    "size": [
+      1366,
+      657
+    ],
+    "ok": true
+  },
+  {
+    "view": "login",
+    "size": [
+      1280,
+      620
+    ],
+    "ok": true
+  },
+  {
+    "view": "login-error",
+    "size": [
+      1280,
+      620
+    ],
+    "ok": true
+  },
+  {
+    "view": "register",
+    "size": [
+      1280,
+      620
+    ],
+    "ok": true
+  },
+  {
+    "view": "register-error",
+    "size": [
+      1280,
+      620
+    ],
+    "ok": true
+  },
+  {
+    "view": "forgot",
+    "size": [
+      1280,
+      620
+    ],
+    "ok": true
+  },
+  {
+    "view": "forgot-error",
+    "size": [
+      1280,
+      620
+    ],
+    "ok": true
+  },
+  {
+    "view": "mail",
+    "size": [
+      1280,
+      620
+    ],
+    "ok": true
+  },
+  {
+    "view": "mail-error",
+    "size": [
+      1280,
+      620
+    ],
+    "ok": true
+  },
+  {
+    "view": "reset",
+    "size": [
+      1280,
+      620
+    ],
+    "ok": true
+  },
+  {
+    "view": "reset-error",
+    "size": [
+      1280,
+      620
+    ],
+    "ok": true
+  },
+  {
+    "view": "login",
+    "size": [
+      1024,
+      600
+    ],
+    "ok": true
+  },
+  {
+    "view": "login-error",
+    "size": [
+      1024,
+      600
+    ],
+    "ok": true
+  },
+  {
+    "view": "register",
+    "size": [
+      1024,
+      600
+    ],
+    "ok": true
+  },
+  {
+    "view": "register-error",
+    "size": [
+      1024,
+      600
+    ],
+    "ok": true
+  },
+  {
+    "view": "forgot",
+    "size": [
+      1024,
+      600
+    ],
+    "ok": true
+  },
+  {
+    "view": "forgot-error",
+    "size": [
+      1024,
+      600
+    ],
+    "ok": true
+  },
+  {
+    "view": "mail",
+    "size": [
+      1024,
+      600
+    ],
+    "ok": true
+  },
+  {
+    "view": "mail-error",
+    "size": [
+      1024,
+      600
+    ],
+    "ok": true
+  },
+  {
+    "view": "reset",
+    "size": [
+      1024,
+      600
+    ],
+    "ok": true
+  },
+  {
+    "view": "reset-error",
+    "size": [
+      1024,
+      600
+    ],
+    "ok": true
+  },
+  {
+    "view": "login",
+    "size": [
+      768,
+      1024
+    ],
+    "ok": true
+  },
+  {
+    "view": "login-error",
+    "size": [
+      768,
+      1024
+    ],
+    "ok": true
+  },
+  {
+    "view": "register",
+    "size": [
+      768,
+      1024
+    ],
+    "ok": true
+  },
+  {
+    "view": "register-error",
+    "size": [
+      768,
+      1024
+    ],
+    "ok": true
+  },
+  {
+    "view": "forgot",
+    "size": [
+      768,
+      1024
+    ],
+    "ok": true
+  },
+  {
+    "view": "forgot-error",
+    "size": [
+      768,
+      1024
+    ],
+    "ok": true
+  },
+  {
+    "view": "mail",
+    "size": [
+      768,
+      1024
+    ],
+    "ok": true
+  },
+  {
+    "view": "mail-error",
+    "size": [
+      768,
+      1024
+    ],
+    "ok": true
+  },
+  {
+    "view": "reset",
+    "size": [
+      768,
+      1024
+    ],
+    "ok": true
+  },
+  {
+    "view": "reset-error",
+    "size": [
+      768,
+      1024
+    ],
+    "ok": true
+  },
+  {
+    "view": "login",
+    "size": [
+      390,
+      844
+    ],
+    "ok": true
+  },
+  {
+    "view": "login-error",
+    "size": [
+      390,
+      844
+    ],
+    "ok": true
+  },
+  {
+    "view": "register",
+    "size": [
+      390,
+      844
+    ],
+    "ok": true
+  },
+  {
+    "view": "register-error",
+    "size": [
+      390,
+      844
+    ],
+    "ok": true
+  },
+  {
+    "view": "forgot",
+    "size": [
+      390,
+      844
+    ],
+    "ok": true
+  },
+  {
+    "view": "forgot-error",
+    "size": [
+      390,
+      844
+    ],
+    "ok": true
+  },
+  {
+    "view": "mail",
+    "size": [
+      390,
+      844
+    ],
+    "ok": true
+  },
+  {
+    "view": "mail-error",
+    "size": [
+      390,
+      844
+    ],
+    "ok": true
+  },
+  {
+    "view": "reset",
+    "size": [
+      390,
+      844
+    ],
+    "ok": true
+  },
+  {
+    "view": "reset-error",
+    "size": [
+      390,
+      844
+    ],
+    "ok": true
+  },
+  {
+    "view": "login",
+    "size": [
+      360,
+      640
+    ],
+    "ok": true
+  },
+  {
+    "view": "login-error",
+    "size": [
+      360,
+      640
+    ],
+    "ok": true
+  },
+  {
+    "view": "register",
+    "size": [
+      360,
+      640
+    ],
+    "ok": true
+  },
+  {
+    "view": "register-error",
+    "size": [
+      360,
+      640
+    ],
+    "ok": true
+  },
+  {
+    "view": "forgot",
+    "size": [
+      360,
+      640
+    ],
+    "ok": true
+  },
+  {
+    "view": "forgot-error",
+    "size": [
+      360,
+      640
+    ],
+    "ok": true
+  },
+  {
+    "view": "mail",
+    "size": [
+      360,
+      640
+    ],
+    "ok": true
+  },
+  {
+    "view": "mail-error",
+    "size": [
+      360,
+      640
+    ],
+    "ok": true
+  },
+  {
+    "view": "reset",
+    "size": [
+      360,
+      640
+    ],
+    "ok": true
+  },
+  {
+    "view": "reset-error",
+    "size": [
+      360,
+      640
+    ],
+    "ok": true
+  }
+]

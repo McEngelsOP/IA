@@ -1,0 +1,749 @@
+{
+  "before": 3561168,
+  "after": 4422088,
+  "growth": 860920,
+  "resourcesBefore": {
+    "intervals": 1,
+    "observers": 0
+  },
+  "resourcesAfter": {
+    "intervals": 1,
+    "observers": 0
+  },
+  "p95": 34.099999997764826,
+  "interactions": {
+    "sidebar": {
+      "runs": [
+        37,
+        31.800000000745058,
+        30.900000002235174,
+        34.099999997764826,
+        69.39999999850988
+      ],
+      "median": 34.099999997764826
+    },
+    "tabs": {
+      "runs": [
+        40.900000002235174,
+        35.20000000298023,
+        75.90000000223517,
+        104,
+        92.80000000074506
+      ],
+      "median": 75.90000000223517
+    },
+    "course": {
+      "runs": [
+        49.899999998509884,
+        39.5,
+        50.19999999925494,
+        44.30000000074506,
+        51.399999998509884
+      ],
+      "median": 49.899999998509884
+    }
+  },
+  "matrix": [
+    {
+      "theme": "light",
+      "width": 1920,
+      "height": 947,
+      "name": "Calendario/Horarios",
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "width": 1920,
+      "height": 947,
+      "name": "Malla Curricular",
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "width": 1920,
+      "height": 947,
+      "name": "Grupos de estudio",
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "width": 1920,
+      "height": 947,
+      "name": "Mod Focus",
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "width": 1920,
+      "height": 947,
+      "name": "Inicio",
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "width": 1536,
+      "height": 730,
+      "name": "Calendario/Horarios",
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "width": 1536,
+      "height": 730,
+      "name": "Malla Curricular",
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "width": 1536,
+      "height": 730,
+      "name": "Grupos de estudio",
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "width": 1536,
+      "height": 730,
+      "name": "Mod Focus",
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "width": 1536,
+      "height": 730,
+      "name": "Inicio",
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "width": 1366,
+      "height": 657,
+      "name": "Calendario/Horarios",
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "width": 1366,
+      "height": 657,
+      "name": "Malla Curricular",
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "width": 1366,
+      "height": 657,
+      "name": "Grupos de estudio",
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "width": 1366,
+      "height": 657,
+      "name": "Mod Focus",
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "width": 1366,
+      "height": 657,
+      "name": "Inicio",
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "width": 1280,
+      "height": 620,
+      "name": "Calendario/Horarios",
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "width": 1280,
+      "height": 620,
+      "name": "Malla Curricular",
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "width": 1280,
+      "height": 620,
+      "name": "Grupos de estudio",
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "width": 1280,
+      "height": 620,
+      "name": "Mod Focus",
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "width": 1280,
+      "height": 620,
+      "name": "Inicio",
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "width": 1024,
+      "height": 600,
+      "name": "Calendario/Horarios",
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "width": 1024,
+      "height": 600,
+      "name": "Malla Curricular",
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "width": 1024,
+      "height": 600,
+      "name": "Grupos de estudio",
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "width": 1024,
+      "height": 600,
+      "name": "Mod Focus",
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "width": 1024,
+      "height": 600,
+      "name": "Inicio",
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "width": 768,
+      "height": 1024,
+      "name": "Calendario/Horarios",
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "width": 768,
+      "height": 1024,
+      "name": "Malla Curricular",
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "width": 768,
+      "height": 1024,
+      "name": "Grupos de estudio",
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "width": 768,
+      "height": 1024,
+      "name": "Mod Focus",
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "width": 768,
+      "height": 1024,
+      "name": "Inicio",
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "width": 390,
+      "height": 844,
+      "name": "Calendario/Horarios",
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "width": 390,
+      "height": 844,
+      "name": "Malla Curricular",
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "width": 390,
+      "height": 844,
+      "name": "Grupos de estudio",
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "width": 390,
+      "height": 844,
+      "name": "Mod Focus",
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "width": 390,
+      "height": 844,
+      "name": "Inicio",
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "width": 360,
+      "height": 640,
+      "name": "Calendario/Horarios",
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "width": 360,
+      "height": 640,
+      "name": "Malla Curricular",
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "width": 360,
+      "height": 640,
+      "name": "Grupos de estudio",
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "width": 360,
+      "height": 640,
+      "name": "Mod Focus",
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "width": 360,
+      "height": 640,
+      "name": "Inicio",
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "width": 844,
+      "height": 390,
+      "name": "Calendario/Horarios",
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "width": 844,
+      "height": 390,
+      "name": "Malla Curricular",
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "width": 844,
+      "height": 390,
+      "name": "Grupos de estudio",
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "width": 844,
+      "height": 390,
+      "name": "Mod Focus",
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "width": 844,
+      "height": 390,
+      "name": "Inicio",
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "width": 390,
+      "height": 480,
+      "name": "Calendario/Horarios",
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "width": 390,
+      "height": 480,
+      "name": "Malla Curricular",
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "width": 390,
+      "height": 480,
+      "name": "Grupos de estudio",
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "width": 390,
+      "height": 480,
+      "name": "Mod Focus",
+      "pass": true
+    },
+    {
+      "theme": "light",
+      "width": 390,
+      "height": 480,
+      "name": "Inicio",
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "width": 1920,
+      "height": 947,
+      "name": "Calendario/Horarios",
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "width": 1920,
+      "height": 947,
+      "name": "Malla Curricular",
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "width": 1920,
+      "height": 947,
+      "name": "Grupos de estudio",
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "width": 1920,
+      "height": 947,
+      "name": "Mod Focus",
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "width": 1920,
+      "height": 947,
+      "name": "Inicio",
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "width": 1536,
+      "height": 730,
+      "name": "Calendario/Horarios",
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "width": 1536,
+      "height": 730,
+      "name": "Malla Curricular",
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "width": 1536,
+      "height": 730,
+      "name": "Grupos de estudio",
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "width": 1536,
+      "height": 730,
+      "name": "Mod Focus",
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "width": 1536,
+      "height": 730,
+      "name": "Inicio",
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "width": 1366,
+      "height": 657,
+      "name": "Calendario/Horarios",
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "width": 1366,
+      "height": 657,
+      "name": "Malla Curricular",
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "width": 1366,
+      "height": 657,
+      "name": "Grupos de estudio",
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "width": 1366,
+      "height": 657,
+      "name": "Mod Focus",
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "width": 1366,
+      "height": 657,
+      "name": "Inicio",
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "width": 1280,
+      "height": 620,
+      "name": "Calendario/Horarios",
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "width": 1280,
+      "height": 620,
+      "name": "Malla Curricular",
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "width": 1280,
+      "height": 620,
+      "name": "Grupos de estudio",
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "width": 1280,
+      "height": 620,
+      "name": "Mod Focus",
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "width": 1280,
+      "height": 620,
+      "name": "Inicio",
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "width": 1024,
+      "height": 600,
+      "name": "Calendario/Horarios",
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "width": 1024,
+      "height": 600,
+      "name": "Malla Curricular",
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "width": 1024,
+      "height": 600,
+      "name": "Grupos de estudio",
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "width": 1024,
+      "height": 600,
+      "name": "Mod Focus",
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "width": 1024,
+      "height": 600,
+      "name": "Inicio",
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "width": 768,
+      "height": 1024,
+      "name": "Calendario/Horarios",
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "width": 768,
+      "height": 1024,
+      "name": "Malla Curricular",
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "width": 768,
+      "height": 1024,
+      "name": "Grupos de estudio",
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "width": 768,
+      "height": 1024,
+      "name": "Mod Focus",
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "width": 768,
+      "height": 1024,
+      "name": "Inicio",
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "width": 390,
+      "height": 844,
+      "name": "Calendario/Horarios",
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "width": 390,
+      "height": 844,
+      "name": "Malla Curricular",
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "width": 390,
+      "height": 844,
+      "name": "Grupos de estudio",
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "width": 390,
+      "height": 844,
+      "name": "Mod Focus",
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "width": 390,
+      "height": 844,
+      "name": "Inicio",
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "width": 360,
+      "height": 640,
+      "name": "Calendario/Horarios",
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "width": 360,
+      "height": 640,
+      "name": "Malla Curricular",
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "width": 360,
+      "height": 640,
+      "name": "Grupos de estudio",
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "width": 360,
+      "height": 640,
+      "name": "Mod Focus",
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "width": 360,
+      "height": 640,
+      "name": "Inicio",
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "width": 844,
+      "height": 390,
+      "name": "Calendario/Horarios",
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "width": 844,
+      "height": 390,
+      "name": "Malla Curricular",
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "width": 844,
+      "height": 390,
+      "name": "Grupos de estudio",
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "width": 844,
+      "height": 390,
+      "name": "Mod Focus",
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "width": 844,
+      "height": 390,
+      "name": "Inicio",
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "width": 390,
+      "height": 480,
+      "name": "Calendario/Horarios",
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "width": 390,
+      "height": 480,
+      "name": "Malla Curricular",
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "width": 390,
+      "height": 480,
+      "name": "Grupos de estudio",
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "width": 390,
+      "height": 480,
+      "name": "Mod Focus",
+      "pass": true
+    },
+    {
+      "theme": "dark",
+      "width": 390,
+      "height": 480,
+      "name": "Inicio",
+      "pass": true
+    }
+  ],
+  "errors": []
+}

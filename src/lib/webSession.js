@@ -15,7 +15,7 @@ export function createWebSessionGuard(client, {
   now = Date.now, schedule = setTimeout, cancel = clearTimeout,
   onLock = () => {}, onExpired = () => {}, onSuspend = () => {}, onResume = () => {},
 } = {}) {
-  let active = null, timer = null, closing = false, expiry = Promise.resolve(), lastWrite = 0
+  let active = null, timer = null, closing = false, expiry = Promise.resolve(), lastWrite = 0, lastMoveCheck = -Infinity
   const activityKey = id => `${authKey}:web-activity:v1:${id}`
   const read = () => {
     try { return JSON.parse(storage.getItem(activityKey(active))) } catch { return null }
@@ -68,6 +68,7 @@ export function createWebSessionGuard(client, {
     return check()
   }
   function activity(event) {
+    if (event.type === 'pointermove') { const time = now(); if (time - lastMoveCheck < 250) return; lastMoveCheck = time }
     if (!check()) {
       if (event.cancelable) event.preventDefault()
       event.stopImmediatePropagation(); return

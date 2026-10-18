@@ -9,6 +9,7 @@ import base64, json, os, subprocess, time
 ROOT = Path(__file__).resolve().parents[1]
 BASE = os.environ.get('ACCESS_BASE_URL', 'http://127.0.0.1:5181')
 CAREERS = json.loads(subprocess.check_output(['node', '--input-type=module', '-e', "import {CARRERAS} from './src/data/carreras.js';console.log(JSON.stringify(CARRERAS))"], cwd=ROOT))
+PROJECT=os.environ.get('ACCESS_FIXTURE_PROJECT','access-fixture')
 errors = []
 encode = lambda value: base64.urlsafe_b64encode(json.dumps(value).encode()).rstrip(b'=').decode()
 
@@ -40,6 +41,7 @@ def fixture(browser, key, legacy=False):
                 assert 'carrera=is.null' in request.url
                 flags['profile'] = key; flags['saved'] = True
             data = [{'carrera':flags['profile'],'created_at':'2026-10-01T00:00:00Z'}]
+        elif path == '/rest/v1/student_setup': data = [{'draft':{},'preferences':{},'completed_at':'2026-10-01T00:00:00Z'}]
         elif path == '/rest/v1/course_status':
             data = [{'course_id':c['id'],'status':'matriculado','times_taken':1,'passed_at':None} for c in career['cursos'] if c['cr'] > 0][:3]
         elif path in ['/rest/v1/progress','/rest/v1/grades','/rest/v1/logros','/rest/v1/calendar_events','/rest/v1/calendar_tasks','/rest/v1/game_scores']: data = []
@@ -50,8 +52,9 @@ def fixture(browser, key, legacy=False):
             data = []
         else: raise AssertionError((request.method,path,body))
         r.fulfill(status=200,json=data,headers={'access-control-allow-origin':'*'})
-    context.route('https://access-fixture.supabase.co/**',route)
-    if legacy: context.add_init_script("localStorage.setItem('sb-access-fixture-auth-token',"+json.dumps(json.dumps(session))+');')
+    context.route('https://'+PROJECT+'.supabase.co/**',route)
+    if legacy: context.add_init_script("localStorage.setItem('sb-"+PROJECT+"-auth-token:web-activity:v1:'+"+json.dumps(user['id'])+",JSON.stringify({at:Date.now()}));")
+    if legacy: context.add_init_script("localStorage.setItem('sb-"+PROJECT+"-auth-token',"+json.dumps(json.dumps(session))+');')
     page = context.new_page()
     page.on('pageerror',lambda error:errors.append(str(error)))
     page.on('console',lambda message:errors.append(message.type+': '+message.text) if message.type in ['warning','error'] else None)
@@ -93,7 +96,7 @@ with sync_playwright() as p:
         options(page,'#kcs',enrolled)
         page.locator('#nav [data-n="Herramientas"]').click()
         page.locator('#nav [data-k="Brújula IA"]').click()
-        expect(page.locator('#roadmap-title')).to_be_visible()
+        expect(page.get_by_role('navigation',name='Vistas de Brújula')).to_be_visible()
         context.close(); print('PASS',key,'registro → Inicio; malla, calendario, grupos, Focus y Brújula',flush=True)
     context,page,flags,_ = fixture(browser,'software',legacy=True)
     page.goto(BASE+'/pagina.html')

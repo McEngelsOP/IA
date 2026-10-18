@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
-import { ROOM_PAGE_SIZE, MESSAGE_PAGE_SIZE, studyError, mergeMessages, cleanInvite, validRoom } from '../lib/studyGroups'
+import { ROOM_PAGE_SIZE, MESSAGE_PAGE_SIZE, studyError, mergeMessages, chatWindow, cleanInvite, validRoom } from '../lib/studyGroups'
 import '../styles/OfficialStudyGroups.css'
+import { visiblePolling } from '../lib/visiblePolling.js'
 
 const initialForm = course => ({ course, name: '', description: '', nickname: '', private: false })
 const when = value => new Date(value).toLocaleString('es-PE', { timeZone: 'America/Lima', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
@@ -18,6 +19,7 @@ function OfficialStudyGroups({ client, user, courses, onBusy }) {
   const [members, setMembers] = useState([]), [messages, setMessages] = useState([]), [messageDraft, setMessageDraft] = useState(''), [older, setOlder] = useState(false), [loadingOlder, setLoadingOlder] = useState(false)
   const [invite, setInvite] = useState(''), [confirm, setConfirm] = useState(null), [refreshing, setRefreshing] = useState(false)
   const alive = useRef(true), lock = useRef(false), listRevision = useRef(0), chatRevision = useRef(0), activeRoom = useRef(null), formRef = useRef(null), messageInput = useRef(null), transcript = useRef(null), headerRef = useRef(null), listAction = useRef(null)
+  const metadataRead = useRef(0)
   const creation = useRef(null), submission = useRef(null), scrolling = useRef(false), lastCount = useRef(0), chatLoading = useRef(null), olderLoading = useRef(null)
   const courseName = id => courses.find(c => c.id === id)?.n || 'Curso de la sala'
   useEffect(() => { alive.current = true; return () => { alive.current = false; listRevision.current++; chatRevision.current++ } }, [])
@@ -29,15 +31,14 @@ function OfficialStudyGroups({ client, user, courses, onBusy }) {
     activeRoom.current = id; setChatState('loading'); setMessages([]); setMembers([]); setInvite(''); setError(''); lastCount.current = 0
     const load = () => refreshChat(id, revision, false)
     load()
-    const timer = setInterval(() => { if (document.visibilityState === 'visible' && !lock.current) refreshChat(id, revision, true) }, 10000)
-    const focus = () => { if (!lock.current && document.visibilityState === 'visible') refreshChat(id, revision, true) }
-    window.addEventListener('focus', focus); document.addEventListener('visibilitychange', focus)
-    return () => { clearInterval(timer); window.removeEventListener('focus', focus); document.removeEventListener('visibilitychange', focus); chatRevision.current++; activeRoom.current = null }
+    const stop = visiblePolling(() => { if (!lock.current) return refreshChat(id, revision, true) })
+    return () => { stop(); chatRevision.current++; activeRoom.current = null }
+
   }, [roomId])
   useEffect(() => { if (form) { formRef.current?.scrollIntoView({ block: 'start', behavior: 'instant' }); formRef.current?.querySelector('input,select')?.focus({ preventScroll: true }) } }, [form])
   useEffect(() => { if (chatState === 'ready') headerRef.current?.focus({ preventScroll: true }) }, [chatState])
   useEffect(() => {
-    if (messages.length !== lastCount.current && !scrolling.current) transcript.current?.scrollTo({ top: transcript.current.scrollHeight, behavior: 'instant' })
+    if (!scrolling.current) transcript.current?.scrollTo({ top: transcript.current.scrollHeight, behavior: 'instant' })
     lastCount.current = messages.length
   }, [messages])
   async function verify() {
@@ -63,13 +64,15 @@ function OfficialStudyGroups({ client, user, courses, onBusy }) {
     if (chatLoading.current === revision || olderLoading.current === revision) return
     chatLoading.current = revision
     try {
+      const metadata = !background || Date.now() - metadataRead.current >= 60000
       const [info, incoming, result] = await Promise.all([
-        rpc('study_room_info', { rid: id }), rpc('read_study_messages', { rid: id }), client.from('study_room_members').select('nickname,joined_at').eq('room_id', id).order('joined_at')
+        metadata ? rpc('study_room_info', { rid: id }) : null, rpc('read_study_messages', { rid: id }), metadata ? client.from('study_room_members').select('nickname,joined_at').eq('room_id', id).order('joined_at').limit(100) : null
       ])
-      if (result.error) throw result.error
-      if (!info?.[0]) throw { message: 'ROOM_UNAVAILABLE' }
+      if (result?.error) throw result.error
+      if (metadata && !info?.[0]) throw { message: 'ROOM_UNAVAILABLE' }
       if (!alive.current || revision !== chatRevision.current || activeRoom.current !== id) return
-      setRoom(info[0]); setMembers(result.data || []); setMessages(previous => mergeMessages(previous, incoming || []))
+      if (metadata) { setRoom(info[0]); setMembers(result.data || []); metadataRead.current = Date.now() }
+      setMessages(previous => { const result = chatWindow(previous, incoming || [], scrolling.current); if (result.trimmed) queueMicrotask(() => { if (alive.current) setOlder(true) }); return result.messages })
       if (!background) { setOlder((incoming || []).length === MESSAGE_PAGE_SIZE); setChatState('ready') }
       else setNotice('')
     } catch (e) { if (alive.current && revision === chatRevision.current) { if (!background) { setChatState('error'); setError(studyError(e, 'No se pudo abrir la conversación. Reintenta.')) } else if (e?.message?.includes('ROOM_UNAVAILABLE')) { setChatState('error'); setMessages([]); setMembers([]); setError(studyError(e)) } else setNotice('No pudimos actualizar la conversación. Conservamos los mensajes que ya cargaron. Usa Actualizar para reintentar.') } }
