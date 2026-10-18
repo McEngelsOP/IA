@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import GeodueloOnline from './GeodueloOnline'
+import useGeodueloFullscreen from './useGeodueloFullscreen'
 
 const TYPE = 'esan:geoduelo'
 const VALID_PHASES = new Set(['ready', 'playing', 'steal', 'result', 'paused', 'final'])
 
 export default function Geoduelo({ onGameOver, soundEnabled, onSoundChange, onExit, playerName, account, client, user }) {
   const [mode, setMode] = useState('offline')
-  const frame = useRef(null)
+  const frame = useRef(null), root = useRef(null)
+  const { fullscreen, toggle } = useGeodueloFullscreen(root)
   const callbacks = useRef({ onGameOver, onSoundChange, onExit, soundEnabled, playerName, account })
   callbacks.current = { onGameOver, onSoundChange, onExit, soundEnabled, playerName, account }
   const [session, setSession] = useState(() => crypto.randomUUID())
@@ -48,12 +50,15 @@ export default function Geoduelo({ onGameOver, soundEnabled, onSoundChange, onEx
 
   useEffect(() => { send('sound', { sound: soundEnabled }) }, [soundEnabled, session])
 
-  return <div className="gm-geoduelo-frame geo-with-mode">
+  return <div ref={root} className={`gm-geoduelo-frame geo-with-mode${fullscreen ? ' geo-immersive' : ''}`}>
     <link rel="stylesheet" href="./juegos/geoduelo/fonts.css"/>
     <div className="geo-mode-bar" role="group" aria-label="Modo de Geoduelo">
       <button aria-pressed={mode === 'offline'} onClick={() => setMode('offline')}>Offline</button>
       <button aria-pressed={mode === 'online'} onClick={() => setMode('online')}>Online</button>
-      <span>{mode === 'offline' ? 'Dos jugadores · una máquina' : 'Dos cuentas · dos máquinas'}</span>
+      <span className="geo-mode-hint">{mode === 'offline' ? 'Dos jugadores · una máquina' : 'Dos cuentas · dos máquinas'}</span>
+      <button className="geo-fullscreen-button" onClick={toggle} aria-pressed={fullscreen} aria-label={fullscreen ? 'Salir de pantalla completa' : 'Entrar en pantalla completa'}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={fullscreen ? 'M9 3v6H3m12-6v6h6M9 21v-6H3m12 6v-6h6' : 'M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5'}/></svg><span>{fullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}</span>
+      </button>
     </div>
     {mode === 'online' ? <GeodueloOnline client={client} user={user}/> : <>
 

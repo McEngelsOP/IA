@@ -2,6 +2,14 @@
 
 Implementación para `McEngelsOP/IA`, rama `aea`. El código no crea recursos remotos ni modifica Supabase automáticamente. Offline conserva el juego local completo. Online incluye **los once modos y el duelo mixto, con 10 rondas simultáneas de 25 segundos**. El anfitrión elige modo y dificultad antes de empezar. Hay un intento por pregunta y 100–150 puntos por acierto según el tiempo recibido por el servidor; las apuestas, pistas, robos y turnos alternados pertenecen al modo local.
 
+## Actualización de interfaz y pantalla completa
+
+Si Online ya funciona con el servidor de todos los modos (protocolo 2), esta actualización **solo requiere desplegar la web** desde la rama `aea` en Vercel. No vuelvas a ejecutar SQL ni a desplegar el Worker por estos cambios visuales. Se conservan la URL configurada, salas, autenticación y guardado de resultados.
+
+La partida adopta la jerarquía de Offline: jugadores, pregunta/reloj, globo y respuestas, y muelle de conexión/salida. En móvil los controles pasan debajo del globo; las pantallas bajas permiten desplazamiento interno. La barra Offline/Online incluye entrar/salir de pantalla completa. Si el navegador no permite pantalla completa nativa, se abre una vista inmersiva dentro del navegador; su botón de salida permanece visible. Escape sale de esa vista sin cerrar la partida.
+
+El globo no recibe actualizaciones por los cambios del reloj y solo dibuja cuando cambia la pregunta, el tamaño o una interacción. Admite arrastrar, pellizcar, botones de zoom y teclado. El servidor conserva la autoridad sobre tiempo, respuestas y puntajes.
+
 ## Qué hace cada servicio
 
 - Vercel sirve la interfaz. La sesión de la cuenta existente se utiliza para entrar.

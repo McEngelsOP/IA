@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import './geoduelo-online.css'
 import GeodueloGlobe from './GeodueloGlobe'
 import { MODES, LEVELS, modeName } from '../lib/geoduelo-modes'
@@ -112,11 +112,18 @@ export default function GeodueloOnline({ client, user }) {
   }, [client, user?.id])
   useEffect(() => {
     if (!state || !['waiting','ready','question','reveal'].includes(state.phase)) return
-    const timer = setInterval(() => setNow(Date.now() + offset.current), 250)
+    const timer = setInterval(() => setNow(Date.now() + offset.current), 1000)
     return () => clearInterval(timer)
   }, [state?.phase])
   const seconds = state ? Math.max(0, Math.ceil((state.deadline - now) / 1000)) : 0
   const connected = connection === 'connected', active = state && !['finished','expired'].includes(state.phase)
+  const playing = state && ['question','reveal'].includes(state.phase)
+  const globeMap = useMemo(() => state?.question ? ({
+    ...(state.question.map || {}), disabled: !connected || sent || state.phase !== 'question',
+    revealed: state.phase === 'reveal', target: state.target, targetCountry: state.targetCountry
+  }) : null, [state?.question, connected, sent, state?.phase, state?.target, state?.targetCountry])
+  const markPoint = useCallback(p => { if (!sent && state?.phase === 'question') setPoint(p) }, [sent, state?.phase])
+
   async function copyCode() {
     try { await navigator.clipboard.writeText(state.code); setCopied(true) } catch { setError('No se pudo copiar. Selecciona el código y cópialo manualmente.') }
   }
@@ -141,11 +148,19 @@ export default function GeodueloOnline({ client, user }) {
           </>}
       </div>
     </div>}
-    {state && <div className="geo-online-match">
-      <header className="geo-online-score" aria-label="Marcador">{[0, 1].map(i => <div key={i} className={`geo-player geo-player-${i}`}>
-        <span><svg className="geo-player-mark" viewBox="0 0 16 16" aria-hidden="true">{i === 0 ? <circle cx="8" cy="8" r="5"/> : <path d="M8 1 15 8 8 15 1 8Z"/>}</svg>{state.players[i]?.name || 'Buscando rival…'}{i === state.seat ? ' (tú)' : ''}</span><strong>{state.scores[i]}</strong>
-      </div>)}</header>
-      <div className="geo-online-play">
+    {state && <div className={`geo-online-match${playing ? ' geo-match-playing' : ''}`}>
+      <header className="geo-online-hud">
+        {[0, 1].map(i => <div key={i} className={`geo-player geo-player-${i}${state.answered[i] && playing ? ' geo-player-answered' : ''}`} aria-label={`Jugador ${i + 1}: ${state.players[i]?.name || 'Buscando rival'}, ${state.scores[i]} puntos`}>
+          <span className="geo-player-name" title={state.players[i]?.name}><svg className="geo-player-mark" viewBox="0 0 16 16" aria-hidden="true">{i === 0 ? <circle cx="8" cy="8" r="5"/> : <path d="M8 1 15 8 8 15 1 8Z"/>}</svg>{state.players[i]?.name || 'Buscando rival…'}</span>
+          <strong>{state.scores[i]}</strong><small>{i === state.seat ? 'Tú' : 'Rival'} · {playing ? state.answered[i] ? 'Respondió' : 'Pensando…' : state.players[i]?.ready ? 'Listo' : 'En sala'}</small>
+        </div>)}
+        <div className="geo-online-prompt">
+          {playing ? <><div className="geo-round-meta"><span>Ronda {state.round + 1} de {state.rounds} · {modeName(state.question.kind)}</span><span role="timer" aria-label="Segundos restantes">{seconds} s</span></div>
+            <h2>{state.question.prompt}</h2><div className="geo-timer-track" aria-hidden="true"><span style={{width: `${Math.min(100, seconds / (state.phase === 'question' ? 25 : 4) * 100)}%`}}/></div>
+          </> : <><h2>{state.phase === 'waiting' ? 'Sala de espera' : state.phase === 'ready' ? 'Preparen el duelo' : 'Duelo terminado'}</h2><p>{modeName(state.settings.mode)} · {LEVELS.find(l=>l.id===state.settings.level)?.name}</p></>}
+        </div>
+      </header>
+      <div className={`geo-online-play${playing ? '' : ' geo-setup-content'}`}>
         {state.phase === 'waiting' && <><h2>{state.code ? 'Tu sala está lista.' : 'Buscando un explorador…'}</h2>
           {state.code ? <><p>Comparte este código con tu amigo. Debe entrar a Online desde su cuenta y elegir Entrar.</p>
             <div className="geo-room-share"><output aria-label="Código de sala">{state.code}</output><button onClick={copyCode}>{copied ? 'Código copiado' : 'Copiar código'}</button></div></>
@@ -153,34 +168,32 @@ export default function GeodueloOnline({ client, user }) {
           <p className="geo-round-meta">La sala espera hasta {seconds} s.</p></>}
         {['waiting','ready'].includes(state.phase) && state.host !== null && <div className="geo-online-config">
           <h3>{state.host === state.seat ? 'Tú eliges el duelo' : `${state.players[state.host]?.name || 'El anfitrión'} elige el duelo`}</h3>
-          <p>{state.code ? 'Quien crea la sala es el anfitrión.' : 'El anfitrión se elige al azar al encontrar rival.'} Cambiar la configuración reinicia las confirmaciones.</p>
+          <p>Cambiar el modo o la dificultad reinicia las confirmaciones.</p>
           <div className="geo-config-fields"><div><label htmlFor="geo-mode">Modo de juego</label><select id="geo-mode" value={state.settings.mode} disabled={!connected || state.host !== state.seat} onChange={e => send('configure', {settings:{...state.settings,mode:e.target.value}})}>
             {['Ubicar','Elegir','Calcular','Todos'].map(category => <optgroup key={category} label={category}>{MODES.filter(m=>m.category===category).map(m=><option key={m.id} value={m.id}>{m.name}</option>)}</optgroup>)}
           </select></div>
           <div><label htmlFor="geo-level">Dificultad</label><select id="geo-level" value={state.settings.level} disabled={!connected || state.host !== state.seat} onChange={e => send('configure',{settings:{...state.settings,level:e.target.value}})}>{LEVELS.map(l=><option key={l.id} value={l.id}>{l.name}</option>)}</select></div></div>
-          {state.host !== state.seat && <p role="status">Solo el anfitrión puede cambiar el modo. Puedes confirmar cuando estés de acuerdo.</p>}
+          {state.host !== state.seat && <p role="status">El anfitrión configura el duelo. Tú confirmas cuando estés listo.</p>}
         </div>}
-        {state.phase === 'ready' && <><h2>Preparen el duelo.</h2><p>{modeName(state.settings.mode)} · {LEVELS.find(l=>l.id===state.settings.level)?.name}. La partida comienza cuando ambos confirmen. El reloj continúa aunque cambies de pestaña.</p>
-          <button className="geo-primary" disabled={!connected || state.players[state.seat]?.ready} onClick={() => send('ready',{revision:state.revision})}>{state.players[state.seat]?.ready ? 'Esperando al rival…' : 'Estoy listo'}</button><p className="geo-round-meta">Confirmen en {seconds} s.</p></>}
+        {state.phase === 'ready' && <><p>La partida comienza cuando ambos confirmen. El reloj sigue aunque cambies de pestaña.</p>
+          <p className="geo-round-meta">Confirmen en {seconds} s.</p></>}
         {['question','reveal'].includes(state.phase) && <>
-          <div className="geo-round-meta"><span>Ronda {state.round + 1} de {state.rounds} · {modeName(state.question.kind)}</span><span role="timer" aria-label="Segundos restantes">{seconds} s</span></div>
-          <h2>{state.question.prompt}</h2>
-          <div className={`geo-question-body${state.question.map ? ' geo-question-with-map' : ''}`}>
-            {state.question.map && <GeodueloGlobe round={state.round} selected={point} onPoint={p=>{if(!sent&&state.phase==='question')setPoint(p)}} map={{...state.question.map,disabled:!connected||sent||state.phase!=='question',revealed:state.phase==='reveal',target:state.target,targetCountry:state.targetCountry}}/>}
-            <div>
+          <div className="geo-question-body geo-question-with-map">
+            <GeodueloGlobe round={state.round} selected={point} onPoint={markPoint} map={globeMap}/>
+            <div className="geo-answer-panel" aria-label="Tu respuesta">
               {state.question.ui === 'opts' && <div className="geo-online-options">{state.question.options.map((option, i) => <button key={`${state.round}-${i}`} className={`${choice === i ? 'geo-selected' : ''} ${state.phase === 'reveal' && state.correct === i ? 'geo-correct' : ''}`}
                 disabled={!connected || state.phase !== 'question' || sent || choice !== null || seconds === 0} aria-pressed={choice === i}
                 onClick={() => { setChoice(i); setSent(true); send('answer', { choice: i, round: state.round }) }}>{option}{state.phase === 'reveal' && state.correct === i ? ' · Correcta' : ''}</button>)}</div>}
               {state.question.ui === 'globe' && <><p>Gira el globo y marca tu respuesta. Tienes un intento por ronda.</p><p className="geo-round-meta">{point ? `Tu marca: ${point[1].toFixed(1)}°, ${point[0].toFixed(1)}°` : 'Todavía no has marcado un punto.'}</p><button className="geo-primary" disabled={!connected||sent||!point||state.phase!=='question'||seconds===0} onClick={()=>{setSent(true);send('answer',{point,round:state.round})}}>Confirmar ubicación</button></>}
               {state.question.ui === 'distance' && <form onSubmit={e=>{e.preventDefault();if(!sent){setSent(true);send('answer',{km:Number(estimate),round:state.round})}}}>
-                <label htmlFor="geo-distance">Tu estimación en kilómetros</label><input id="geo-distance" type="number" inputMode="numeric" min="0" max="20040" step="1" required value={estimate} disabled={sent||state.phase!=='question'} onChange={e=>setEstimate(e.target.value)}/>
+                <label htmlFor="geo-distance">Tu estimación en kilómetros</label><input id="geo-distance" type="number" inputMode="numeric" min="0" max="20040" step="1" required value={estimate} disabled={!connected||sent||state.phase!=='question'||seconds===0} onChange={e=>setEstimate(e.target.value)}/>
                 <button className="geo-primary" disabled={!connected||sent||estimate===''||state.phase!=='question'||seconds===0}>Confirmar distancia</button>
               </form>}
-              {state.question.ui === 'order' && <><p>Pulsa los países en orden, de mayor a menor.</p><div className="geo-online-options">{state.question.options.map((name,i)=><button key={`${state.round}-${i}`} disabled={sent||state.phase!=='question'||order.includes(i)} onClick={()=>setOrder(v=>[...v,i])}>{order.includes(i)?`${order.indexOf(i)+1}. `:''}{name}</button>)}</div>
+              {state.question.ui === 'order' && <><p>Pulsa los países en orden, de mayor a menor.</p><div className="geo-online-options">{state.question.options.map((name,i)=><button key={`${state.round}-${i}`} disabled={!connected||sent||state.phase!=='question'||seconds===0||order.includes(i)} onClick={()=>setOrder(v=>[...v,i])}>{order.includes(i)?`${order.indexOf(i)+1}. `:''}{name}</button>)}</div>
                 <div className="geo-order-actions"><button disabled={sent||!order.length||state.phase!=='question'} onClick={()=>setOrder(v=>v.slice(0,-1))}>Deshacer último</button><button className="geo-primary" disabled={!connected||sent||order.length!==state.question.options.length||state.phase!=='question'||seconds===0} onClick={()=>{setSent(true);send('answer',{order,round:state.round})}}>Confirmar orden</button></div></>}
             </div>
           </div>
-          <p role="status">{state.phase === 'reveal' ? `Respuesta: ${state.solution}. Siguiente ronda en ${seconds} s.` : sent ? state.answered[state.seat] ? 'Respuesta recibida. Esperando al rival.' : 'Enviando respuesta…' : 'Ambos responden. Un acierto rápido suma más puntos.'}</p>
+          <p className={`geo-answer-status${state.phase === 'reveal' ? ' geo-answer-revealed' : ''}`} role="status">{state.phase === 'reveal' ? `Respuesta: ${state.solution}. Siguiente ronda en ${seconds} s.` : sent ? state.answered[state.seat] ? 'Respuesta recibida. Esperando al rival.' : 'Enviando respuesta…' : 'Ambos responden. Un acierto rápido suma más puntos.'}</p>
         </>}
         {state.phase === 'finished' && <><h2>{state.winner === null ? 'Empate en el atlas.' : state.winner === state.seat ? '¡El duelo es tuyo!' : 'Esta vez ganó tu rival.'}</h2>
           <p>{state.reason === 'abandoned' ? 'La partida terminó por abandono.' : 'Diez rondas, un mundo por aprender. ¿Otro duelo?'}</p>
@@ -189,6 +202,7 @@ export default function GeodueloOnline({ client, user }) {
         {state.phase === 'expired' && <><h2>La sala venció.</h2><p>Vuelve a buscar rival o crea una nueva sala.</p></>}
       </div>
       <footer className="geo-online-footer"><span role="status">{connected ? 'Conectado' : connection === 'connecting' ? 'Conectando…' : 'Sin conexión'}</span>
+        {state.phase === 'ready' && <button className="geo-primary" disabled={!connected || state.players[state.seat]?.ready} onClick={() => send('ready',{revision:state.revision})}>{state.players[state.seat]?.ready ? 'Esperando al rival…' : 'Estoy listo'}</button>}
         {!connected && active && <button onClick={() => resume()} disabled={busy}>Volver a conectar</button>}
         <button onClick={leave} disabled={busy}>{active ? state.phase === 'waiting' ? 'Cancelar búsqueda / sala' : 'Abandonar partida' : 'Volver a Online'}</button>
       </footer>

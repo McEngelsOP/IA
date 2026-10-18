@@ -6,23 +6,24 @@ import {runtime, ids, capitals} from '../workers/geoduelo/test/runtime.mjs'
 const require=createRequire(import.meta.url)
 const {chromium}=require(process.env.PLAYWRIGHT_PATH || 'playwright')
 const root=new URL('../',import.meta.url).pathname
+const arcadeCSS=(await fs.readFile(root+'pagina.html','utf8')).match(/<style>([\s\S]*?)<\/style>/)[1]
 const runtime_=await runtime()
 const endpoint=String(await runtime_.mf.ready).replace(/\/$/,'')
 const server=await createServer({root,configFile:root+'vite.config.js',define:{'import.meta.env.VITE_GEODUELO_ONLINE_URL':JSON.stringify(endpoint)},server:{host:'127.0.0.1',port:5173,strictPort:true},plugins:[{
   name:'online-fixture',configureServer(server){server.middlewares.use('/__online',async(req,res)=>{
     const n=Number(new URL(req.url,'http://fixture').searchParams.get('seat')||0)
-    res.setHeader('content-type','text/html');res.end(await server.transformIndexHtml('/__online-'+n,`<html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0"><div id="game" style="height:100dvh"></div><script type="module">
+    res.setHeader('content-type','text/html');res.end(await server.transformIndexHtml('/__online-'+n,`<html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0"><main class="arc"><section class="gm-play gm-geoduelo"><div class="gm-play-top"><h2>Geoduelo</h2><button class="gm-small-button">Volver a juegos</button></div><div id="game" class="gm-game-body"></div></section></main><script type="module">
       import {mountOfficialArcadeGame} from '/src/components/OfficialArcadeGame.jsx';
       const user={id:'${ids[n]}'},client={auth:{getSession:async()=>({data:{session:{access_token:user.id}}})},rpc:async()=>({data:null})};
       mountOfficialArcadeGame(document.getElementById('game'),{game:'geoduelo',client,user,soundEnabled:false});
-      </script><style>.gm-react-game{height:100%;display:flex;flex-direction:column}.gm-geoduelo-frame{height:100%;flex:1}.gm-geoduelo-frame iframe{border:0;width:100%}</style></body></html>`))
+      </script><style>${arcadeCSS}</style></body></html>`))
   })}
 }]})
 let browser
 try{
  await server.listen()
  browser=await chromium.launch({headless:true,args:['--no-sandbox']})
- let a=await browser.newPage({viewport:{width:1440,height:900}}),b=await browser.newPage({viewport:{width:390,height:844}})
+ let a=await browser.newPage({reducedMotion:'reduce',viewport:{width:1440,height:900}}),b=await browser.newPage({reducedMotion:'reduce',viewport:{width:390,height:844}})
  const errors=[];for(const p of [a,b])p.on('pageerror',e=>errors.push(e.message))
  await a.goto('http://127.0.0.1:5173/__online?seat=0');await a.getByRole('button',{name:'Online',exact:true}).click()
  await a.getByRole('button',{name:'Buscar rival',exact:true}).waitFor();await a.evaluate(()=>document.fonts.ready)
@@ -39,14 +40,14 @@ try{
  for(let round=0;round<10;round++){
    await a.getByText(`Ronda ${round+1} de 10 · Capitales`,{exact:true}).waitFor({timeout:15000})
    await b.getByText(`Ronda ${round+1} de 10 · Capitales`,{exact:true}).waitFor({timeout:15000})
-   const question=await a.locator('.geo-online-play h2').textContent();const country=question.replace('¿Cuál es la capital de ','').replace(/\?$/,'')
+   const question=await a.locator('.geo-online-prompt h2').textContent();const country=question.replace('¿Cuál es la capital de ','').replace(/\?$/,'')
    const correct=capitals.find(c=>c.country===country).capital
    const options=await b.locator('.geo-online-options button').allTextContents();const wrong=options.find(o=>o!==correct)
    await a.getByRole('button',{name:correct,exact:true}).click();await b.getByRole('button',{name:wrong,exact:true}).click()
    await a.getByText(`Respuesta: ${correct}.`,{exact:false}).waitFor()
    if(round===1){
      const previous=a
-     a=await browser.newPage({viewport:{width:1440,height:900}})
+     a=await browser.newPage({reducedMotion:'reduce',viewport:{width:1440,height:900}})
      a.on('pageerror',e=>errors.push(e.message))
      await a.goto('http://127.0.0.1:5173/__online?seat=0')
      await a.getByRole('button',{name:'Online',exact:true}).click()
@@ -62,9 +63,9 @@ try{
  await a.getByRole('button',{name:'Volver a Online',exact:true}).click();await a.getByRole('button',{name:'Buscar rival',exact:true}).waitFor()
  await b.getByRole('button',{name:'Volver a Online',exact:true}).click()
  }
- const modes=['country','cap','place','who','cur','lang','falso','dist','tz','rank','mixto']
+ const modes=process.env.PROFILE_ONLY?['country']:['country','cap','place','who','cur','lang','falso','dist','tz','rank','mixto']
  for(const mode of modes){
-   if(mode==='country'){
+   if(mode==='country'&&!process.env.PROFILE_ONLY){
      for(const pattern of ['**/juegos/geoduelo/vendor/d3.v3.min.js','**/juegos/geoduelo/world.json']){
        let failed=false
        await a.route(pattern,route=>{if(!failed){failed=true;return route.fulfill({status:503,body:'Unavailable'})}return route.continue()})
@@ -87,14 +88,47 @@ try{
      await page.locator('.geo-round-meta').filter({hasText:'Ronda 1 de 10'}).first().waitFor()
      const globe=page.frameLocator('iframe.geo-online-globe')
      if(await page.locator('iframe.geo-online-globe').count()){
-       if(mode==='country'&&page===a){
+       if(mode==='country'&&page===a&&!process.env.PROFILE_ONLY){
          await globe.getByRole('button',{name:'Reintentar mapa',exact:true}).click()
          await globe.getByRole('button',{name:'Reintentar mapa',exact:true}).click()
        }
        await globe.locator('#status').waitFor({state:'hidden'})
        await page.waitForTimeout(100)
      }
-     if(mode==='country')await page.screenshot({path:root+`.impeccable/review/modes-globe-${page===a?'desktop':'mobile'}.png`,fullPage:true})
+     if(mode==='country'&&page===a){
+       const prompt=await page.locator('.geo-online-prompt h2').textContent()
+       await page.getByRole('button',{name:'Entrar en pantalla completa'}).click()
+       assert.equal(await page.evaluate(()=>!!document.fullscreenElement),true)
+       await page.getByRole('button',{name:'Salir de pantalla completa'}).click()
+       assert.equal(await page.evaluate(()=>!!document.fullscreenElement),false)
+       await page.evaluate(()=>{Element.prototype.requestFullscreen=undefined})
+       await page.getByRole('button',{name:'Entrar en pantalla completa'}).click()
+       assert.equal(await page.locator('.geo-immersive').count(),1)
+       await page.frameLocator('iframe.geo-online-globe').locator('canvas').focus();await page.keyboard.press('Escape')
+       await page.locator('.geo-immersive').waitFor({state:'detached'})
+       assert.equal(await page.locator('.geo-online-prompt h2').textContent(),prompt)
+       assert.equal(await page.evaluate(()=>document.body.style.overflow),'')
+     }
+     if(process.env.PROFILE_ONLY){await page.frameLocator('iframe.geo-online-globe').locator('canvas').evaluate(el=>{window.configCount=0;addEventListener('message',e=>{if(e.data?.action==='configure')window.configCount++})});await page.waitForTimeout(1500);const packets=await page.frameLocator('iframe.geo-online-globe').locator('canvas').evaluate(()=>window.configCount);console.log('Idle configure packets / 1.5s:',packets);assert.equal(packets,0);console.log('Globe height:',await page.locator('iframe.geo-online-globe').evaluate(el=>el.getBoundingClientRect().height))}
+     if(mode==='country'){
+       const box=await page.locator('iframe.geo-online-globe').boundingBox();assert.ok(box.height>=200,'Globe must remain usable')
+       if(page===a){assert.equal(await page.locator('.geo-online').evaluate(el=>el.scrollHeight>el.clientHeight+2),false,'Desktop match should fit Arcade')}
+     }
+     if(mode==='country'){
+       await page.locator('.geo-online').evaluate(el=>el.scrollTop=0)
+       await page.screenshot({path:root+`.impeccable/review/modes-globe-${page===a?'desktop':'mobile'}.png`,fullPage:true})
+       if(page===b){
+         await page.setViewportSize({width:844,height:390})
+         assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false)
+         await page.screenshot({path:root+'.impeccable/review/layout-landscape.png',fullPage:true})
+         await page.setViewportSize({width:390,height:844})
+       }
+       await page.getByRole('button',{name:'Entrar en pantalla completa'}).click()
+       await page.waitForTimeout(100)
+       await page.waitForFunction(()=>{const r=document.querySelector('.geo-immersive')?.getBoundingClientRect();return r&&Math.abs(r.x)<1&&Math.abs(r.y)<1&&Math.abs(r.width-innerWidth)<1&&Math.abs(r.height-innerHeight)<1})
+       await page.screenshot({path:root+`.impeccable/review/layout-fullscreen-${page===a?'desktop':'mobile'}.png`,fullPage:true})
+       await page.getByRole('button',{name:'Salir de pantalla completa'}).click()
+     }
      if(await page.getByRole('button',{name:'Confirmar ubicación',exact:true}).count()){
        await globe.locator('canvas').focus();await page.keyboard.press('Enter')
        await page.getByRole('button',{name:'Confirmar ubicación',exact:true}).click()

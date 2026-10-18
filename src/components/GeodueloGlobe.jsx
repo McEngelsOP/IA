@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
-export default function GeodueloGlobe({ map, selected, round, onPoint }) {
+import { memo, useEffect, useRef, useState } from 'react'
+function GeodueloGlobe({ map, selected, round, onPoint }) {
   const frame = useRef(null), callback = useRef(onPoint), config = useRef(null)
   const [session] = useState(() => crypto.randomUUID())
   callback.current = onPoint; config.current = { type:'esan:geoduelo-map',session,action:'configure',config:map,selected,round }
@@ -16,3 +16,5 @@ export default function GeodueloGlobe({ map, selected, round, onPoint }) {
   useEffect(send,[map,selected,round,session])
   return <iframe className="geo-online-globe" ref={frame} title="Globo interactivo de la pregunta" src={`./juegos/geoduelo/online-map.html#session=${session}`} onLoad={send}/>
 }
+
+export default memo(GeodueloGlobe)
