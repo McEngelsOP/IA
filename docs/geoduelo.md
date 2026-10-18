@@ -52,3 +52,7 @@ Correcciones del motor original:
 Ambos requieren Playwright; el segundo requiere PGlite. Se pueden indicar rutas instaladas con `PLAYWRIGHT_PATH` y `PGLITE_PATH`. La compilación de producción se verifica con `npm run build`.
 
 La validación local no sustituye el paso manual de activar y comprobar el SQL en el proyecto remoto.
+
+## Modalidad online
+
+El selector Offline / Online conserva el modo local y permite activar duelos de capitales entre dos cuentas. Consulta [la guía de activación manual](geoduelo-online.md) para Cloudflare, SQL y Vercel. Los resultados online se guardan por el servidor en su propia tabla y no pasan por `submit_game_score`.

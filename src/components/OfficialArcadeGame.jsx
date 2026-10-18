@@ -39,9 +39,9 @@ export function OfficialArcadeGame({ game, client, user, soundEnabled = true, on
     }
   }
   return <div className={`gm-react-game${game === 'geoduelo' ? ' gm-geoduelo-game' : ''}`}>
-    {game === 'geoduelo' ? <Geoduelo onGameOver={saveScore} soundEnabled={soundEnabled} onSoundChange={onSoundChange} onExit={onExit} playerName={playerName} account={!!user}/>
+    {game === 'geoduelo' ? <Geoduelo onGameOver={saveScore} soundEnabled={soundEnabled} onSoundChange={onSoundChange} onExit={onExit} playerName={playerName} account={!!user} client={client} user={user}/>
       : game === 'dino' ? <DinoGame onGameOver={saveScore}/> : <Galaxia onGameOver={saveScore}/>}
-    {(best != null || notice || pendingScore) && <div className="gm-game-status"><p className="gm-result" role="status">{best != null ? `Tu mejor puntaje${game === 'geoduelo' ? ' · Jugador 1' : ''}: ${best}. ` : ''}{notice}</p>
+    {(best != null || notice || pendingScore) && <div className="gm-game-status"><p className="gm-result" role="status">{best != null ? `Tu mejor puntaje${game === 'geoduelo' ? ' local · Jugador 1' : ''}: ${best}. ` : ''}{notice}</p>
       {pendingScore != null && <button className="gm-small-button" onClick={() => saveScore(pendingScore, true)}>Reintentar guardado</button>}</div>}
   </div>
 }

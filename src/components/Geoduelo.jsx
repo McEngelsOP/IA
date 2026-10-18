@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
+import GeodueloOnline from './GeodueloOnline'
 
 const TYPE = 'esan:geoduelo'
 const VALID_PHASES = new Set(['ready', 'playing', 'steal', 'result', 'paused', 'final'])
 
-export default function Geoduelo({ onGameOver, soundEnabled, onSoundChange, onExit, playerName, account }) {
+export default function Geoduelo({ onGameOver, soundEnabled, onSoundChange, onExit, playerName, account, client, user }) {
+  const [mode, setMode] = useState('offline')
   const frame = useRef(null)
   const callbacks = useRef({ onGameOver, onSoundChange, onExit, soundEnabled, playerName, account })
   callbacks.current = { onGameOver, onSoundChange, onExit, soundEnabled, playerName, account }
@@ -12,6 +14,7 @@ export default function Geoduelo({ onGameOver, soundEnabled, onSoundChange, onEx
   const send = (action, detail = {}) => frame.current?.contentWindow?.postMessage({ type: TYPE, version: 1, session, action, ...detail }, location.origin)
 
   useEffect(() => {
+    if (mode !== 'offline') return
     const matches = new Set()
     let timer = setTimeout(() => setStatus('error'), 30000)
     const init = () => send('init', { sound: callbacks.current.soundEnabled, playerName: callbacks.current.playerName, account: callbacks.current.account })
@@ -41,11 +44,19 @@ export default function Geoduelo({ onGameOver, soundEnabled, onSoundChange, onEx
       window.removeEventListener('blur', blur)
       document.removeEventListener('visibilitychange', hidden)
     }
-  }, [session])
+  }, [session, mode])
 
   useEffect(() => { send('sound', { sound: soundEnabled }) }, [soundEnabled, session])
 
-  return <div className="gm-geoduelo-frame">
+  return <div className="gm-geoduelo-frame geo-with-mode">
+    <link rel="stylesheet" href="./juegos/geoduelo/fonts.css"/>
+    <div className="geo-mode-bar" role="group" aria-label="Modo de Geoduelo">
+      <button aria-pressed={mode === 'offline'} onClick={() => setMode('offline')}>Offline</button>
+      <button aria-pressed={mode === 'online'} onClick={() => setMode('online')}>Online</button>
+      <span>{mode === 'offline' ? 'Dos jugadores · una máquina' : 'Dos cuentas · dos máquinas'}</span>
+    </div>
+    {mode === 'online' ? <GeodueloOnline client={client} user={user}/> : <>
+
     <iframe key={session} ref={frame} title="Geoduelo: duelo local de geografía para dos jugadores"
       src={`./juegos/geoduelo/index.html#session=${session}`} allow="autoplay" referrerPolicy="same-origin"
       onLoad={() => send('init', { sound: soundEnabled, playerName, account })}/>
@@ -53,5 +64,6 @@ export default function Geoduelo({ onGameOver, soundEnabled, onSoundChange, onEx
       <p>No se pudo preparar Geoduelo. Comprueba tu conexión y vuelve a intentarlo.</p>
       <button className="gm-small-button" onClick={() => { setStatus('loading'); setSession(crypto.randomUUID()) }}>Reintentar</button>
     </div>}
+    </>}
   </div>
 }
