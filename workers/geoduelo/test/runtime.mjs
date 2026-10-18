@@ -28,11 +28,11 @@ export async function runtime() {
   })
   await mf.ready
   async function session(seat, action, extra = {}) {
-    const r = await mf.dispatchFetch('https://game.test/session', { method: 'POST', headers: { origin, authorization: `Bearer ${ids[seat]}`, 'content-type': 'application/json' }, body: JSON.stringify({ action, ...extra }) })
+    const r = await mf.dispatchFetch('https://game.test/session', { method: 'POST', headers: { origin, authorization: `Bearer ${ids[seat]}`, 'content-type': 'application/json' }, body: JSON.stringify({ action, protocol:2, ...extra }) })
     return { status: r.status, ...await r.json() }
   }
   async function socket(data) {
-    const r = await mf.dispatchFetch(`https://game.test/ws/${data.room}?ticket=${data.ticket}`, { headers: { origin, Upgrade: 'websocket' } })
+    const r = await mf.dispatchFetch(`https://game.test/ws/${data.room}?ticket=${data.ticket}&v=2`, { headers: { origin, Upgrade: 'websocket' } })
     assert.equal(r.status, 101)
     const ws = r.webSocket; ws.accept(); const messages = []; const waiters = []
     ws.addEventListener('message', e => { const s = JSON.parse(e.data); messages.push(s); for (const w of [...waiters]) if (w.fn(s)) { waiters.splice(waiters.indexOf(w), 1); clearTimeout(w.timer); w.resolve(s) } })

@@ -1,6 +1,6 @@
 # Activar Geoduelo online
 
-Implementación para `McEngelsOP/IA`, rama `aea`. El código no crea recursos remotos ni modifica Supabase automáticamente. Offline conserva el juego local completo. Online estrena **capitales, 10 rondas simultáneas de 25 segundos**, cuatro opciones, 100–150 puntos por acierto según el tiempo recibido por el servidor. Los otros modos y el globo interactivo siguen disponibles en Offline; todavía no tienen modalidad online.
+Implementación para `McEngelsOP/IA`, rama `aea`. El código no crea recursos remotos ni modifica Supabase automáticamente. Offline conserva el juego local completo. Online incluye **los once modos y el duelo mixto, con 10 rondas simultáneas de 25 segundos**. El anfitrión elige modo y dificultad antes de empezar. Hay un intento por pregunta y 100–150 puntos por acierto según el tiempo recibido por el servidor; las apuestas, pistas, robos y turnos alternados pertenecen al modo local.
 
 ## Qué hace cada servicio
 
@@ -8,7 +8,7 @@ Implementación para `McEngelsOP/IA`, rama `aea`. El código no crea recursos re
 - Cloudflare Workers verifica la identidad contra Supabase una vez por solicitud de acceso/reconexión. Un Durable Object coordina la cola; otro por sala mantiene preguntas, respuestas, tiempos y puntajes. WebSockets con hibernación y alarmas por fase, sin intervalos en el servidor.
 - Supabase recibe **una fila por partida terminada**, con reintentos idempotentes. La tabla online está separada del ranking local. Cada participante puede consultar su historial con RLS; el cliente no puede insertar resultados. Esta versión muestra el resultado final en el juego; no incorpora todavía una pantalla de historial ni ranking online.
 
-Se incluyen búsqueda pública, sala privada con código, una partida por cuenta, confirmación de ambos jugadores, reconexión, cancelación y abandono. Una sala privada **no** acepta personas de la búsqueda pública. No hay chat ni espectadores.
+Se incluyen búsqueda pública, sala privada con código, una partida por cuenta, anfitrión y configuración compartida, confirmación de ambos jugadores, reconexión, cancelación y abandono. En búsqueda pública el anfitrión se elige al azar al emparejar; en sala privada es quien la crea. Solo él puede cambiar modo y dificultad; cada cambio anula las confirmaciones anteriores. Una sala privada **no** acepta personas de la búsqueda pública. No hay chat ni espectadores.
 
 ## 1. Supabase: ejecutar SQL manualmente
 
@@ -85,7 +85,7 @@ Sin esta variable, Online muestra que falta la activación y Offline continúa f
 ## 4. Comprobar con dos cuentas y dos máquinas
 
 1. Inicia sesión con dos cuentas distintas. Una misma cuenta no ocupa ambos puestos.
-2. En Arcade → Educativos → Geoduelo → Online, ambas pulsan **Buscar rival**. Deben llegar a la misma sala y confirmar **Estoy listo**.
+2. En Arcade → Educativos → Geoduelo → Online, ambas pulsan **Buscar rival**. Deben llegar a la misma sala. El anfitrión elegido al azar selecciona modo y dificultad y ambos confirman **Estoy listo**. Si cambia la configuración, ambos deben confirmar de nuevo.
 3. Termina una partida. Comprueba el marcador de ambos y el mensaje **Resultado online guardado en tu cuenta**.
 4. En SQL Editor: `select match_id, outcome, score_one, score_two, created_at from public.geoduelo_online_results order by created_at desc limit 10;`. Debe aparecer una fila por partida, sin duplicados.
 5. Crea una sala privada, comparte el código y entra desde la otra cuenta. Una tercera cuenta que busque públicamente no debe entrar en esa sala.
@@ -94,7 +94,7 @@ Sin esta variable, Online muestra que falta la activación y Offline continúa f
 
 ## Operación y límites iniciales
 
-- Cola pública: espera hasta 2 minutos. Sala privada: hasta 5 minutos. Confirmación de inicio: 45 segundos.
+- Cola pública: espera hasta 2 minutos. Sala privada: hasta 5 minutos. Confirmación de inicio y selección de modo: 2 minutos.
 - Dos conexiones por sala, una por cuenta; abrir la misma partida en otra pestaña cierra la conexión anterior.
 - Reloj local ajustado con la hora del servidor; solo se envían acciones y cambios de fase. Las soluciones no se envían antes de cerrar cada pregunta.
 - El cierre explícito de Arcade o el cambio a Offline intenta cancelar/abandonar con `keepalive`. Si el navegador se cierra de golpe o no hay red, el servidor continúa con sus plazos hasta terminar o vencer. No hay victoria automática solo por un corte breve.
@@ -123,4 +123,24 @@ La prueba de navegador usa dos contextos, servidor Vite y Worker local en el mis
 - [Cloudflare: alarmas](https://developers.cloudflare.com/durable-objects/api/alarms/)
 - [Supabase: seguridad de API](https://supabase.com/docs/guides/api/securing-your-api)
 
-El banco de capitales se deriva del juego local aportado en `public/juegos/geoduelo/index.html`; se omiten Bolivia, Sudáfrica y Sri Lanka en esta modalidad para evitar preguntas con varias sedes/capitales posibles.
+El banco de preguntas se deriva del juego local aportado en `public/juegos/geoduelo/index.html`, mediante `node scripts/geoduelo-data.mjs`. Usa los mismos datos y mapa con sus licencias existentes. Las preguntas de capital por país omiten Bolivia, Sudáfrica y Sri Lanka para evitar varias sedes/capitales posibles. Las poblaciones y superficies son aproximadas según el banco del juego; los husos se calculan para la fecha de generación de cada pregunta.
+
+## Actualizar una instalación online que ya funciona
+
+No hace falta ejecutar otro SQL ni cambiar los secretos. Actualiza la copia completa del repositorio (el Worker importa también módulos compartidos y el mapa):
+
+```bash
+git switch aea
+git pull --ff-only origin aea
+cd workers/geoduelo
+npm ci
+npm run deploy
+```
+
+Conserva tus valores reales de `wrangler.jsonc` al actualizar. Si los configuraste solo en el panel Cloudflare, comprueba `ALLOWED_ORIGINS`, `SUPABASE_URL` y `MAX_PLAYERS`: Wrangler publica los valores de `vars` del archivo. Los secretos existentes permanecen. No subas claves al repositorio.
+
+Después reconstruye/redeploy la web de `aea` en Vercel con la misma `VITE_GEODUELO_ONLINE_URL`. Despliega primero el Worker; luego la web. Pide a ambos jugadores que recarguen la página. El protocolo online ahora es versión 2: un cliente anterior recibe un aviso para actualizar y un cliente nuevo detecta el Worker anterior.
+
+Modos: Encuentra el país, Ubica la capital, Lugares del mundo, Reconoce el país, Capitales, Monedas, Idiomas, Detecta el error, Distancias, Husos horarios, Ordena los países y Duelo mixto. Ubicación utiliza globo con ratón, táctil o teclado (flechas, zoom y Enter para marcar el centro). Confirma la marca para enviarla; el rival no ve tu respuesta antes de la revelación. Distancia recibe una estimación en kilómetros y Ordenar recibe una permutación completa. Todas se validan en el servidor.
+
+El Worker genera una pregunta por cambio de fase, en lugar de producir todas al confirmar, para acotar el trabajo de CPU por evento. Los estados de pregunta ocultan solución, coordenadas objetivo, orden correcto y márgenes de evaluación. Solo después de que ambos respondan o venza el plazo se revela la solución.

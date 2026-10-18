@@ -55,4 +55,4 @@ La validación local no sustituye el paso manual de activar y comprobar el SQL e
 
 ## Modalidad online
 
-El selector Offline / Online conserva el modo local y permite activar duelos de capitales entre dos cuentas. Consulta [la guía de activación manual](geoduelo-online.md) para Cloudflare, SQL y Vercel. Los resultados online se guardan por el servidor en su propia tabla y no pasan por `submit_game_score`.
+El selector Offline / Online conserva el modo local y permite activar los once modos y el duelo mixto entre dos cuentas, con selección de modo y dificultad por el anfitrión. Consulta [la guía de activación manual](geoduelo-online.md) para Cloudflare, SQL y Vercel. Los resultados online se guardan por el servidor en su propia tabla y no pasan por `submit_game_score`.

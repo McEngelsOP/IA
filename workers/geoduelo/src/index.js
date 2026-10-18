@@ -1,4 +1,5 @@
-import { answer, questions, view, QUESTION_MS, REVEAL_MS, ROUNDS } from './engine.js'
+import { DEFAULT_SETTINGS } from '../../../src/lib/geoduelo-modes.js'
+import { answer, appendQuestion, view, validSettings, QUESTION_MS, REVEAL_MS, ROUNDS } from './engine.js'
 const json = (body, status = 200) => Response.json(body, { status })
 const fail = (message, status = 400) => { throw Object.assign(new Error(message), { status }) }
 const stub = (binding, name) => binding.get(binding.idFromName(name))
@@ -50,6 +51,7 @@ export default {
     try {
       if ((!env.TICKET_SECRET || env.TICKET_SECRET.length < 32) || !env.SUPABASE_ANON_KEY || !env.SUPABASE_SERVICE_ROLE_KEY) fail('El modo online aún no está configurado.', 503)
       if (url.pathname.startsWith('/ws/') && request.headers.get('upgrade')?.toLowerCase() === 'websocket') {
+        if (url.searchParams.get('v') !== '2') fail('Actualiza la página para usar la nueva versión de Geoduelo.', 426)
         const room = url.pathname.slice(4)
         if (!uuid.test(room)) fail('Sala inválida.')
         const data = await verify(env, url.searchParams.get('ticket'), room)
@@ -60,6 +62,7 @@ export default {
       }
       if (url.pathname !== '/session' || request.method !== 'POST') fail('Ruta no encontrada.', 404)
       const data = await body(request)
+      if (data.protocol !== 2) fail('Actualiza la página para usar la nueva versión de Geoduelo.', 426)
       if (!['search', 'create', 'join', 'resume', 'leave'].includes(data.action)) fail('Acción inválida.')
       const player = await identity(request, env)
       const r = await stub(env.LOBBY, 'global-v1').fetch(new Request('https://internal/session', { method: 'POST', body: JSON.stringify({ ...data, player }) }))
@@ -144,7 +147,7 @@ export class Room {
       let s = await this.ctx.storage.get('game')
       if (path === '/create' && !s) {
         const r = await request.json()
-        s = { id: r.id, code: r.public ? null : r.code, phase: 'waiting', players: [r.player], scores: [0, 0], answers: [null, null], round: -1, deadline: r.waitUntil, saved: 'pending', expires: r.expires }
+        s = { id: r.id, code: r.public ? null : r.code, phase: 'waiting', players: [r.player], scores: [0, 0], answers: [null, null], round: -1, deadline: r.waitUntil, saved: 'pending', expires: r.expires, host: r.public ? null : 0, public: r.public, settings: {...DEFAULT_SETTINGS}, revision: 0 }
         await this.save(s); return json({ ok: true })
       }
       if (!s) return json({ phase: 'expired', error: 'Sala vencida.' }, 404)
@@ -153,7 +156,7 @@ export class Room {
       if (path === '/join') {
         const player = await request.json()
         if (s.phase !== 'waiting' || s.players[0].id === player.id) return json({ error: 'Sala no disponible.' }, 409)
-        s.players.push(player); s.questions = questions(); s.phase = 'ready'; s.deadline = Date.now() + 45000
+        s.players.push(player); if (s.public) s.host = crypto.getRandomValues(new Uint8Array(1))[0] % 2; s.phase = 'ready'; s.deadline = Date.now() + 120000
         await this.save(s); this.broadcast(s); return json({ ok: true })
       }
       if (path === '/leave') {
@@ -188,16 +191,22 @@ export class Room {
       const a = ws.deserializeAttachment(), now = Date.now()
       if (now - a.last < 1000) a.burst++; else { a.last = now; a.burst = 0 }
       ws.serializeAttachment(a)
-      if (a.burst > 10) { ws.close(1008, 'Demasiados mensajes'); return }
+      if (a.burst > 20) { ws.close(1008, 'Demasiados mensajes'); return }
       const s = await this.ctx.storage.get('game')
       if (!s || s.phase === 'expired') { ws.close(1000, 'Sala vencida'); return }
       // A replaced socket must not issue a last command during its closing handshake.
       if (!this.ctx.getWebSockets().includes(ws) || ws.readyState !== 1) return
       await this.advance(s)
       let m; try { m = JSON.parse(raw) } catch { ws.close(1008, 'Mensaje inválido'); return }
-      if (m.action === 'ready' && s.phase === 'ready') {
+      if (m.action === 'configure' && ['waiting','ready'].includes(s.phase) && a.seat === s.host && validSettings(m.settings)) {
+        if (m.settings.mode !== s.settings?.mode || m.settings.level !== s.settings?.level) {
+          s.settings = {mode:m.settings.mode,level:m.settings.level}; s.revision = (s.revision || 0) + 1
+          s.players.forEach(p => { p.ready = false })
+          await this.save(s); this.broadcast(s)
+        }
+      } else if (m.action === 'ready' && s.phase === 'ready' && m.revision === (s.revision || 0)) {
         s.players[a.seat].ready = true
-        if (s.players.every(p => p.ready)) this.next(s)
+        if (s.players.every(p => p.ready)) { s.questions = []; s.used = []; this.next(s) }
         await this.save(s); this.broadcast(s)
       } else if (m.action === 'answer' && answer(s, a.seat, m, now)) {
         if (s.answers.every(v => v !== null)) this.reveal(s)
@@ -205,7 +214,7 @@ export class Room {
       }
     })
   }
-  next(s) { s.round++; s.phase = 'question'; s.answers = [null, null]; s.deadline = Date.now() + QUESTION_MS }
+  next(s) { s.round++; appendQuestion(s); s.phase = 'question'; s.answers = [null, null]; s.deadline = Date.now() + QUESTION_MS }
   reveal(s) { s.phase = 'reveal'; s.deadline = Date.now() + REVEAL_MS }
   async advance(s) {
     if (Date.now() < s.deadline) return

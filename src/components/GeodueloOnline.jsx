@@ -1,11 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 import './geoduelo-online.css'
+import GeodueloGlobe from './GeodueloGlobe'
+import { MODES, LEVELS, modeName } from '../lib/geoduelo-modes'
 
 const configuredURL = import.meta.env.VITE_GEODUELO_ONLINE_URL?.replace(/\/+$/, '') || ''
 export default function GeodueloOnline({ client, user }) {
   const [state, setState] = useState(null), [error, setError] = useState(''), [busy, setBusy] = useState(false)
   const [code, setCode] = useState(''), [connection, setConnection] = useState('idle'), [now, setNow] = useState(Date.now())
   const [choice, setChoice] = useState(null), [copied, setCopied] = useState(false)
+  const [point, setPoint] = useState(null), [estimate, setEstimate] = useState(''), [order, setOrder] = useState([]), [sent, setSent] = useState(false)
+  const questionKey = useRef('')
   const ownsConnection = useRef(true)
   const socket = useRef(null), room = useRef(null), alive = useRef(true), token = useRef(null), generation = useRef(0), offset = useRef(0)
   const reconnect = useRef(null), retryCount = useRef(0), busyRef = useRef(false), stateRef = useRef(null)
@@ -17,7 +21,7 @@ export default function GeodueloOnline({ client, user }) {
     if (authError || !data.session?.access_token) throw new Error('Tu sesión venció. Vuelve a iniciar sesión.')
     token.current = data.session.access_token
     const response = await fetch(`${configuredURL}/session`, { method: 'POST', headers: { Authorization: `Bearer ${token.current}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action, ...extra }), signal: AbortSignal.timeout(15000) })
+      body: JSON.stringify({ action, protocol:2, ...extra }), signal: AbortSignal.timeout(15000) })
     const body = await response.json()
     if (!response.ok) throw new Error(body.error || 'No se pudo conectar. Inténtalo nuevamente.')
     return body
@@ -28,22 +32,27 @@ export default function GeodueloOnline({ client, user }) {
     socket.current?.close()
     ownsConnection.current = true
     room.current = data.room; remember(data.room); setConnection('connecting')
-    const url = new URL(`${configuredURL}/ws/${data.room}`); url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:'; url.searchParams.set('ticket', data.ticket)
+    const url = new URL(`${configuredURL}/ws/${data.room}`); url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:'; url.searchParams.set('ticket', data.ticket); url.searchParams.set('v','2')
     const ws = new WebSocket(url); socket.current = ws
     ws.onopen = () => { if (alive.current && revision === generation.current) { setConnection('connected'); setError(''); retryCount.current = 0 } }
     ws.onmessage = event => {
       if (!alive.current || revision !== generation.current) return
       try {
         const s = JSON.parse(event.data)
+        if(s.protocol!==2){setError('Actualiza el Worker de Cloudflare para habilitar los modos online.');ws.close(4002,'Servidor anterior');return}
         if (s.room !== room.current || !Array.isArray(s.scores)) return
         offset.current = s.serverTime - Date.now()
         setState(s); setNow(Date.now() + offset.current); setChoice(s.ownChoice)
+        const key=`${s.room}:${s.round}`
+        if(questionKey.current!==key){questionKey.current=key;setPoint(null);setEstimate('');setOrder([]);setSent(false)}
+        if(s.answered[s.seat]){setSent(true);if(s.question?.ui==='globe')setPoint(s.ownAnswer);if(s.question?.ui==='distance')setEstimate(String(s.ownAnswer));if(s.question?.ui==='order')setOrder(s.ownAnswer||[])}
         if (s.phase === 'expired') { remember(null); setError('La sala venció. Vuelve a buscar o crea una nueva.') }
       } catch { setError('No se pudo leer la partida. Vuelve a conectar.') }
     }
     ws.onclose = event => {
       if (!alive.current || revision !== generation.current) return
       setConnection('disconnected')
+      if (event.code === 4002) return
       if (event.code === 4001) { ownsConnection.current = false; setError('La partida se abrió en otra pestaña. Continúa allí o vuelve a conectar aquí.'); return }
       if (['finished','expired'].includes(stateRef.current?.phase)) return
       if (retryCount.current++ < 4) {
@@ -65,7 +74,7 @@ export default function GeodueloOnline({ client, user }) {
       const data = await request(action, { code })
       if (alive.current && revision === generation.current) connect(data)
       else if (!alive.current && token.current) {
-        fetch(`${configuredURL}/session`, { method: 'POST', headers: { Authorization: `Bearer ${token.current}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'leave' }), keepalive: true }).catch(() => {})
+        fetch(`${configuredURL}/session`, { method: 'POST', headers: { Authorization: `Bearer ${token.current}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'leave', protocol:2 }), keepalive: true }).catch(() => {})
       }
     }
     catch (e) { if (alive.current) setError(e.message) }
@@ -82,7 +91,7 @@ export default function GeodueloOnline({ client, user }) {
   }
   function send(action, extra = {}) {
     if (socket.current?.readyState !== WebSocket.OPEN) { setError('Reconecta antes de responder.'); return }
-    socket.current.send(JSON.stringify({ action, ...extra }))
+    socket.current.send(JSON.stringify({ action, protocol:2, ...extra }))
   }
   useEffect(() => {
     alive.current = true
@@ -90,13 +99,13 @@ export default function GeodueloOnline({ client, user }) {
       let previous; try { previous = sessionStorage.getItem(storageKey) } catch {}
       if (previous) { room.current = previous; resume() }
     }
-    const online = () => { if (room.current && socket.current?.readyState !== WebSocket.OPEN) resume() }
+    const online = () => { if (ownsConnection.current && room.current && socket.current?.readyState !== WebSocket.OPEN) resume() }
     window.addEventListener('online', online)
     return () => {
       alive.current = false; ++generation.current; clearTimeout(reconnect.current); socket.current?.close(); window.removeEventListener('online', online)
       // Switching to local or closing Arcade releases the queue/room. A page reload can resume via sessionStorage.
       if (room.current && token.current && ownsConnection.current && !['finished','expired'].includes(stateRef.current?.phase)) {
-        fetch(`${configuredURL}/session`, { method: 'POST', headers: { Authorization: `Bearer ${token.current}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'leave' }), keepalive: true })
+        fetch(`${configuredURL}/session`, { method: 'POST', headers: { Authorization: `Bearer ${token.current}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'leave', protocol:2 }), keepalive: true })
           .then(r => { if (r.ok) remember(null) }).catch(() => {})
       } else remember(null)
     }
@@ -116,7 +125,7 @@ export default function GeodueloOnline({ client, user }) {
       <img className="geo-online-cover" src="./juegos/geoduelo/cover.svg" alt="Globo de Geoduelo con dos marcadores"/>
       <div className="geo-online-intro">
         <h2>El mundo entre los dos.</h2>
-        <p>Un rival, dos pantallas. Respondan las mismas 10 preguntas de capitales: 25 segundos por ronda, hasta 150 puntos por acierto.</p>
+        <p>Un rival, dos pantallas. El anfitrión elige el modo: ubicar, elegir, calcular o un duelo mixto. Diez rondas, 25 segundos por pregunta.</p>
         {!configuredURL ? <p className="geo-online-message" role="status">Online estará disponible cuando se active el servidor. Ya puedes jugar en Offline en la misma máquina.</p>
           : !user || !client ? <p className="geo-online-message" role="status">Inicia sesión en tu cuenta para buscar rival o entrar a una sala.</p>
           : <>
@@ -142,15 +151,36 @@ export default function GeodueloOnline({ client, user }) {
             <div className="geo-room-share"><output aria-label="Código de sala">{state.code}</output><button onClick={copyCode}>{copied ? 'Código copiado' : 'Copiar código'}</button></div></>
             : <p>Te conectaremos cuando otra persona pulse Buscar rival. Puedes cancelar si prefieres jugar local.</p>}
           <p className="geo-round-meta">La sala espera hasta {seconds} s.</p></>}
-        {state.phase === 'ready' && <><h2>Rival encontrado.</h2><p>La partida comienza cuando ambos estén listos. Después de empezar, el reloj continúa aunque cambies de pestaña.</p>
-          <button className="geo-primary" disabled={!connected || state.players[state.seat]?.ready} onClick={() => send('ready')}>{state.players[state.seat]?.ready ? 'Esperando al rival…' : 'Estoy listo'}</button><p className="geo-round-meta">Confirmen en {seconds} s.</p></>}
+        {['waiting','ready'].includes(state.phase) && state.host !== null && <div className="geo-online-config">
+          <h3>{state.host === state.seat ? 'Tú eliges el duelo' : `${state.players[state.host]?.name || 'El anfitrión'} elige el duelo`}</h3>
+          <p>{state.code ? 'Quien crea la sala es el anfitrión.' : 'El anfitrión se elige al azar al encontrar rival.'} Cambiar la configuración reinicia las confirmaciones.</p>
+          <div className="geo-config-fields"><div><label htmlFor="geo-mode">Modo de juego</label><select id="geo-mode" value={state.settings.mode} disabled={!connected || state.host !== state.seat} onChange={e => send('configure', {settings:{...state.settings,mode:e.target.value}})}>
+            {['Ubicar','Elegir','Calcular','Todos'].map(category => <optgroup key={category} label={category}>{MODES.filter(m=>m.category===category).map(m=><option key={m.id} value={m.id}>{m.name}</option>)}</optgroup>)}
+          </select></div>
+          <div><label htmlFor="geo-level">Dificultad</label><select id="geo-level" value={state.settings.level} disabled={!connected || state.host !== state.seat} onChange={e => send('configure',{settings:{...state.settings,level:e.target.value}})}>{LEVELS.map(l=><option key={l.id} value={l.id}>{l.name}</option>)}</select></div></div>
+          {state.host !== state.seat && <p role="status">Solo el anfitrión puede cambiar el modo. Puedes confirmar cuando estés de acuerdo.</p>}
+        </div>}
+        {state.phase === 'ready' && <><h2>Preparen el duelo.</h2><p>{modeName(state.settings.mode)} · {LEVELS.find(l=>l.id===state.settings.level)?.name}. La partida comienza cuando ambos confirmen. El reloj continúa aunque cambies de pestaña.</p>
+          <button className="geo-primary" disabled={!connected || state.players[state.seat]?.ready} onClick={() => send('ready',{revision:state.revision})}>{state.players[state.seat]?.ready ? 'Esperando al rival…' : 'Estoy listo'}</button><p className="geo-round-meta">Confirmen en {seconds} s.</p></>}
         {['question','reveal'].includes(state.phase) && <>
-          <div className="geo-round-meta"><span>Ronda {state.round + 1} de {state.rounds}</span><span role="timer" aria-label="Segundos restantes">{seconds} s</span></div>
-          <h2>¿Cuál es la capital de {state.question.country}?</h2>
-          <div className="geo-online-options">{state.question.options.map((option, i) => <button key={`${state.round}-${i}`} className={`${choice === i ? 'geo-selected' : ''} ${state.phase === 'reveal' && state.correct === i ? 'geo-correct' : ''}`}
-            disabled={!connected || state.phase !== 'question' || choice !== null || seconds === 0} aria-pressed={choice === i}
-            onClick={() => { setChoice(i); send('answer', { choice: i, round: state.round }) }}>{option}{state.phase === 'reveal' && state.correct === i ? ' · Correcta' : ''}</button>)}</div>
-          <p role="status">{state.phase === 'reveal' ? `Respuesta: ${state.question.options[state.correct]}. Siguiente ronda en ${seconds} s.` : choice !== null ? state.answered[state.seat] ? 'Respuesta recibida. Esperando al rival.' : 'Enviando respuesta…' : 'Ambos responden. Un acierto rápido suma más puntos.'}</p>
+          <div className="geo-round-meta"><span>Ronda {state.round + 1} de {state.rounds} · {modeName(state.question.kind)}</span><span role="timer" aria-label="Segundos restantes">{seconds} s</span></div>
+          <h2>{state.question.prompt}</h2>
+          <div className={`geo-question-body${state.question.map ? ' geo-question-with-map' : ''}`}>
+            {state.question.map && <GeodueloGlobe round={state.round} selected={point} onPoint={p=>{if(!sent&&state.phase==='question')setPoint(p)}} map={{...state.question.map,disabled:!connected||sent||state.phase!=='question',revealed:state.phase==='reveal',target:state.target,targetCountry:state.targetCountry}}/>}
+            <div>
+              {state.question.ui === 'opts' && <div className="geo-online-options">{state.question.options.map((option, i) => <button key={`${state.round}-${i}`} className={`${choice === i ? 'geo-selected' : ''} ${state.phase === 'reveal' && state.correct === i ? 'geo-correct' : ''}`}
+                disabled={!connected || state.phase !== 'question' || sent || choice !== null || seconds === 0} aria-pressed={choice === i}
+                onClick={() => { setChoice(i); setSent(true); send('answer', { choice: i, round: state.round }) }}>{option}{state.phase === 'reveal' && state.correct === i ? ' · Correcta' : ''}</button>)}</div>}
+              {state.question.ui === 'globe' && <><p>Gira el globo y marca tu respuesta. Tienes un intento por ronda.</p><p className="geo-round-meta">{point ? `Tu marca: ${point[1].toFixed(1)}°, ${point[0].toFixed(1)}°` : 'Todavía no has marcado un punto.'}</p><button className="geo-primary" disabled={!connected||sent||!point||state.phase!=='question'||seconds===0} onClick={()=>{setSent(true);send('answer',{point,round:state.round})}}>Confirmar ubicación</button></>}
+              {state.question.ui === 'distance' && <form onSubmit={e=>{e.preventDefault();if(!sent){setSent(true);send('answer',{km:Number(estimate),round:state.round})}}}>
+                <label htmlFor="geo-distance">Tu estimación en kilómetros</label><input id="geo-distance" type="number" inputMode="numeric" min="0" max="20040" step="1" required value={estimate} disabled={sent||state.phase!=='question'} onChange={e=>setEstimate(e.target.value)}/>
+                <button className="geo-primary" disabled={!connected||sent||estimate===''||state.phase!=='question'||seconds===0}>Confirmar distancia</button>
+              </form>}
+              {state.question.ui === 'order' && <><p>Pulsa los países en orden, de mayor a menor.</p><div className="geo-online-options">{state.question.options.map((name,i)=><button key={`${state.round}-${i}`} disabled={sent||state.phase!=='question'||order.includes(i)} onClick={()=>setOrder(v=>[...v,i])}>{order.includes(i)?`${order.indexOf(i)+1}. `:''}{name}</button>)}</div>
+                <div className="geo-order-actions"><button disabled={sent||!order.length||state.phase!=='question'} onClick={()=>setOrder(v=>v.slice(0,-1))}>Deshacer último</button><button className="geo-primary" disabled={!connected||sent||order.length!==state.question.options.length||state.phase!=='question'||seconds===0} onClick={()=>{setSent(true);send('answer',{order,round:state.round})}}>Confirmar orden</button></div></>}
+            </div>
+          </div>
+          <p role="status">{state.phase === 'reveal' ? `Respuesta: ${state.solution}. Siguiente ronda en ${seconds} s.` : sent ? state.answered[state.seat] ? 'Respuesta recibida. Esperando al rival.' : 'Enviando respuesta…' : 'Ambos responden. Un acierto rápido suma más puntos.'}</p>
         </>}
         {state.phase === 'finished' && <><h2>{state.winner === null ? 'Empate en el atlas.' : state.winner === state.seat ? '¡El duelo es tuyo!' : 'Esta vez ganó tu rival.'}</h2>
           <p>{state.reason === 'abandoned' ? 'La partida terminó por abandono.' : 'Diez rondas, un mundo por aprender. ¿Otro duelo?'}</p>
