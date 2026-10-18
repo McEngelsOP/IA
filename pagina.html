@@ -336,7 +336,7 @@ a{text-underline-offset:3px}.page button:not(.ck){min-height:36px}
 @media(max-width:860px){.title{font-size:18px}.top{right:12px}.act{width:46px;height:46px}.page{padding-inline:14px!important}.side{bottom:calc(12px + env(safe-area-inset-bottom,0px))}}
 @media(max-height:480px){.a-box,.s-chat,.k-stage{min-height:260px}.side{border-radius:20px}}
 /* Arcade: cover flow and a translucent control surface, entirely self-contained. */
-.arc{--card:clamp(228px,22cqw,294px);--step:calc(var(--card)*.61);--drag:0px;--ease:cubic-bezier(.16,1,.3,1);position:absolute;inset:0;z-index:10;overflow:hidden;isolation:isolate;container-type:size;color:#fff8f4;background:#100f14;border-radius:inherit;animation:gm-enter .55s var(--ease) both;color-scheme:dark}
+.arc{--card:clamp(228px,22cqw,294px);--step:calc(var(--card)*.61);--drag:0px;--ease:cubic-bezier(.16,1,.3,1);position:absolute;inset:0;z-index:10;overflow:hidden;overflow:clip;isolation:isolate;container-type:size;color:#fff8f4;background:#100f14;border-radius:inherit;animation:gm-enter .55s var(--ease) both;color-scheme:dark}
 .arc[hidden]{display:none!important}.arc.out{animation:gm-exit .22s ease both;pointer-events:none}
 @keyframes gm-enter{from{opacity:0;clip-path:inset(6% 5% round 36px)}to{opacity:1;clip-path:inset(0 round 0)}}
 @keyframes gm-exit{to{opacity:0;transform:scale(.985)}}
@@ -970,6 +970,26 @@ a{text-underline-offset:3px}.page button:not(.ck){min-height:36px}
  #app .focus-web .k-chip,#app .focus-web .k-opt,#app .focus-web .k-btn{transition:background-color 150ms ease,color 150ms ease}
 }
 @media(prefers-reduced-motion:reduce){#app #mobile-dock *,#app .focus-web *{transition:none!important;animation:none!important}}
+
+
+/* Geoduelo inherits the Arcade shell; the atlas keeps its own scoped styles. */
+.gm-art img,.gm-dock-art img{display:block;width:100%;height:100%;object-fit:cover}
+.gm-play.gm-geoduelo{display:flex;flex-direction:column;overflow:hidden;padding:14px;gap:12px}
+.gm-play.gm-geoduelo[hidden]{display:none}
+.gm-geoduelo .gm-play-top{max-width:none;width:100%;margin:0;flex:none}
+.gm-geoduelo .gm-game-body{max-width:none;width:100%;min-height:0;flex:1;text-align:left}
+.gm-geoduelo-game{height:100%;min-height:0;display:flex;flex-direction:column;gap:8px}
+.gm-geoduelo-frame{position:relative;flex:1;min-height:0;overflow:hidden;border-radius:14px;background:#e9eef2}
+.gm-geoduelo-frame iframe{display:block;width:100%;height:100%;border:0}
+.gm-geoduelo-error{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:20px;background:#16131e;color:#fff;padding:24px;text-align:center}
+.gm-geoduelo .gm-game-status{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;flex:none;max-height:96px;overflow:auto}
+.gm-geoduelo .gm-game-status .gm-result{font-size:13px;margin:0;flex:1;min-width:200px}
+@media(max-width:600px){
+ .gm-play.gm-geoduelo{inset:72px 6px 6px;padding:8px;gap:8px;border-radius:16px}
+ .gm-geoduelo .gm-play-top h2{font-size:19px}
+ .gm-geoduelo .gm-small-button{padding:0 12px;font-size:12px}
+ .gm-geoduelo .gm-confirmed{display:none}
+}
 
 </style>
 </head>
@@ -1950,6 +1970,7 @@ function gmSoundToggle(){
  GM_SOUND.enabled=!GM_SOUND.enabled;
  try{localStorage.setItem('esan.arcade.sound',GM_SOUND.enabled?'on':'off')}catch{}
  if(!GM_SOUND.enabled){gmSoundStop();if(GM_SOUND.master)GM_SOUND.master.gain.setTargetAtTime(0,GM_SOUND.context.currentTime,.01)}
+ arcadeGameUnmount?.setSound?.(GM_SOUND.enabled);
  gmSoundSync();if(GM_SOUND.enabled)gmSoundPlay('move');
 }
 function gmSoundSuspend(){gmSoundStop();GM_SOUND.context?.suspend().catch(()=>{})}
@@ -1958,6 +1979,7 @@ const ARC={open:false,active:0,filter:'all',auto:0,game:null,timers:[],returnFoc
 let arcadeGameUnmount=null;
 const GAMES=[
  {id:'memory',name:'Memoria',tag:'Encuentra las parejas',cat:'educational',time:'2–3 min',a:'#b93427',b:'#eeb82e',bg:'#b5372c',desc:'Cada carta tiene una pareja. Observa, recuerda y encuéntralas.',skill:'Atención y memoria'},
+ {id:'geoduelo',name:'Geoduelo',tag:'Un globo, dos jugadores',cat:'educational',time:'10–20 min',a:'#b84d0d',b:'#216fb6',bg:'#e9eef2',desc:'Un globo y dos jugadores. Ubica países, arriesga tus puntos y roba lo que tu rival no se sepa.',skill:'Geografía y atención · 2 jugadores'},
  {id:'logic',name:'Reto lógico',tag:'Una idea lleva a otra',cat:'educational',time:'3 min',a:'#1635af',b:'#b484df',bg:'#2037ad',desc:'Descubre patrones y resuelve cinco retos a tu ritmo.',skill:'Razonamiento'},
  {id:'dino',name:'Dino Run+',tag:'Salta y supera tu récord',cat:'arcade',time:'Libre',a:'#276846',b:'#bbd482',bg:'#285c45',desc:'El dinosaurio vuelve con sus modos de juego y tu mejor puntaje por temporada.',skill:'Coordinación y reflejos'},
  {id:'galaxia',name:'Escuadrón Galáctico',tag:'Defiende tu escuadrón',cat:'arcade',time:'Libre',a:'#19468c',b:'#d38cc5',bg:'#15316a',desc:'Pilota tu nave, esquiva disparos y supera las oleadas.',skill:'Atención y coordinación'},
@@ -1968,6 +1990,7 @@ const gameList=()=>GAMES.filter(g=>ARC.filter==='all'||g.cat===ARC.filter);
 const gmPlayIcon=()=>'<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 4v16l13-8z"/></svg>';
 const gmPauseIcon=()=>'<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>';
 function gmArt(id){
+ if(id==='geoduelo')return '<img src="./juegos/geoduelo/cover.svg" width="280" height="292" alt="" loading="lazy" decoding="async">';
  let p='';
  if(id==='memory'){
   p='<rect width="280" height="292" fill="#ba3129"/><circle cx="230" cy="37" r="150" fill="#f7bb39" opacity=".5"/>';
@@ -1992,13 +2015,14 @@ function arcHTML(){return `<div class="gm-ambient" aria-hidden="true">${GAMES.ma
  <section class="gm-shelf" id="gmshelf" aria-label="Elegir juego" aria-roledescription="carrusel" tabindex="0"></section>
  <div class="gm-selection" id="gmselection" aria-live="polite" aria-atomic="true"></div><div class="gm-dots" id="gmdots" role="group" aria-label="Seleccionar juego"></div>
  <div class="gm-dock"><button class="gm-icon" data-gm="prev" aria-label="Juego anterior">${svg('chevl',21)}</button><button class="gm-icon" data-gm="next" aria-label="Juego siguiente">${svg('chevr',21)}</button><div class="gm-dock-art" id="gmthumb" aria-hidden="true"></div><div class="gm-now" id="gmnow"></div><button class="gm-play-button" id="gmstart" data-gm="play">${gmPlayIcon()}Jugar</button></div>
- <p class="gm-footer"><span class="gm-touch">Desliza para explorar · </span><span class="gm-desktop-hint">Usa las flechas para explorar · </span>5 juegos · Sin conexión</p></div>
+ <p class="gm-footer"><span class="gm-touch">Desliza para explorar · </span><span class="gm-desktop-hint">Usa las flechas para explorar · </span>${gameList().length} juegos</p></div>
  <section class="gm-play" id="gmplay" aria-label="Juego activo" hidden></section>`;}
 function gmCards(){const list=gameList();$('gmshelf').innerHTML=list.map((g,i)=>`<button class="gm-card" data-gm="select" data-index="${i}" tabindex="-1" aria-label="Seleccionar ${g.name}" aria-pressed="false"><span class="gm-art" style="--artbg:${g.bg}">${gmArt(g.id)}</span><span class="gm-card-copy"><strong>${g.name}</strong><small>${g.tag}</small></span></button>`).join('');$('gmdots').innerHTML=list.map((g,i)=>`<button class="gm-dot" data-gm="select" data-index="${i}" aria-label="Ver ${g.name}" aria-pressed="false"></button>`).join('');gmPaint();}
 function gmPaint(){const list=gameList(),n=list.length,g=list[ARC.active];if(!g)return;
  [...$('gmshelf').children].forEach((el,i)=>{let d=i-ARC.active;if(d>n/2)d-=n;if(d<-n/2)d+=n;const a=Math.abs(d);el.style.cssText=`--shift:${d};--drop:${a*17};--turn:${-d*19};--lean:${d*3};--scale:${1-a*.11};--z:${10-a};--opacity:${a>2?0:1};--bright:${1-a*.13}`;el.classList.toggle('front',!d);el.setAttribute('aria-pressed',!d);el.setAttribute('aria-hidden',a>2);el.inert=a>2;});
  [...$('gmdots').children].forEach((b,i)=>{b.classList.toggle('on',i===ARC.active);b.setAttribute('aria-pressed',i===ARC.active)});
  $('arc').querySelectorAll('[data-glow]').forEach(el=>el.classList.toggle('on',el.dataset.glow===g.id));
+ $('arc').querySelector('.gm-footer').lastChild.textContent=list.length+' juegos';
  $('gmselection').innerHTML=`<p class="gm-desc">${g.desc}</p><p class="gm-meta">${g.skill} · ${g.time}</p>`;$('gmnow').innerHTML=`<b>${g.name}</b><small>${g.cat==='arcade'?'Arcade':'Educativo'} · ${g.time}</small>`;$('gmthumb').innerHTML=gmArt(g.id);$('gmstart').setAttribute('aria-label','Jugar '+g.name);
 }
 function gmMove(d,audible=true){const list=gameList();ARC.active=(ARC.active+d+list.length)%list.length;gmPaint();if(audible)gmSoundPlay('move');}
@@ -2107,15 +2131,15 @@ function arcClose(){
 function gmBindSwipe(){const el=$('gmshelf');el.onpointerdown=e=>{if(e.button!==0||ARC.game)return;gmStopAuto();ARC.drag={x:e.clientX,y:e.clientY,id:e.pointerId,moved:false};};el.onpointermove=e=>{const d=ARC.drag;if(!d||d.id!==e.pointerId)return;const dx=e.clientX-d.x,dy=e.clientY-d.y;if(Math.abs(dx)>12&&Math.abs(dx)>Math.abs(dy)){d.moved=true;el.classList.add('dragging');$('arc').style.setProperty('--drag',Math.max(-100,Math.min(100,dx))+'px');}};
  const end=e=>{const d=ARC.drag;if(!d||d.id!==e.pointerId)return;el.classList.remove('dragging');$('arc').style.removeProperty('--drag');if(d.moved){ARC.suppressClick=true;if(e.type!=='pointercancel'&&Math.abs(e.clientX-d.x)>36)gmMove(e.clientX<d.x?1:-1);setTimeout(()=>ARC.suppressClick=false,50)}ARC.drag=null;};el.onpointerup=end;el.onpointercancel=end;el.onpointerleave=e=>{if(e.pointerType==='mouse')end(e)};}
 function gmGameShell(g){return `<div class="gm-play-top"><div class="gm-play-label"><h2>${g.name}</h2><p class="gm-confirmed" role="status">${svg('tick',15)}Juego iniciado</p></div><button class="gm-small-button" data-gm="library">${svg('chevl',16)}Volver a juegos</button></div><div class="gm-game-body" id="gmbody"></div>`;}
-function gmStart(){arcadeGameUnmount?.();arcadeGameUnmount=null;gmStopAuto();gmClearTimers();gmSoundPlay('confirm');const g=gameList()[ARC.active];ARC.game={id:g.id};$('arc').querySelectorAll('.gm-auto').forEach(b=>b.hidden=true);$('gmgallery').inert=true;$('gmgallery').setAttribute('aria-hidden','true');$('gmplay').innerHTML=gmGameShell(g);$('gmplay').hidden=false;
- if(g.id==='memory')gmMemory();else if(['dino','galaxia'].includes(g.id))gmMountRestored(g);else if(g.id==='reaction')gmReaction();else gmQuiz(g.id);
+function gmStart(){arcadeGameUnmount?.();arcadeGameUnmount=null;gmStopAuto();gmClearTimers();gmSoundPlay('confirm');const g=gameList()[ARC.active];ARC.game={id:g.id};$('arc').querySelectorAll('.gm-auto').forEach(b=>b.hidden=true);$('gmgallery').inert=true;$('gmgallery').setAttribute('aria-hidden','true');$('gmplay').innerHTML=gmGameShell(g);$('gmplay').hidden=false;$('gmplay').classList.toggle('gm-geoduelo',g.id==='geoduelo');
+ if(g.id==='memory')gmMemory();else if(['dino','galaxia','geoduelo'].includes(g.id))gmMountRestored(g);else if(g.id==='reaction')gmReaction();else gmQuiz(g.id);
  $('gmplay').scrollTop=0;$('gmplay').querySelector('[data-gm="library"]').focus({preventScroll:true});}
 async function gmMountRestored(g){
  const game=ARC.game,container=$('gmbody');container.innerHTML='<p role="status">Preparando '+g.name+'…</p>';
- try{const {mountOfficialArcadeGame}=await import('./src/components/OfficialArcadeGame.jsx');if(!container.isConnected||ARC.game!==game)return;container.innerHTML='';arcadeGameUnmount=mountOfficialArcadeGame(container,{game:g.id,client:homeClient,user:HOME.user})}
+ try{const {mountOfficialArcadeGame}=await import('./src/components/OfficialArcadeGame.jsx');if(!container.isConnected||ARC.game!==game)return;container.innerHTML='';arcadeGameUnmount=mountOfficialArcadeGame(container,{game:g.id,client:homeClient,user:HOME.user,soundEnabled:GM_SOUND.enabled,playerName:HOME.profile?.alias,onExit:gmLibrary,onSoundChange:on=>{if(GM_SOUND.enabled!==on)gmSoundToggle()}})}
  catch{if(container.isConnected&&ARC.game===game)container.innerHTML='<p role="alert">No se pudo cargar el juego. Vuelve al listado y reintenta.</p>'}
 }
-function gmLibrary(){arcadeGameUnmount?.();arcadeGameUnmount=null;gmClearTimers();ARC.game=null;$('gmplay').hidden=true;$('gmplay').innerHTML='';$('arc').querySelectorAll('.gm-auto').forEach(b=>b.hidden=false);$('gmgallery').inert=false;$('gmgallery').removeAttribute('aria-hidden');$('gmstart').focus({preventScroll:true});}
+function gmLibrary(){arcadeGameUnmount?.();arcadeGameUnmount=null;gmClearTimers();ARC.game=null;$('gmplay').hidden=true;$('gmplay').classList.remove('gm-geoduelo');$('gmplay').innerHTML='';$('arc').querySelectorAll('.gm-auto').forEach(b=>b.hidden=false);$('gmgallery').inert=false;$('gmgallery').removeAttribute('aria-hidden');$('gmstart').focus({preventScroll:true});}
 function gmShuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a;}
 function gmMemory(){const s=ARC.game;Object.assign(s,{deck:gmShuffle(['cap','clock','spark','target','compass','gamepad'].flatMap(x=>[x,x])),flipped:[],matched:[],moves:0,locked:false});$('gmbody').innerHTML=`<p class="gm-instructions">Voltea dos cartas y encuentra las seis parejas. Sin límite de tiempo.</p><div class="gm-score"><span>Parejas <b id="gmpairs">0 / 6</b></span><span>Intentos <b id="gmmoves">0</b></span></div><div class="gm-memory">${s.deck.map((x,i)=>`<button data-gm="flip" data-tile="${i}" aria-label="Carta ${i+1}, oculta"><span class="gm-hidden-symbol">${svg('spark',24)}</span></button>`).join('')}</div><p class="gm-result" id="gmresult" role="status"></p><button class="gm-play-button" data-gm="restart">Reiniciar</button>`;}
 function gmFlip(i){const s=ARC.game;if(s.locked||s.flipped.includes(i)||s.matched.includes(i))return;const btns=[...$('gmplay').querySelectorAll('[data-tile]')],b=btns[i];s.flipped.push(i);b.classList.add('face');b.innerHTML=svg(s.deck[i],32);b.setAttribute('aria-label',`Carta ${i+1}, ${['cap','clock','spark','target','compass','gamepad'].indexOf(s.deck[i])+1}`);b.setAttribute('aria-pressed','true');
@@ -2136,7 +2160,7 @@ $('arc').onclick=e=>{const boot=e.target.closest('.ar-b');if(boot){if(boot.disab
  if(a==='close')arcClose();else if(a==='filter'){const previous=gameList()[ARC.active]?.id;gmStopAuto();ARC.filter=b.dataset.filter;ARC.active=0;$('arc').querySelectorAll('.gm-filter').forEach(el=>{el.classList.toggle('on',el===b);el.setAttribute('aria-pressed',el===b)});gmCards();if(previous!==gameList()[ARC.active]?.id)gmSoundPlay('move');}
  else if(a==='sound')gmSoundToggle();else if(a==='auto')gmAuto();else if(a==='prev'||a==='next'){gmStopAuto();gmMove(a==='prev'?-1:1)}else if(a==='select'){gmStopAuto();const changed=ARC.active!==+b.dataset.index;ARC.active=+b.dataset.index;gmPaint();if(changed)gmSoundPlay('move')}else if(a==='play'||a==='restart')gmStart();else if(a==='library')gmLibrary();else if(a==='flip')gmFlip(+b.dataset.tile);else if(a==='answer')gmAnswer(+b.dataset.answer);else if(a==='question'){ARC.game.q++;gmQuestion();$('gmplay').querySelector('[data-answer], [data-gm="restart"]')?.focus({preventScroll:true})}else if(a==='react')gmReact();};
 document.addEventListener('keydown',e=>{if(!ARC.open)return;const s=ARC.game;if(e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();if(s)gmLibrary();else arcClose();return}
- if(e.key==='Tab'){const all=[...$('arc').querySelectorAll('button, [tabindex="0"]')].filter(x=>!x.disabled&&!x.closest('[inert]')&&x.getClientRects().length);const first=all[0],last=all.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}return}
+ if(e.key==='Tab'){const all=[...$('arc').querySelectorAll('button, iframe, [tabindex="0"]')].filter(x=>!x.disabled&&!x.closest('[inert]')&&x.getClientRects().length);const first=all[0],last=all.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}return}
  if(ARC.stage!=='gallery')return;
  if(!s&&(e.key==='ArrowRight'||e.key==='ArrowLeft')){e.preventDefault();gmStopAuto();gmMove(e.key==='ArrowRight'?1:-1)}
 },true);
@@ -2200,3 +2224,4 @@ if(homeClient)homeClient.auth.onAuthStateChange((event,session)=>{
 </script>
 </body>
 </html>
+

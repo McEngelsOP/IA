@@ -18,7 +18,7 @@ Aplicación web de la malla de **Ingeniería en IA (ESAN)**: cada alumno inicia 
 - 🧭 **Proyección de ciclos**: compara rutas ligeras, equilibradas e intensivas respetando prerrequisitos
 - 👨‍🏫 **Directorio de profesores**: likes/dislikes y etiquetas comunitarias
 - 📊 **Mi Panel**: estadísticas, histogramas y línea de tiempo con logros desbloqueables
-- 🕹️ **Arcade Retro**: 5 juegos nativos con ranking por temporada + juegos locales
+- 🕹️ **Arcade**: 7 juegos (4 educativos), incluido Geoduelo para dos jugadores, y puntajes por temporada en los juegos compatibles. [Integración de Geoduelo](docs/geoduelo.md).
 
 ## Stack
 
@@ -88,3 +88,4 @@ Mod Focus ofrece sesiones persistentes con pausa y recuperación al recargar, hi
 ## Material archivado
 
 `Revisar para limpiar/README.md` describe los componentes de la aplicación anterior, juegos externos y planes alternativos que se conservaron para revisión. `Revisar para limpiar/inventario.json` registra sus rutas originales y motivos. `Mallas curriculares/` conserva las 18 fuentes activas; el prototipo HTML de IA y su hoja de fuentes se eliminaron, junto con la copia idéntica del Markdown de IA.
+
