@@ -1,35 +1,197 @@
-## Qué es
-## Limpieza de archivos de Oficial — 2026-10-11
+# Contexto técnico de Lyra AI
 
-Las entradas activas de Vite siguen siendo `pagina.html`, `login.html` e `ios-android.html`. Los 44 archivos exclusivos de la SPA original (antes en `src/main.jsx`, `src/App.jsx` y sus dependencias) se conservan ahora en `Revisar para limpiar/src/`. Los juegos externos que solo importaba el arcade anterior se movieron completos a `Revisar para limpiar/public/juegos/`, con sus licencias. Los apartados históricos de este documento y `docs/superpowers/` sobre la aplicación original deben interpretarse con esas rutas archivadas; no reconstruir ni editar esa SPA como si fuera la web vigente. Las dependencias compartidas por los componentes oficiales permanecen en `src/`.
+Actualizado el **19 de octubre de 2026**, a partir del código de `main`. Este documento describe la arquitectura del repositorio y las decisiones que deben preservarse. El estado de un despliegue, una migración aplicada o una credencial remota debe comprobarse en el servicio correspondiente; los informes de pruebas anteriores no son una comprobación de producción actual.
 
-Se eliminaron el prototipo independiente `Malla curricular · Ingeniería en IA · ESAN.html`, su hoja de fuentes `ESAN_files/css2` y la copia exacta de IA con sufijo `(1).md`. Los dos Markdown alternativos de Industrial y Sistemas se conservan en `Revisar para limpiar/Mallas curriculares/`; las 18 fuentes seleccionadas en `scripts/curriculumSources.mjs` permanecen en la carpeta original. El inventario de la carpeta nueva identifica rutas, motivos y SHA; ningún catálogo de cursos, script SQL, perfil o dato de usuario fue modificado. La página móvil conserva su contenido exacto.
+## Estado y puntos de entrada
 
+Lyra organiza avance académico, notas, matrícula del semestre, calendario, tareas y herramientas de estudio. El catálogo admite **18 carreras ESAN y Mecatrónica PUCP**. React 18 y Vite conviven con el HTML, CSS y JavaScript del portal; no se trata de la SPA original de `src/App.jsx`.
 
-Malla curricular interactiva para cuatro carreras: **Ingeniería en IA**, **Ingeniería Industrial y Comercial** y **Comunicación Empresarial y Marketing Digital** (ESAN) e **Ingeniería Mecatrónica** (PUCP, sistema separado). React 18 + Vite, Supabase (auth + Postgres con RLS + una Edge Function), desplegada en Vercel: **`Oficial` es la rama de producción de `https://l-esan.vercel.app`**. Todo el texto de la interfaz y los mensajes de commit van en español.
+| Entrada de Vite | Papel actual |
+| --- | --- |
+| `login.html` | Acceso, registro, confirmación de correo y recuperación mediante `src/lib/accessController.js`. |
+| `pagina.html` | Portal funcional, con adaptación a escritorio y móvil y componentes React montados bajo demanda. |
+| `ios-android.html` | Maqueta independiente de navegación y tema móvil. Sus avisos y menús no equivalen al flujo autenticado del portal. Sigue incluida en el build. |
+| `Pagina promocional/index.html` | Landing con demostraciones ilustrativas; no usa cuentas ni proveedores de IA para sus ejemplos. |
 
-## Comandos
+`vite.config.js` define estas cuatro entradas y genera `dist/`. `vercel.json` redirige `/` a `/login.html` y reescribe `/promocional` a la landing. El frontend funcional en móvil usa `pagina.html`, no una redirección automática a la maqueta. Ninguna de estas entradas produce por sí misma un APK o un paquete iOS.
 
-- `npm run dev` — servidor de desarrollo
-- `npm run build` — build de producción
-- `node --test tests/calendarModel.test.mjs` — pruebas del modelo de calendario
-- Requiere `.env.local` con `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`
+El trabajo actual se realiza en `main`. Las referencias a `aea` y `Oficial` en documentos anteriores son contexto de implementación; no prueban la rama que un proyecto de Vercel tiene seleccionada para producción. No cambiar ramas de producción ni dominios a partir de esas notas sin consultar la configuración efectiva.
 
-## Sesión de la web Oficial
+## Estructura y límites de despliegue
+
+- `src/`: componentes activos, modelos puros, catálogos, recursos de marca y estilos compartidos.
+- `public/`: recursos que Vite copia al build. Los datos geográficos y módulos de `public/juegos/geoduelo/` también son dependencias del Worker.
+- `api/mailbox.js`: función de Vercel que valida el buzón y lo reenvía a Google Apps Script. Una publicación puramente estática no ejecuta esta API.
+- `supabase/functions/`: `auth-by-code`, `study-advisor`, `text-to-tasks`, `personal-ai` y `excel-schedule`. Editar el repositorio o publicar Vercel no las despliega.
+- `supabase/`: instaladores, cambios, diagnósticos, mantenimiento e historia SQL. No ejecutar todos los archivos como una secuencia de migraciones.
+- `workers/geoduelo/`: Cloudflare Worker con Durable Objects, configuración, lockfile y pruebas propios. Publicarlo es independiente del frontend y del SQL.
+- `Mallas curriculares/` y `scripts/`: fuentes y generadores del catálogo; conservar la trazabilidad de IDs y requisitos.
+- `tests/` y `docs/`: verificaciones y guías. Las evidencias fechadas o las versiones desplegadas que mencionan describen el momento de aquellas pruebas.
+- `Revisar para limpiar/`: archivo para revisión, no una fuente alternativa de la aplicación vigente.
+
+## Comandos y configuración local
+
+Desde la raíz:
+
+```bash
+npm ci
+cp .env.example .env.local
+npm run dev
+npm run build
+npm run preview
+```
+
+En PowerShell, copiar el ejemplo con `Copy-Item .env.example .env.local`. El desarrollo abre `/login.html` en el puerto 5173. Completar `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`; `getSupabaseClient()` centraliza el cliente compartido.
+
+`VITE_GEODUELO_ONLINE_URL` es opcional y contiene únicamente la URL pública del Worker ya desplegado. Sin ella, la interfaz informa que Online no está activado y permite el juego offline.
+
+Las variables `VITE_` son públicas en el bundle. Las claves de proveedores, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_DB_URL` y `TICKET_SECRET` no deben incorporarse al navegador ni al repositorio. Las claves personales se gestionan mediante el backend de Mi IA, no mediante variables Vite.
+
+La landing puede compilarse junto al portal desde la raíz o por separado con su propio `Pagina promocional/package.json`. Para un proyecto Vercel exclusivo de la landing, seleccionar esa carpeta como Root Directory. Si está en otro dominio, ajustar `data-app-url` en su `index.html` para que el acceso apunte al portal real.
+
+## Acceso y recuperación
+
+Las operaciones por código usan `auth-by-code` (login, recuperación, reenvío y comprobaciones previstas por el controlador). El registro usa `auth.signUp` con `student_code` y `carrera` en los metadatos. La identidad que consume el servidor procede de la sesión, nunca de un UUID de usuario enviado por el cliente como autorización.
+
+Preservar la detección de correo repetido mediante identidades vacías. Con confirmación de correo activa, el registro muestra el aviso y espera el enlace; si ya hay sesión válida, puede continuar al portal. Las respuestas por código no deben exponer el correo completo de otra cuenta. El contador de 45 segundos es una ayuda del cliente y no sustituye los límites del servidor.
+
+Los callbacks se construyen con el origen actual y la ruta `/login.html`; después del acceso se abre `pagina.html` en Inicio. La nueva contraseña exige sesión verificada mediante `auth.getUser` antes de `auth.updateUser`. Un enlace inválido o caducado vuelve a recuperación; cancelar cierra solo la sesión local de recuperación.
+
+En Supabase Auth deben permitirse el origen y la ruta efectivos de redirección. `https://l-esan.vercel.app/login.html` es una dirección utilizada previamente, no una constante que deba copiarse a cualquier entorno. Un cambio de dominio requiere revisar callbacks, plantillas de correo, enlaces de la landing y orígenes permitidos del Worker.
+
+El código de alumno tiene ocho dígitos y se valida según universidad/carrera tanto en el acceso como en el backend. Conservar las reglas del catálogo y del trigger sin sustituirlas por una validación solo visual ni revelar reglas internas en los mensajes de error.
+
+### Fondo y layout del acceso
+
+Los recursos actuales están en `public/`: `login-landscape.mp4`, `login-landscape.webp`, `Cat.jpg` y fuentes Entry. Vite los publica en la raíz de la salida. `src/lib/accessBackground.js` coordina la carga decorativa; esta no debe bloquear la autenticación. `login.html` usa el video de paisaje y su póster en escritorio y la imagen de gato para móvil.
+
+El archivo raíz `270983.mp4` sigue presente, pero no es el recurso referenciado por el acceso actual. Está pendiente de limpieza; no se ha movido ni eliminado como parte de esta actualización documental.
+
+El layout lo coordina `src/styles/accessViewport.css`: panel limitado al viewport, ajuste al contenido y teclado mediante `visualViewport`, con desplazamiento interno cuando hace falta. El éxito se anuncia en `#accessStatus`; los errores comparten `#formMessage`. La [verificación de acceso](docs/access-layout/verification.md) conserva la evidencia histórica con Supabase simulado y sus límites.
+
+## Sesión y navegación del portal
 
 `pagina.html` y `accessController.js` instalan `src/lib/webSession.js`: cierre de sesión tras 30 minutos sin interacción. Solo las acciones reales de teclado, puntero, entrada, scroll o toque en una pestaña visible actualizan la actividad; la renovación de tokens, las consultas y el temporizador de Focus no la prolongan. El registro por sesión persiste en el navegador y se comparte entre pestañas. Recargar, enfocar o volver desde suspensión/bfcache comprueba el plazo antes de admitir actividad o cargar datos académicos. Una sesión antigua sin registro válido requiere volver a iniciar sesión una vez.
 
-Al caducar, el portal oculta y desmonta la información privada inmediatamente, intenta `signOut({scope:'local'})` y limpia únicamente las claves de autenticación de este proyecto aunque no haya conexión. Tras un máximo de 1,5 segundos esperando el cierre, vuelve al acceso. No elimina notas, cursos ni preferencias de Supabase y no cierra otros dispositivos. Los enlaces de recuperación/confirmación verificados y un login nuevo establecen un registro nuevo. `App.jsx`, `ios-android.html` y el cliente Supabase compartido conservan su implementación. Este control es de la aplicación web, no una política de expiración de JWT ni una modificación de Supabase Auth en el servidor.
+Al caducar, el portal oculta y desmonta la información privada inmediatamente, intenta `signOut({scope:'local'})` y limpia únicamente las claves de autenticación de este proyecto aunque no haya conexión. Tras un máximo de 1,5 segundos esperando el cierre, vuelve al acceso. No elimina notas, cursos ni preferencias de Supabase y no cierra otros dispositivos. Los enlaces de recuperación/confirmación verificados y un login nuevo establecen un registro nuevo. Este guard no convierte la maqueta `ios-android.html` en un portal conectado. Este control es de la aplicación web, no una política de expiración de JWT ni una modificación de Supabase Auth en el servidor.
 
 Pruebas: `node --test tests/webSession.test.mjs` y `tests/webSession.browser.mjs` (Playwright, `SETUP_BROWSER` opcional, Vite en 5181 con URL `https://setup-fixture.supabase.co` y clave fixture). Se comprueban inactividad, regreso siete horas después, recarga, actividad entre pestañas, restauración y cierre sin conexión; los requests de la prueba de navegador son simulados.
 
-La extensión de escritorio de Buzón, Brújula IA, Asesor IA, Mod Focus y Recursos está documentada en [docs/desktop-surfaces.md](docs/desktop-surfaces.md): mapeo de referencias, alcance superior a 860 px, contratos de datos, funciones aún deshabilitadas y evidencia de validación.
+La extensión de escritorio y su evidencia histórica están documentadas en [docs/desktop-surfaces.md](docs/desktop-surfaces.md). Comprobar el código actual antes de interpretar como vigente una función allí marcada como pendiente.
 
-## Arquitectura original: index.html
+
+## Datos académicos, catálogo y configuración inicial
+
+Las opciones se generan en `src/data/careerOptions.js` desde `scripts/curriculumSources.mjs`: 18 ESAN más Mecatrónica PUCP. Los 15 catálogos añadidos están en `src/data/curriculaEsan.js`; IA, Industrial, Marketing y PUCP conservan sus módulos e IDs.
+
+```bash
+node scripts/generateCurricula.mjs
+node scripts/generateCurricula.mjs --check
+```
+
+No editar las salidas generadas a mano. Los requisitos y créditos proceden de los Markdown seleccionados; la generación rechaza requisitos desconocidos. Ver [fuentes y generación](docs/careers.md).
+
+**No renombrar IDs de cursos sin una migración de datos**: progreso, notas, estados, profesores y comunidad dependen de ellos. Los IDs equivalentes ESAN pueden compartirse; PUCP conserva su espacio separado con prefijo `pucp-`. Una modificación de malla puede requerir regenerar el catálogo y los totales de Logros y revisar el SQL correspondiente.
+
+Inicio y `OfficialCurriculum` comparten el avance privado. Distinguir cursos completados, matrícula actual y plan futuro: Focus y Texto → tareas usan la matrícula actual, no el plan. La selección de Cursos de este semestre excluye cursos completados y se guarda mediante `set_semester_courses`; ver [matrícula y tareas](docs/text-tasks-semester.md).
+
+La configuración inicial usa `InitialSetup.jsx`, `setupModel.js` y `student_setup.completed_at`. Una configuración completada no debe volver a abrirse como si fuera un usuario nuevo. Conservar los borradores y los avisos de reintento cuando falla una consulta o escritura. Ver [configuración inicial](docs/initial-setup.md).
+
+## Calendario, tareas, Focus y grupos
+
+`OfficialCalendar.jsx` administra `calendar_events` y `calendar_tasks` por cuenta: Día/Semana/Mes, horarios semanales, agenda y edición. Los modelos de fechas civiles usan Lima (UTC−5). Un error debe conservar registros y borradores; no reemplazar información remota por datos de muestra.
+
+`ExcelScheduleImport.jsx` integra la importación de horario Excel y `excel-schedule`; las propuestas se revisan antes de persistir el horario. `TextToTasks.jsx` usa `text-to-tasks` para proponer tareas, no para guardarlas automáticamente. Mantener la validación de cursos, fechas y títulos y los identificadores estables para reintentos sin duplicados.
+
+Mod Focus usa `focusModel.js`, sesiones privadas y reloj del servidor. Filtra cursos matriculados de la carrera que no estén completados. Conserva pausa, recuperación al recargar, finalización idempotente e historial por fecha en Lima. Ver [Focus](supabase/FOCUS_SETUP.md).
+
+`OfficialStudyGroups.jsx` usa `study_rooms`, `study_room_members` y `study_room_messages`. La tabla histórica `study_messages` es independiente. Salas privadas y mensajes requieren membresía; solo el creador gestiona invitación y cierre. Los reintentos reutilizan UUID y conservan el borrador. La consulta periódica de mensajes no representa presencia en línea. Ver [grupos](supabase/STUDY_GROUPS_SETUP.md).
+
+## IA, recursos y buzón
+
+`OfficialTools.jsx` integra el asesor y la proyección de ciclos. Brújula/SemesterRoadmap calcula rutas localmente; no confundirla con una llamada a proveedores.
+
+`study-advisor`, `text-to-tasks` y la importación inteligente reutilizan piezas de proveedores y enrutamiento. La disponibilidad de Gemini, Groq y OpenRouter depende del entorno y del momento. No describir una comprobación pasada como garantía de disponibilidad futura.
+
+Mi IA se abre desde el perfil o el botón «+» del portal móvil. `PersonalAISettings.jsx` y `personal-ai` gestionan las claves personales con secretos en Vault y metadata enmascarada en la respuesta. No recuperarlas completas desde la UI ni guardarlas en localStorage. El modo personal usa sus claves activas y cuotas, sin recurrir automáticamente al servicio compartido si fallan. Ver [Mi IA](docs/personal-ai-keys.md).
+
+Recursos consulta los enlaces compartidos de Supabase; no publicar datos de demostración como si fueran aportes reales.
+
+**Buzón está implementado en el código actual**: `OfficialMailbox.jsx` → `POST /api/mailbox` → Google Apps Script. La API valida categorías, campos y límites y requiere una respuesta `OK` del servicio antes de anunciar éxito. Las categorías Aplicativo, Docente y Universidad se conservan en los datos reenviados. El flujo depende de que la función de Vercel y el Apps Script estén desplegados y accesibles; un servidor estático o `vite preview` por sí solos no ofrecen esta API. Esta revisión documental no envió mensajes ni comprobó la recepción externa.
+
+## Arcade y Geoduelo
+
+El catálogo de `pagina.html` tiene siete juegos: Memoria, Geoduelo, Reto lógico, Dino Run+, Escuadrón Galáctico, Quiz académico y Reflejos. `OfficialArcadeGame.jsx` monta Dino, Galaxia y Geoduelo; las referencias a AstroDefensa, Frogger y juegos externos del archivo histórico no describen el catálogo activo.
+
+Geoduelo comparte `src/lib/geoduelo-modes.js` entre frontend y Worker, y depende también de datos de `public/juegos/geoduelo/`. No mover esas rutas de forma aislada.
+
+Online usa Cloudflare Workers, Durable Objects y WebSockets. El servidor decide preguntas, tiempos y puntajes; verifica la sesión con Supabase y guarda resultados mediante `record_geoduelo_online`, con permisos de servidor. No habilitar escritura directa de resultados a alumnos ni confiar en puntajes enviados por el navegador. Los secretos se cargan en Cloudflare, nunca en `VITE_` ni en `wrangler.jsonc`.
+
+Frontend, Worker y SQL son entregas separadas. Un cambio solo visual no implica redesplegar el Worker ni repetir SQL si el protocolo sigue siendo compatible. Consultar [Geoduelo local](docs/geoduelo.md) y [online](docs/geoduelo-online.md); sus referencias a `aea` corresponden a la etapa de implementación. La pantalla de juego conserva adaptación móvil y controles de pantalla completa/salida.
+
+## Base de datos y decisiones de seguridad
+
+Los SQL del repositorio no certifican que estén aplicados en producción. Antes de cambiar una base existente, revisar tablas, funciones, permisos, RLS y la guía del módulo. No repetir instaladores e historia de forma indiscriminada. Consultar [calendario](supabase/CALENDAR_SETUP.md) y [mantenimiento SQL](supabase/SQL_MAINTENANCE.md); las instantáneas de `supabase/maintenance/` no son instaladores de una base vacía.
+
+Preservar estas decisiones:
+
+- Aislamiento de datos privados por cuenta mediante RLS y comprobación de sesión antes de escribir. La UI no constituye una barrera de autorización.
+- Progreso, notas, estados y matrícula deben mantenerse coherentes al marcar o desmarcar cursos. Un curso completado no debe ofrecerse como matrícula futura incompatible.
+- Notas en escala 0–20; las notas autodeclaradas no deben otorgar logros por sí solas.
+- Logros otorgados mediante RPC que comprueba las condiciones en el servidor; no permitir inserción libre del cliente.
+- Comentarios y puntajes públicos firmados con alias, sin exponer `author_id`, `student_id` ni un vínculo alias↔perfil al navegador. Los administradores del servicio pueden acceder a identidades según sus permisos; alias no equivale a anonimato frente al administrador.
+- Selecciones explícitas de columnas en tablas con restricciones de lectura; no sustituirlas por `select('*')`.
+- El alias es editable en el diseño posterior: `change_alias.sql` retira su candado y sincroniza firmas existentes. No restaurar `lock_alias` desde instrucciones antiguas. El estado efectivo de la base debe comprobarse.
+- La función antigua `email_for_student_code` no debe reintroducirse como lookup público. La guía de mantenimiento documenta su retiro y el de `lock_alias`, con recuperación administrativa separada.
+- Los permisos y topes contra spam viven también en el backend: no resolver un bloqueo ampliando RLS a todos los usuarios.
+- No ampliar privilegios de `service_role` al navegador ni exponer claves de proveedores en respuestas o logs.
+
+`ADMIN.md` conserva procedimientos y estados históricos; revisar sus pendientes antes de ejecutar consultas. Activar un CAPTCHA exige coordinar cliente y autenticación. Esta actualización de documentación no aplica SQL, no cambia configuración de Supabase ni declara resueltos avisos de seguridad anteriores.
+
+## Marca, móvil y navegación
+
+La marca se centraliza en `src/lib/lyraBrand.js` y sus estilos. Inicio monta los decorativos de la paloma mediante `homeCompanion.js` y `homeEnhancements.js`. Las transiciones del sidebar incluyen `src/styles/SidebarMotion.css`.
+
+La interfaz responsive y el menú móvil del portal están en `pagina.html`. Preservar movimiento reducido, foco, controles táctiles y navegación con Atrás/Adelante. La maqueta `ios-android.html` puede servir de referencia visual, pero no demuestra que exista una integración equivalente con datos reales.
+
+## Verificación y CI
+
+Ejemplos de comprobaciones por módulo:
+
+```bash
+npm run build
+node scripts/generateCurricula.mjs --check
+node --test tests/calendarModel.test.mjs tests/calendarEditing.test.mjs tests/focusModel.test.mjs tests/studyGroups.test.mjs
+node --test tests/textTasks.test.mjs tests/scheduleImport.test.mjs tests/personalAi.test.mjs tests/webSession.test.mjs
+```
+
+Las pruebas `*.browser.mjs` y los scripts Python de navegador necesitan Playwright y un navegador compatible. Algunas pruebas SQL requieren PGlite fuera de las dependencias raíz; seguir la guía de cada módulo y sus variables de fixture. No asumir que instalar solo el frontend prepara toda la suite.
+
+Desde `workers/geoduelo`, `npm ci` y `npm test` preparan y ejecutan su suite propia. Un cambio en código compartido puede requerir validar tanto frontend como Worker.
+
+El `package.json` raíz no define `npm test`. `.github/workflows/validate.yml` ejecuta `npm ci` y `npm run build` en pull requests y pushes a `feat/**`; no ejecuta las suites. `deploy.yml` intenta publicar `dist/` en GitHub Pages con pushes a `main` y por ejecución manual. Este workflow es independiente de Vercel y necesita Pages configurado; Pages no aloja la API de Vercel.
+
+Los documentos de verificación conservan los resultados de sus entregas, incluidos fixtures y pruebas locales. No reutilizar cifras de pruebas antiguas como resultado de esta revisión ni asumir correo, proveedores o servicios externos validados por una compilación.
+
+## Archivo y limpieza
+
+Los componentes exclusivos de la SPA original se conservan en `Revisar para limpiar/src/`; los juegos externos retirados y sus licencias, en `Revisar para limpiar/public/juegos/`; dos planes alternativos, en `Revisar para limpiar/Mallas curriculares/`. Las 18 fuentes activas siguen en `Mallas curriculares/`.
+
+Las herramientas de agentes se movieron posteriormente a `Revisar para limpiar/.agents/`. `.gitmodules` apunta allí al submódulo de Superpowers; conservar la referencia mientras exista el submódulo. Su retirada futura debe tratar ambos elementos.
+
+El [README del archivo](Revisar%20para%20limpiar/README.md) y su [inventario](Revisar%20para%20limpiar/inventario.json) documentan la limpieza previa; no asumir que enumeran todos los movimientos posteriores. No reconstruir la SPA archivada como si fuera la web vigente.
+
+Los archivos de PWA (`public/manifest.webmanifest`, `public/sw.js` e iconos) permanecen en el repositorio. Las entradas actuales de acceso y portal no enlazan el manifiesto ni registran ese service worker; la instalación y el modo offline no deben darse por activos por la sola presencia de los archivos.
+
+## Apéndice histórico: SPA original archivada
+
+El bloque siguiente se conserva para no perder decisiones y detalles de la implementación anterior. **No es una descripción de la aplicación actual ni una lista de instrucciones para restaurarla.** Sus rutas a `App.jsx`, `MallaCurricular.jsx`, juegos retirados y registro PWA remiten al archivo en `Revisar para limpiar/`. Sus afirmaciones de catálogo activo, interfaz móvil o funciones pendientes deben interpretarse en aquel contexto. Para editar el portal, usar las secciones anteriores y comprobar el código vigente.
+
+### Arquitectura original: index.html
 
 `App.jsx` decide la pantalla según la sesión de Supabase: `LoginPage` (login/registro/recuperación), `UpdatePassword` (llega del enlace del correo), `CareerSelect` o `MallaCurricular`. La malla recibe `user` y `carrera` — si `user` es `null` es **modo visitante**: puede explorar (y alternar de carrera con `onSwitchCarrera`) pero nada persiste, y las funciones sociales (profesores, panel lateral) ni se renderizan. El bloqueo real del visitante no es la UI: las tablas nuevas tienen políticas RLS solo para `authenticated`, el rol `anon` no tiene ninguna.
 
-### Carreras
+#### Carreras
 
 - `data/carreras.js` indexa las mallas: `data/cursos.js` (IA, 200 créd), `data/cursosIndustrial.js` (Industrial y Comercial, 215 créd), `data/cursosMarketing.js` (Comunicación Empresarial y Marketing Digital, 215 créd) y `data/cursosPucp.js` (PUCP). Cada curso: `id`, `n` nombre, `c` ciclo, `cr` créditos, `r` prerequisitos, `rc` créditos aprobados requeridos (opcional; bloquea el marcado hasta alcanzar el umbral), `a` área temática (clave de `data/areas.js`; da color a las líneas de la malla — cada línea toma el color del área del curso al que llega).
 - **Cursos equivalentes entre las carreras ESAN comparten el mismo `id`** (calc1, fis1, est1, prog1, com1, comlit2, fin, glob, precalc, pcrit, contab, costos, econ, estinf, adat1, fil, metinv, entre, ttesis1/2, ieint1/2, talleres, pre-formación): así los profesores y sus votos se ven desde las tres mallas ESAN sin tocar la base. Los **requisitos y créditos sí pueden variar por malla** (cada archivo declara los suyos; p. ej. `metinv` pide 85 créd. en Marketing y 105 en Industrial). **No renombrar esos ids** sin migrar la tabla `professors`. Los electivos NO se comparten (ele* en IA, iele* en Industrial, cele* en Marketing).
@@ -37,11 +199,11 @@ La extensión de escritorio de Buzón, Brújula IA, Asesor IA, Mod Focus y Recur
 - Cada carrera declara `uni` y `ciclosLabel` (el header y `CareerSelect` los muestran). `buildMalla` normaliza las columnas al primer ciclo (`minC`) porque PUCP no tiene pre-formación.
 - La carrera vive en `profiles.carrera` (`'ia'` | `'industrial'` | `'marketing'` | `'pucp-mecatronica'`), se elige en el registro (desplegable, va en los metadatos del signUp) y **es fija**: un trigger (`lock_carrera`) rechaza el cambio desde la app; solo el dueño la corrige desde el Table Editor. Cuentas anteriores a esta función tienen `carrera` NULL y `App.jsx` les muestra `CareerSelect` una sola vez.
 
-### Tema claro/oscuro
+#### Tema claro/oscuro
 
 Toda la app (login, carreras, malla y paneles) tiene modo oscuro: `src/lib/theme.js` guarda la elección en localStorage (`malla-tema`) y la aplica como `data-theme="dark"` en `<html>` — el modo elegido es con el que la app inicia siempre en ese dispositivo. El botón flotante (🌙/☀️, abajo a la izquierda) vive en `App.jsx` y aparece en todas las pantallas. **El arcade no cambia**: tiene su propio look siempre oscuro y al abrirse tapa el botón. Los overrides oscuros viven al final de cada CSS en bloques `[data-theme='dark']` — al tocar estilos claros, revisar si el bloque oscuro del mismo archivo necesita el cambio equivalente.
 
-### Componentes
+#### Componentes
 
 - `MallaCurricular.jsx` — grafo de cursos (layout calculado por carrera a nivel de módulo en `buildMalla`; el orden de las filas dentro de cada ciclo lo decide una heurística de baricentro —4 pasadas ida/vuelta, promedio, no mediana— que minimiza cruces de líneas: IA 25→7, Industrial 62→16, PUCP 153→55. No reordenar los archivos de datos a mano para "arreglar" el dibujo). Modos: qué abre / qué requiere / marcar llevados (BFS sobre dependencias; los cursos con `rc` no se marcan sin los créditos y caen en cascada al desmarcar) / qué puedo llevar / **planificar ciclo** / **ficha del curso** (solo con sesión). El avance se guarda en la tabla `progress` (array `done` y array `plan` sincronizados en la nube + localStorage). La leyenda de áreas incluye **filtro interactivo por área temática** (`selectedArea`), atenuando los cursos y aristas ajenos para estudiar ramas de especialización. El **buscador** de la toolbar normaliza tildes, resalta coincidencias (clase `hit`) y hace scroll suave al resultado (Enter cicla entre varios). El modo **planificar ciclo** arma el plan del próximo ciclo (solo cursos `disponible`; sincronizado en Supabase por alumno y con fallback en localStorage): la barra muestra créditos, aviso de carga alta (>22 créd), cuántos cursos desbloquearía y señala «cursos exigentes» con la RPC `stats_cursos` (query 28 — agregados anónimos de `course_status` con umbral de ≥5 registros; si la RPC no existe o eres visitante, el medidor funciona sin esa señal).
 - `CourseDetail.jsx` — drawer derecho del modo «Ficha del curso»: estado académico con colores (aprobado verde / convalidado azul / matriculado naranja / desaprobado rojo / pendiente blanco), nota (reusa `grades`), veces llevado, fecha de aprobación, comentario personal privado y **reseñas anónimas por curso** (máx. 50 palabras; visibles entre carreras gracias al id compartido). Sincronización con «llevados»: aprobado/convalidado marcan el curso (con requisitos, respetando `rc`); matriculado/desaprobado/pendiente lo quitan en cascada; a la inversa, `reconcileStatuses` limpia estados contradictorios al marcar/desmarcar. Un curso llevado sin fila propia cuenta como **aprobado implícito**.
@@ -55,60 +217,4 @@ Toda la app (login, carreras, malla y paneles) tiene modo oscuro: `src/lib/theme
 
 
 
-## Autenticación — reglas no negociables
-
-- **Las operaciones por código pasan por la Edge Function `auth-by-code`** (`supabase.functions.invoke`, acciones `login`/`recover`/`resend`/`exists`). El registro usa `auth.signUp` y el cambio de contraseña usa `auth.updateUser` con sesión verificada. La RPC vieja `email_for_student_code` está **revocada en producción** — cualquier código que la llame falla. El navegador nunca debe recibir el correo completo de otro usuario (solo enmascarado `ju•••@gmail.com`).
-- La Edge Function vive en `supabase/functions/auth-by-code/index.ts` pero **se despliega a mano en el dashboard de Supabase** (Edge Functions → editor); el push a Vercel NO la actualiza. Si se edita ese archivo, avisar al usuario que debe redesplegarla.
-- Código de alumno: exactamente 8 dígitos y la regla depende de la carrera elegida — ESAN: los dos primeros (promoción) van de 25 hasta el año en curso; PUCP: empieza en 20 (año de ingreso 20xx). Los rangos no se cruzan. Se valida en `LoginPage` (según la carrera del desplegable) y en la base (CHECK `NOT VALID` + trigger `handle_new_user`, que valida por carrera). **Los mensajes de error no deben revelar la regla** (decisión deliberada para no ayudar a colados); el placeholder tampoco muestra ejemplos con "25" ni "20".
-- Con confirmación de correo activa, Supabase devuelve un usuario sin identidades (`data.user.identities.length === 0`) al registrar un correo repetido, en vez de error — `LoginPage` ya lo maneja; no quitar ese check.
-
-## Base de datos
-
-Los `.sql` de `supabase/` son scripts que el usuario corre **a mano** en el SQL Editor (guardados allí como queries numeradas); editarlos en el repo no cambia producción. Cada script nuevo debe correrse **antes** de desplegar el frontend que lo usa. Tablas: `profiles` (incluye `carrera` y `alias`), `progress` (incluye `done` y `plan`), `calendar_events` (eventos personales con horas y repetición semanal) + `calendar_tasks` (tareas privadas — script `sync_features.sql`), `professors` + `professor_votes` (PK compuesta = un voto por alumno) + `professor_tags` (PK compuesta con la etiqueta = hasta 3 etiquetas por alumno por profesor, tope por RLS; claves fijas por CHECK), `grades` (privadas por alumno), `tools` (compartidas) + `tool_likes` (un like por alumno) + `tool_comments` (anónimos), `course_status` (estado académico privado por alumno+curso) + `course_comments` (reseñas anónimas por curso, mismo patrón que `tool_comments` — script `course_detail.sql`), `game_scores` (mejor puntaje por alumno+juego+**temporada** para el arcade; alias visible, `student_id` no legible; escrituras solo por RPC — script consolidado `arcade.sql`), `logros` (insignias privadas por alumno; solo lectura para el cliente, se otorgan únicamente por la RPC `reclamar_logros` — script consolidado `logros.sql` (25 logros en total); **el logro `malla-completa` usa el total de cursos de cada carrera dentro del SQL** — el generador `scripts/generateCurricula.mjs` sincroniza los 19 totales de `reclamar_logros`; si cambia una malla, regenerar y aplicar la migración antes de publicar).
-
-Decisiones que no hay que re-proponer:
-
-- **Borrado en listas compartidas**: el creador de un profesor solo puede borrarlo mientras nadie más haya votado (política RLS con `not exists`); después, solo el dueño del proyecto desde Table Editor. Herramientas: siempre el creador. Nunca borrado libre para todos — los dislikes son la señal comunitaria, no el borrado.
-- **Topes anti-spam** por RLS: 5 profesores por alumno por curso, 20 herramientas por alumno, 5 comentarios por alumno por herramienta, 3 reseñas por alumno por curso.
-- Nombres de profesor **siempre en mayúsculas** (toUpperCase al guardar + CHECK en la base + CSS).
-- Escala de notas 0–20, aprobado desde 10.5 (`PASS` en `SidePanel.jsx`).
-- **Comentarios de herramientas y reseñas de cursos son anónimos de verdad**: se firman con el `alias` ("nombre secreto", único, se elige una vez — trigger `lock_alias`), el servidor lo estampa (`stamp_comment_alias`, función compartida por ambas tablas) y `author_id` NO es legible por el cliente en `tool_comments` ni `course_comments` (permiso a nivel de columna). Por eso los `select` a esas tablas deben pedir columnas explícitas — `select('*')` falla — y nunca hay que exponer `author_id` ni un join alias↔perfil al navegador. Topes: 5 comentarios por herramienta (300 caracteres), 3 reseñas por curso (50 palabras / 400 caracteres).
-
-## Gotchas
-
-- La cuenta admin/limpieza es el propio usuario vía Supabase Table Editor; el contacto público de la app es hernandengels@gmail.com.
-- Pendientes conocidos que requieren coordinación con el usuario: CAPTCHA Turnstile (hay que tocar login + Edge Function juntos; no activarlo en el dashboard antes) y leaked password protection (probablemente requiere plan Pro).
-
-
-## Rama Oficial: pagina.html
-
-La configuración inicial de escritorio se comprueba en `student_setup.completed_at` para cada cuenta, sin filtrar por fecha de creación. Si falta ese registro o no está completado, se abre automáticamente; un borrador pendiente puede retomarse. Tras confirmar y guardar, se aplican las preferencias y ya no se muestra ningún acceso de configuración o «Preferencias de estudio» en el perfil. `setupOpen` también rechaza registros completados. Mientras se consulta el estado no se ofrece el acceso del menú; un fallo conserva el aviso de reintento. No se modifica la versión móvil ni el componente compartido de preferencias de la aplicación original.
-
-Las opciones de carrera se generan en `src/data/careerOptions.js` desde `scripts/curriculumSources.mjs`: 18 ESAN + Mecatrónica PUCP. Los 15 catálogos nuevos viven en `src/data/curriculaEsan.js`; IA/Industrial/Marketing/PUCP conservan sus cursos e IDs. Ejecutar `node scripts/generateCurricula.mjs` para regenerar y `--check` para validar; no editar las salidas a mano. Créditos y requisitos vienen de los Markdown, con equivalencias de escritura explícitas y generación bloqueada ante requisitos desconocidos. Fuentes, versiones y pruebas: `docs/careers.md`. El frontend calcula únicamente el grafo de la carrera abierta y comparte `getSupabaseClient()` con Herramientas. Las cuentas sin carrera la eligen desde Inicio; ya no se enlaza al `index.html` eliminado. La ampliación exige ejecutar manualmente `supabase/careers_catalog.sql` antes de publicar: modifica CHECK/trigger y actualiza Focus/Logros instalados sin tocar datos, RLS ni candados.
-
-`login.html` usa `auth-by-code`, verifica la sesión y abre `pagina.html` en Inicio. El documento monta componentes React de forma diferida y los desmonta al navegar o cambiar de cuenta. Inicio y OfficialCurriculum comparten las tablas privadas de avance/notas/estados/logros. No hay notas, logros ni conversaciones de muestra.
-
-El acceso se controla en `src/lib/accessController.js`: conserva la entrada animada y el inicio de sesión, con navegación directa a Inicio, y añade registro, recuperación por código, aviso de correo y nueva contraseña. Estas pantallas prolongan el diseño existente: panel oscuro redondeado con contorno, texto crema/acento salmón, brújula circular I'ESAN, fuente Entry embebida y el video `270983.mp4`.
-
-El registro envía `student_code` y `carrera` en los metadatos de `auth.signUp`; el trigger existente crea el perfil con la carrera. Si Supabase exige confirmar el correo, muestra el aviso y espera el enlace; si devuelve una sesión, entra directamente. Conserva la detección de correo duplicado mediante identidades vacías. Recuperación y reenvío usan `auth-by-code`; el aviso muestra solo el correo enmascarado o una respuesta genérica para códigos desconocidos. El contador de 45 segundos usa una fecha límite (`Date.now()`), se actualiza al volver a la pestaña y limita solicitudes en el cliente; no sustituye los límites del servidor.
-
-Los enlaces de correo regresan a `login.html`. En Supabase → Authentication → URL Configuration, permitir **`https://l-esan.vercel.app/login.html`** como URL de redirección. Para guardar la nueva contraseña se exige una sesión real y `auth.getUser` válido antes de `auth.updateUser`; un enlace inválido/caducado vuelve a recuperación. Al cancelar se cierra solo la sesión local de recuperación. Una sesión aceptada abre `pagina.html` en Inicio. Esta extensión de UI no requiere SQL nuevo ni redesplegar la Edge Function existente.
-
-El layout de acceso está limitado al viewport por `src/styles/accessViewport.css`: documento sin scroll, `.entry` fija, panel con altura máxima y composición original como punto de partida. El controlador mide el contenido activo, incluyendo errores: primero amplía la altura, después ajusta espacios y finalmente tamaños solo si aún hace falta. No impone densidades por altura ni aplica escala; `visualViewport` contempla el teclado móvil. Solo `.stage` puede desplazarse en altura extrema o con teclado abierto. `#complete` se eliminó: el éxito se anuncia en `#accessStatus` oculto y navega a `pagina.html`; los errores comparten `#formMessage`. `#replay` reinicia la carga previa y no existe un modo `#previewHint` en este documento.
-
-Validación: `npm run build`, sintaxis JS y `tests/accessViewport.py` con Supabase simulado. Pasaron 80 combinaciones de cinco vistas con/sin error en ocho tamaños, además de navegación directa, replay, gestos táctiles, tamaños legibles, altura extrema, teclado simulado y animaciones habituales. Resultados, capturas y reproducción en `docs/access-layout/verification.md`. No se crearon cuentas reales ni se verificó correo real o un teclado físico.
-
-`OfficialCalendar.jsx` administra eventos y tareas reales de la cuenta: `calendar_events` y `calendar_tasks`, consultas paginadas filtradas por `student_id`, verificación de sesión antes de escribir y RLS de propietario. Soporta Día/Semana/Mes, horarios semanales, rangos del calendario anterior, filtros, eventos simultáneos, agenda y CRUD con confirmación de eliminación. Las fechas civiles y horarios usan Lima (UTC−5); `calendarModel.js` evita desplazamientos por zona horaria. No usa almacenamiento local ni muestras como sustituto de Supabase. Un fallo conserva registros y borradores; un guardado bloquea navegación/cierre de sesión hasta terminar.
-
-`OfficialTools.jsx` integra StudyAdvisor y SemesterRoadmap con datos reales de la carrera/avance/plan, como secciones embebidas y con estilos propios de pagina.html. Brújula suma la primera proyección al plan actual y la persiste. Recursos consulta `tools` y abre sus enlaces reales. Buzón sigue pendiente; no simula envíos.
-
-`OfficialStudyGroups.jsx` monta salas reales desde el cliente Supabase compartido y verifica la cuenta antes de escribir. `study_rooms`, `study_room_members` y `study_room_messages` se crean con `study_groups.sql`. La tabla anterior `study_messages` pertenece al chat por curso y no se modifica: el diagnóstico real mostró que carece de `room_id`, por lo que la migración de salas utiliza un nombre independiente. Las públicas se descubren por curso; las privadas solo son visibles para miembros y se comparten por código. Participantes y mensajes son accesibles únicamente con membresía. Los RPC estamparán el nombre del miembro y ocultan los UUID de cuenta; solo el creador obtiene o renueva la invitación y cierra la sala. Escrituras directas desde el navegador están revocadas. La conversación carga 50 mensajes, pagina por fecha/UUID y consulta novedades cada 10 segundos mientras sea visible. No representa presencia en línea. Reintentar creación/envío utiliza el mismo UUID para evitar duplicados; un fallo conserva el borrador. La navegación queda bloqueada durante escrituras.
-
-`Mod Focus` conserva el reloj y los compañeros de pagina.html, con el modelo puro `src/lib/focusModel.js`. Los cursos se filtran por la carrera de `profiles.carrera`, estado Matriculado y ausencia en `progress.done`, ordenados en español. No usa el plan futuro como matrícula. `focus_sessions.sql` crea `focus_study_sessions` y RPC privados con reloj del servidor, una sesión activa por cuenta, pausa/reanudación y finalización idempotente. El historial por fecha agrupa por el día de término en Lima e incluye el tiempo parcial de sesiones interrumpidas; los mensajes usan el resumen real. Se recupera una sesión abierta al recargar y se pausa antes de cerrar sesión. El visitante usa el reloj sin guardar. La prueba de 10 segundos se eliminó y el selector nativo tiene opciones opacas claras/oscuras. Activación manual y límites: `supabase/FOCUS_SETUP.md`. Pruebas: `tests/focusModel.test.mjs` y `tests/focusSessions.sql.test.mjs`.
-
-Las referencias anteriores a `App.jsx`, `AcademicCalendar.jsx`, su calendario oficial y su respaldo en localStorage corresponden a la aplicación original `index.html`; no describen el calendario personal de Oficial.
-
-Validación disponible en el repositorio: `node --test tests/calendarModel.test.mjs tests/studyGroups.test.mjs` y `tests/studyGroups.sql.test.mjs` (PGlite externo; instrucciones en `supabase/STUDY_GROUPS_SETUP.md`). Comprueba fechas, zona horaria, límites de repetición, rangos históricos, eventos simultáneos y validación. Además de `npm run build`, la implementación se verificó con fixtures de navegador y PostgreSQL local (PGlite): aislamiento entre cuentas, rechazo anónimo, conservación de datos y migración idempotente. Estas pruebas no equivalen a una prueba con cuentas reales en producción.
-
-La migración y el procedimiento de despliegue están en `supabase/CALENDAR_SETUP.md`. En esta entrega la base activa **no fue modificada**: `SUPABASE_DB_URL` está configurada, pero el proxy del entorno rechaza la conexión PostgreSQL con HTTP 403. El usuario eligió ejecutar `sync_features.sql` y `study_groups.sql` en el SQL Editor; revisar `calendar_audit.sql` y las políticas efectivas antes de publicar el frontend en producción. Los archivos SQL consolidados reemplazan versiones antiguas del repositorio; no se deben volver a ejecutar todos sobre una base existente.
 

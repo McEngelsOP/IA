@@ -1,91 +1,132 @@
-# IA · Malla curricular interactiva
+# Lyra AI
 
-Para mejorar la visualización de los cursos y lo que conlleva cada uno. ¿La razón? El sistema de nuestra U está zzzzz.
+Plataforma web de organización académica para estudiantes: avance de la malla, notas, cursos del semestre, calendario, tareas y herramientas de estudio. Los datos personales se guardan por cuenta en Supabase.
 
-Aplicación web de la malla de **Ingeniería en IA (ESAN)**: cada alumno inicia sesión con su código, marca los cursos que ya llevó y explora qué cursos abre o requiere cada uno. El progreso se guarda en su cuenta (Supabase).
+Esta documentación describe el código de la rama `main`, revisado el **19 de octubre de 2026**. La presencia de una función en el repositorio no confirma que su SQL, secretos o servidor estén instalados en un entorno remoto.
 
-## Características
+## Funciones
 
-- 🎓 Registro con las **18 carreras ESAN** de `Mallas curriculares/` y Mecatrónica PUCP; [fuentes, generación y activación](docs/careers.md)
-- 🔐 Login con **código de alumno** (ESAN / PUCP) y contraseña
-- ✉️ Registro con correo real: confirmación de cuenta y recuperación de contraseña
-- 🗺️ Malla interactiva con cálculo heurístico de cruces mínimos y **filtro por áreas formativas**
-- 🔗 Modos **"Qué abre"** / **"Qué requiere"** y **"Qué puedo llevar"**
-- ✅ Modo **"Marcar llevados"**: requisitos previos en cascada y persistencia en Supabase
-- 📅 **Planificador de ciclo y Calendario Académico** (eventos oficiales + personales sincronizados en la nube)
-- 📝 **Ficha del curso**: notas, veces llevado, comentarios personales, reseñas anónimas y estrellas de dificultad
-- 🤖 **Asesor académico Gemini, Groq y OpenRouter**: estima la carga del plan con créditos y dificultad agregada
-- 🧭 **Proyección de ciclos**: compara rutas ligeras, equilibradas e intensivas respetando prerrequisitos
-- 👨‍🏫 **Directorio de profesores**: likes/dislikes y etiquetas comunitarias
-- 📊 **Mi Panel**: estadísticas, histogramas y línea de tiempo con logros desbloqueables
-- 🕹️ **Arcade**: 7 juegos (4 educativos), incluido Geoduelo para dos jugadores, y puntajes por temporada en los juegos compatibles. [Integración de Geoduelo](docs/geoduelo.md).
+- Registro, confirmación de correo, acceso por código de alumno y recuperación de contraseña.
+- Catálogo de **18 carreras ESAN y Mecatrónica PUCP**, con mallas, prerrequisitos, avance, notas y planificación.
+- Inicio con información académica de la cuenta, estadísticas, logros y la identidad visual de Lyra.
+- Calendario con eventos, horarios semanales y tareas; importación de horario Excel y revisión de propuestas de **Texto → tareas** antes de guardarlas.
+- Asesor IA con proveedores configurables Gemini, Groq y OpenRouter; **Mi IA** permite gestionar claves personales. La disponibilidad depende de las credenciales, cuotas y respuesta de cada proveedor.
+- Brújula para proyectar ciclos mediante cálculos locales; Mod Focus con sesiones e historial; grupos de estudio por curso.
+- Recursos compartidos, comunidad de cursos y profesores.
+- Buzón para Aplicativo, Docente y Universidad, integrado con `/api/mailbox` y Google Apps Script.
+- Arcade con siete juegos, incluido **Geoduelo local y online**. Online requiere su servidor de Cloudflare y configuración propia.
 
-## Stack
+La aplicación funcional adapta `pagina.html` a escritorio y móvil. `ios-android.html` es una maqueta independiente de navegación móvil que Vite sigue compilando; no sustituye al portal ni genera un instalador nativo.
 
-- **React + Vite** (frontend SPA con PWA y chunks lazy)
-- **Supabase** (autenticación Edge Function, base de datos PostgreSQL con RLS y Storage)
-- **Brevo** (SMTP para correos de confirmación/recuperación)
+## Arquitectura y archivos
 
-## Instalación
+El frontend combina HTML, CSS y JavaScript en las páginas de entrada con componentes React que se cargan bajo demanda. Se compila con Vite.
+
+| Ruta | Función |
+| --- | --- |
+| `login.html` | Acceso, registro y recuperación; usa `src/lib/accessController.js`. |
+| `pagina.html` | Portal académico funcional, también en móvil. |
+| `ios-android.html` | Maqueta independiente de navegación móvil. |
+| `Pagina promocional/` | Landing con demostraciones ilustrativas y configuración de Vite propia. |
+| `src/` | Componentes, modelos, estilos, marca y catálogos usados por el portal. |
+| `public/` | Recursos estáticos que Vite copia a la salida, incluidos los datos y recursos de Geoduelo. |
+| `api/mailbox.js` | Endpoint de Vercel que valida y reenvía el buzón a Google Apps Script. |
+| `supabase/` | SQL, guías de instalación/mantenimiento y código de Edge Functions. |
+| `workers/geoduelo/` | Backend online de Cloudflare Workers y Durable Objects, con despliegue y pruebas propios. |
+| `Mallas curriculares/`, `scripts/` | Fuentes y herramientas de generación de catálogos y datos. |
+| `tests/`, `docs/` | Pruebas, decisiones y guías por función. |
+| `Revisar para limpiar/` | Material archivado para evaluación; no es la aplicación vigente. |
+
+`vite.config.js` compila las cuatro entradas HTML. `vercel.json` redirige `/` a `/login.html` y ofrece `/promocional` como acceso a la landing cuando se despliega el proyecto desde la raíz.
+
+## Desarrollo local
+
+Instala Node.js y npm; la validación del frontend en GitHub Actions utiliza Node 20.
 
 ```bash
-git clone https://github.com/McEngelsOP/IA.git
+git clone --branch main https://github.com/McEngelsOP/IA.git
 cd IA
-npm install
-```
-
-Crea `.env.local` con tus credenciales de Supabase:
-
-```
-VITE_SUPABASE_URL=https://tuproyecto.supabase.co
-VITE_SUPABASE_ANON_KEY=tu-clave-anon
-```
-
-Y ejecuta:
-
-```bash
+npm ci
+cp .env.example .env.local
 npm run dev
 ```
 
-## Configuración de Supabase
+En Windows se puede copiar `.env.example` a `.env.local` desde el explorador o con `Copy-Item .env.example .env.local` en PowerShell.
 
-Ejecuta en el **SQL Editor** los scripts de la carpeta [`supabase/`](supabase/), según corresponda:
-- `setup.sql` — perfiles y triggers de autenticación
-- `careers_catalog.sql` — ampliación a todas las carreras; ejecutar antes de publicar el registro actualizado, sin repetir los scripts históricos
-- `progress.sql` — avance de malla
-- `sync_features.sql` — plan, eventos con horarios/repetición semanal y tareas privadas; ejecutar antes de publicar `pagina.html`
-- `focus_sessions.sql` — temporizador persistente e historial privado de Mod Focus; [guía de activación](supabase/FOCUS_SETUP.md)
-- `study_groups.sql` — salas públicas/privadas, participantes, mensajes (`study_room_messages`) y funciones con permisos de membresía; conserva el chat anterior `study_messages`
-- [`STUDY_GROUPS_SETUP.md`](supabase/STUDY_GROUPS_SETUP.md) — activación y pruebas de Grupos de estudio
-- [`CALENDAR_SETUP.md`](supabase/CALENDAR_SETUP.md) — migración, revisión de RLS y orden de instalación de los scripts consolidados
-- `course_detail.sql`, `arcade.sql`, `logros.sql` — ficha de curso, rankings de arcade y sistema de logros
-- `GEMINI_ADVISOR.md` — configuración del asesor académico y respaldo automático Gemini → Groq → OpenRouter
+Completa las variables de `.env.local`:
 
-## Scripts
+```dotenv
+VITE_SUPABASE_URL=https://tu-proyecto.supabase.co
+VITE_SUPABASE_ANON_KEY=tu-clave-publica-anon
+# Opcional: URL pública del Worker de Geoduelo ya configurado.
+VITE_GEODUELO_ONLINE_URL=
+```
 
-- `npm run dev` — servidor de desarrollo
-- `npm run build` — build de producción
-- `npm run preview` — previsualizar el build
-- `node --test tests/calendarModel.test.mjs tests/studyGroups.test.mjs tests/focusModel.test.mjs` — calendario, conversación y validación de salas
+Las variables `VITE_` se incorporan al código del navegador. Nunca incluir en ellas claves de proveedores, `service_role`, credenciales de base de datos ni `TICKET_SECRET`. El archivo de ejemplo contiene solo valores de muestra.
 
+Comandos del frontend:
 
-## Oficial: información real por usuario
+```bash
+npm run dev
+npm run build
+npm run preview
+```
 
-La rama `Oficial` corresponde a producción en `https://l-esan.vercel.app`. La arquitectura SPA anterior se conserva en `Revisar para limpiar/src/`; no se incluye en las entradas de Vite actuales.
+El servidor de desarrollo abre `/login.html` y el build se genera en `dist/`. `vite preview` permite revisar el frontend compilado; la función `/api/mailbox` necesita un entorno que ejecute la API de Vercel.
 
-`login.html` abre `pagina.html` en Inicio. Calendario/Horarios permite crear, editar y eliminar eventos y tareas de la cuenta, con vistas Día/Semana/Mes, horarios semanales, filtros y agenda accesible. Los cambios fallidos conservan los registros anteriores y el borrador. Inicio y Malla usan el mismo progreso privado.
+## Configuración de servicios y despliegue
 
-El acceso incluye registro, recuperación por código, aviso de correo y cambio de contraseña dentro del mismo diseño. `src/lib/accessController.js` registra con `auth.signUp` y metadatos `student_code`/`carrera`, que consume el trigger existente del perfil. Con confirmación de correo activa, hay que abrir el enlace antes de entrar. Recuperación y reenvío usan la Edge Function `auth-by-code`; el contador de 45 segundos se calcula con una fecha límite del cliente y no es un límite de seguridad del servidor. La nueva contraseña se guarda con `auth.updateUser` después de verificar la sesión mediante `auth.getUser`.
+**Frontend en Vercel.** Para el portal completo, usar la raíz del repositorio, `npm run build` y salida `dist`, con sus variables públicas. Para desplegar solo la landing, usar `Pagina promocional` como Root Directory y su propio `package.json`. Si la landing está en otro dominio, configurar `data-app-url` en su `index.html` con la URL real del acceso.
 
-En Supabase → Authentication → URL Configuration, permite `https://l-esan.vercel.app/login.html` como URL de redirección de correo; el acceso completado continúa a `pagina.html` en Inicio. Estas pantallas no requieren SQL nuevo ni redesplegar `auth-by-code`. El panel se adapta al viewport sin scroll de página y el éxito lleva directamente a Inicio, sin pantalla final. [Matriz de pruebas y capturas del acceso](docs/access-layout/verification.md). Se verificaron el build y siete grupos de pruebas de navegador con Supabase simulado; no se crearon cuentas reales ni se comprobó el envío de correo o el despliegue en producción.
+**Autenticación.** Registrar el dominio y la ruta `/login.html` en la configuración de redirecciones de Supabase. El dominio usado anteriormente es `https://l-esan.vercel.app`; comprobar el dominio efectivo antes de configurar enlaces de correo. El controlador construye el callback desde el origen actual.
 
-Se retiraron las notas, horarios, conversaciones, menciones y enlaces de muestra. Asesor y Brújula reutilizan las herramientas reales; Recursos consulta los enlaces compartidos en Supabase. Grupos de estudio permite crear salas públicas o privadas por curso, entrar por código, consultar participantes y conversar con mensajes persistentes. Empieza vacío hasta que alguien cree una sala. Buzón sigue pendiente, sin simular envíos.
+**Supabase.** El push del frontend no aplica SQL ni despliega Edge Functions. Revisar lo instalado y la guía del módulo antes de ejecutar scripts: la carpeta incluye instaladores, cambios y material histórico, no una secuencia para ejecutar completa. Empezar por [calendario](supabase/CALENDAR_SETUP.md) y [mantenimiento SQL](supabase/SQL_MAINTENANCE.md), según la tarea. El código incluye `auth-by-code`, `study-advisor`, `text-to-tasks`, `personal-ai` y `excel-schedule`.
 
-Para activar Calendario y Grupos en la base existente, ejecuta `supabase/sync_features.sql` y después `supabase/study_groups.sql` en el SQL Editor. Las migraciones no se aplicaron a producción desde este entorno: su proxy rechaza la conexión PostgreSQL. Consulta [la guía de Grupos de estudio](supabase/STUDY_GROUPS_SETUP.md). La variable administrativa `SUPABASE_DB_URL` nunca se incluye en el frontend.
+**Geoduelo online.** Se despliega por separado desde `workers/geoduelo`; requiere Cloudflare, su SQL y `VITE_GEODUELO_ONLINE_URL`. Los secretos del Worker permanecen en Cloudflare. Consultar la [guía online](docs/geoduelo-online.md).
 
-Mod Focus ofrece sesiones persistentes con pausa y recuperación al recargar, historial por fecha y mensajes según el tiempo registrado. El selector muestra únicamente los cursos marcados como Matriculado de la carrera, en orden alfabético. Para activar esta versión, ejecutar `supabase/focus_sessions.sql` completo y recargar; no incluye sesiones de muestra.
+**Buzón.** La API implementa el reenvío a Google Apps Script y exige confirmación del servicio antes de comunicar éxito. La entrega depende del despliegue y permisos del servicio externo.
 
-## Material archivado
+La rama de producción se elige en cada proyecto de Vercel. Los documentos antiguos que mencionan `Oficial` o `aea` describen etapas anteriores y no confirman la configuración remota actual.
 
-`Revisar para limpiar/README.md` describe los componentes de la aplicación anterior, juegos externos y planes alternativos que se conservaron para revisión. `Revisar para limpiar/inventario.json` registra sus rutas originales y motivos. `Mallas curriculares/` conserva las 18 fuentes activas; el prototipo HTML de IA y su hoja de fuentes se eliminaron, junto con la copia idéntica del Markdown de IA.
+## Pruebas
 
+Ejemplos de verificaciones por módulo:
+
+```bash
+node --test tests/calendarModel.test.mjs tests/calendarEditing.test.mjs tests/focusModel.test.mjs tests/studyGroups.test.mjs
+node --test tests/textTasks.test.mjs tests/scheduleImport.test.mjs tests/personalAi.test.mjs tests/webSession.test.mjs
+node scripts/generateCurricula.mjs --check
+```
+
+El Worker tiene su propia suite:
+
+```bash
+cd workers/geoduelo
+npm ci
+npm test
+```
+
+Las pruebas de navegador requieren Playwright y un navegador compatible; algunas pruebas SQL requieren PGlite. Consultar las guías de cada módulo para preparar sus fixtures y dependencias. El `package.json` raíz no define `npm test`; `validate.yml` instala dependencias y compila, pero no ejecuta las suites. `deploy.yml` intenta publicar `dist/` en GitHub Pages al recibir cambios en `main`; es independiente de Vercel y no ejecuta la API del buzón.
+
+Un build correcto y las pruebas con datos simulados no certifican el correo real, la disponibilidad de proveedores ni la configuración de producción.
+
+## Guías
+
+- [Contexto técnico y decisiones](CONTEXT.md)
+- [Administración](ADMIN.md) — verificar los estados y pendientes históricos antes de operar.
+- [Carreras y generación de catálogos](docs/careers.md)
+- [Configuración inicial](docs/initial-setup.md)
+- [Texto → tareas y matrícula del semestre](docs/text-tasks-semester.md)
+- [Claves personales de IA](docs/personal-ai-keys.md)
+- [Grupos de estudio](supabase/STUDY_GROUPS_SETUP.md)
+- [Mod Focus](supabase/FOCUS_SETUP.md)
+- [Geoduelo local](docs/geoduelo.md) y [online](docs/geoduelo-online.md)
+- [Página promocional](Pagina%20promocional/README.md)
+
+## Material histórico y limpieza
+
+La SPA anterior, juegos retirados, planes alternativos y herramientas de agentes se conservan en `Revisar para limpiar/`. Su [README](Revisar%20para%20limpiar/README.md) e [inventario](Revisar%20para%20limpiar/inventario.json) documentan el archivo previo; el movimiento posterior de `.agents` está reflejado en `.gitmodules`. No asumir que el inventario enumera incorporaciones posteriores.
+
+El acceso actual usa `public/login-landscape.mp4`, su póster WebP y `public/Cat.jpg` para móvil. El video raíz `270983.mp4` permanece pendiente de limpieza; esta actualización documental no lo mueve ni lo elimina.
+
+Los archivos de manifiesto, service worker e iconos de PWA permanecen en `public/`, pero las entradas actuales de acceso y portal no enlazan el manifiesto ni registran el service worker. Su presencia por sí sola no confirma que la aplicación actual sea instalable u opere sin conexión.
