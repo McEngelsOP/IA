@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Floating Bottom Bar</title>
+<title>Lyra — Móvil</title>
 <style>
 /* Tema claro por defecto; oscuro por preferencia del sistema o por el botón */
 :root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
@@ -114,6 +114,7 @@ button:focus-visible{outline:2px solid var(--ic);outline-offset:2px}
 ::view-transition-old(root),::view-transition-new(root){animation-duration:.4s;animation-timing-function:ease-in-out}
 @media(prefers-reduced-motion:reduce){*{transition-duration:.01ms!important;animation:none!important}}
 </style>
+<link rel="icon" type="image/svg+xml" href="./favicon.svg">
 </head>
 <body>
 <div class="device">
@@ -138,7 +139,8 @@ button:focus-visible{outline:2px solid var(--ic);outline-offset:2px}
 </div>
 <button class="theme" id="theme" aria-label="Cambiar tema claro/oscuro"></button>
 
-<script>
+<script type="module">
+import { lyraLogo } from './src/lib/lyraBrand.js';
 const I={
 home:'<path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
 inbox:'<polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>',
@@ -213,8 +215,8 @@ function renderNav(){$('nav').innerHTML=NAV.map(x=>{
   let h=`<button class="it${cur===x.n?' cur':''}" data-n="${x.n}"${x.kids?` aria-expanded="${open}"`:''}>${ic(x.i)}<span class="l">${x.n}</span>${x.kids?svg(open?'minus':'plus',16):''}</button>`;
   if(x.kids)h+=`<div class="sub${open?' ex':''}"><div>${x.kids.map(k=>`<button class="it${kid===k[0]&&cur===x.n?' sel':''}" data-k="${k[0]}" data-p="${x.n}">${ic(k[1])}<span class="l">${k[0]}</span></button>`).join('')}</div></div>`;
   return h}).join('')}
-$('dh').innerHTML=svg('spark',22)+'<span>Menú</span>';
-$('trig').innerHTML=svg('spark',20);
+$('dh').innerHTML=lyraLogo('full','lyra-logo-full');
+$('trig').innerHTML=lyraLogo('symbol','lyra-logo-trigger');
 renderNav();
 $('nav').onclick=e=>{const b=e.target.closest('.it');if(!b)return;
   if(b.dataset.k){cur=b.dataset.p;kid=b.dataset.k;renderNav();$('title').textContent=kid;setDrawer(false,true)}
@@ -267,3 +269,4 @@ paintMenu();mq.addEventListener('change',paint);paint();
 </script>
 </body>
 </html>
+

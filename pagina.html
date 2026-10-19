@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#100f14">
 <meta name="description" content="Tu avance académico: notas, ponderados, estadísticas, logros e historia en Inicio.">
-<title>ESAN — Inicio · Mi avance académico</title>
+<title>Lyra — Mi avance académico</title>
 <style>
 
 /* Tema claro por defecto; oscuro por preferencia del sistema o por el botón */
@@ -992,6 +992,7 @@ a{text-underline-offset:3px}.page button:not(.ck){min-height:36px}
 }
 
 </style>
+<link rel="icon" type="image/svg+xml" href="./favicon.svg">
 </head>
 <body id="app" data-side="full">
 
@@ -1027,6 +1028,8 @@ import { LOGROS } from './src/lib/logros.js';
 import { buildMalla, validPlan } from './src/lib/curriculumGraph.js';
 import { createWebNavigation } from './src/lib/webNavigation.js';
 import { mountHomeEnhancements } from './src/lib/homeEnhancements.js';
+import { homeCompanion, mountHomeCompanion } from './src/lib/homeCompanion.js';
+import { lyraLogo } from './src/lib/lyraBrand.js';
 
 const I={
 home:'<path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
@@ -1125,7 +1128,7 @@ async function homeLoad(user){
  homeRender();
  try{
   const results=await Promise.all([
-   homeClient.from('profiles').select('carrera, created_at').eq('id',user.id).maybeSingle(),
+   homeClient.from('profiles').select('carrera, alias, created_at').eq('id',user.id).maybeSingle(),
    homeClient.from('progress').select('done, plan').eq('student_id',user.id).maybeSingle(),
    homeClient.from('grades').select('course_id, grade').eq('student_id',user.id),
    homeClient.from('course_status').select('course_id, status, times_taken, passed_at').eq('student_id',user.id),
@@ -1318,9 +1321,11 @@ function homeGreeting(){
  return hour<12?'Buenos días':hour<19?'Buenas tardes':'Buenas noches';
 }
 function homeHero(m,active,pct){
- const message=active?(pct>=100?'Completaste tu malla. ¡Increíble trayectoria!':pct>=50?'Ya pasaste la mitad del camino. ¡Sigue así!':pct>0?'Cada curso aprobado te acerca a la meta.':'Tu ruta empieza hoy: registra tus cursos y notas.'):(HOME.mode==='guest'?'Tus notas, tus logros y todo lo que vas construyendo.':HOME.mode==='profile'?'Completa tu perfil para consultar tu avance.':HOME.mode==='error'?'Reintenta la carga para consultar tus datos.':'Estamos preparando tu espacio académico.');
+ const alias=typeof HOME.profile?.alias==='string'?HOME.profile.alias.trim():'';
+ const title=alias?'Tu avance, '+homeEsc(alias)+'.':'Tu avance';
+ const message=active?(pct>=100?'Completaste tu malla. ¡Increíble trayectoria!':pct>=50?'Ya pasaste la mitad del camino. ¡Sigue así!':pct>0?'Llevas '+homeNum(pct)+'% de tu malla. ¡Buen ritmo!':'Tu ruta empieza hoy: registra tus cursos y notas.'):(HOME.mode==='guest'?'Tus notas, tus logros y todo lo que vas construyendo.':HOME.mode==='profile'?'Completa tu perfil para consultar tu avance.':HOME.mode==='error'?'Reintenta la carga para consultar tus datos.':'Estamos preparando tu espacio académico.');
  const actions=HOME.mode==='live'?'<button class="h-btn primary" data-a="hmalla">'+svg('cap',16)+'Ver mi malla</button><button class="h-btn" data-a="hreload"'+(HOME.saving.size?' disabled':'')+'>'+svg('trend',16)+'Actualizar</button>':HOME.mode==='guest'?'<a class="h-btn primary" href="./login.html">Iniciar sesión</a>':'';
- return `<section class="h-hero" aria-labelledby="home-hero-title"><svg class="h-art" viewBox="0 0 250 170" aria-hidden="true"><path class="ha-path" d="M8 150C54 160 78 98 118 106S178 70 222 36"/><g class="ha-flag"><path d="M222 36V8"/><path d="M222 8l22 8-22 8z"/></g><g class="ha-cap"><path d="M118 52l42 17-42 17-42-17z"/><path d="M96 80v16c0 7 44 7 44 0V80"/><path d="M160 69v22"/></g><circle class="ha-d" cx="40" cy="60" r="9"/><circle class="ha-d d2" cx="196" cy="116" r="12"/><path class="ha-s s1" d="M52 22l3 8 8 3-8 3-3 8-3-8-8-3 8-3z"/><path class="ha-s s2" d="M206 78l2.5 6 6 2.5-6 2.5-2.5 6-2.5-6-6-2.5 6-2.5z"/></svg><div class="h-hero-body"><p class="h-hello">${homeGreeting()}</p><h2 id="home-hero-title">Tu avance, en un solo lugar.</h2><p class="h-muted">${active?homeEsc(m.career.nombre):message}</p>${active?`<p class="h-pill"><i aria-hidden="true"></i>${message} · ${homeNum(pct)}% de avance</p>`:''}<div class="h-head-actions">${actions}</div></div></section>`;
+ return `<section class="h-hero pal-hero" id="h-pal" data-s="idle" data-offscreen="false" aria-labelledby="home-hero-title"><div class="h-hero-body"><p class="h-hello">${homeGreeting()}</p><h2 id="home-hero-title">${title}</h2><p class="h-muted">${active?homeEsc(m.career.nombre):message}</p><div class="h-head-actions">${actions}</div></div>${homeCompanion(message)}</section>`;
 }
 function dash(){
  const m=homeModel(),active=HOME.mode==='live',empty=homeReady(m),pct=m.total?m.approvedCredits/m.total*100:0;
@@ -1739,7 +1744,7 @@ async function mountCurriculum(){
   container.innerHTML=homeEmpty('No se pudo abrir el grafo','Reintenta la carga para consultar tu malla.',false)+`<button class="h-btn" data-a="hretry">Reintentar</button>`;
  }
 }
-/* Menú lateral: full · rail · hidden */
+/* PC: barra completa/compacta; móvil: menú desplegable. */
 let mode='full';
 function go(name,parent,options={}){
  if(options.history!==false&&HOME.saving.size){toast('Espera a que termine el guardado');return}
@@ -1754,8 +1759,8 @@ function renderNav(){$('nav').innerHTML=NAV.map(x=>{
   let h=`<button class="it${cur===x.n?' cur':''}" data-n="${x.n}" title="${x.n}"${x.kids?` aria-expanded="${open}"`:''}>${ic(x.i)}<span class="l">${x.n}</span>${x.kids?svg(open?'minus':'plus',16):''}</button>`;
   if(x.kids)h+=`<div class="sub${open?' ex':''}"><div>${x.kids.map(k=>`<button class="it${kid===k[0]&&cur===x.n?' sel':''}" data-k="${k[0]}" data-p="${x.n}">${ic(k[1])}<span class="l">${k[0]}</span></button>`).join('')}</div></div>`;
   return h}).join('');navFlowPaint()}
-$('dh').innerHTML=`<button class="brand" id="brand">${svg('spark',22)}</button><span>Menú</span><button class="hb" id="bRail" aria-label="Reducir a iconos" title="Reducir a iconos">${svg('railc',18)}</button><button class="hb" id="bHide" aria-label="Ocultar menú" title="Ocultar menú">${svg('x',18)}</button>`;
-$('trig').innerHTML=svg('spark',20);
+$('dh').innerHTML=`<button class="brand" id="brand" title="Lyra">${lyraLogo('full','lyra-logo-full')}${lyraLogo('symbol','lyra-logo-symbol')}</button><span class="lyra-brand-spacer" aria-hidden="true"></span><button class="hb" id="bRail" aria-label="Contraer barra lateral" title="Contraer barra lateral">${svg('railc',18)}</button><button class="hb" id="bHide" aria-label="Ocultar menú" title="Ocultar menú">${svg('x',18)}</button>`;
+$('trig').innerHTML=lyraLogo('symbol','lyra-logo-trigger');
 $('uni').innerHTML=`<div class="um">${svg('landmark',20)}</div><div><b>Universidad ESAN</b><span>Somos el pasado, presente y futuro</span></div>`;
 function syncSide(){
  const hidden=app.dataset.side==='hidden',drawer=app.classList.contains('dopen');
@@ -1765,11 +1770,11 @@ function syncSide(){
  $('mobile-dock').setAttribute('aria-hidden',String(blocking));
 }
 function applySide(){
-  const s=mqM.matches?'hidden':mode;
+  const s=mqM.matches?'hidden':mode==='rail'?'rail':'full';
   app.dataset.side=s;app.classList.toggle('mob',mqM.matches);
   if(s!=='hidden')app.classList.remove('dopen');
   $('trig').setAttribute('aria-expanded',app.classList.contains('dopen'));
-  $('brand').setAttribute('aria-label',s==='rail'?'Expandir menú':'Menú');$('brand').tabIndex=s==='rail'?0:-1;
+  $('brand').setAttribute('aria-label',s==='rail'?'Expandir barra lateral':'Lyra');$('brand').tabIndex=s==='rail'?0:-1;
   syncSide();renderMobileDock();
 }
 function setDrawer(o,restore){
@@ -1784,7 +1789,7 @@ function setDrawer(o,restore){
 const closeOverlay=()=>{if(app.dataset.side==='hidden')setDrawer(false,true)};
 $('dh').onclick=e=>{const b=e.target.closest('button');if(!b)return;
   if(b.id==='bRail'){mode='rail';applySide();$('brand').focus()}
-  else if(b.id==='bHide'){if(app.dataset.side==='hidden')setDrawer(false,true);else{mode='hidden';applySide();$('trig').focus()}}
+  else if(b.id==='bHide'){if(app.dataset.side==='hidden')setDrawer(false,true);else{mode='rail';applySide();$('brand').focus()}}
   else if(app.dataset.side==='rail'){mode='full';applySide()}};
 $('nav').onclick=e=>{const b=e.target.closest('.it');if(!b)return;
   if(b.dataset.k){go(b.dataset.k,b.dataset.p);closeOverlay()}
@@ -2214,6 +2219,7 @@ mqM.addEventListener('change',()=>{setMenu(false);renderMobileDock();renderProfi
 renderMobileDock();
 
 mountHomeEnhancements({nav_items:NAV,nav:go,icon:svg,courses:()=>homeCareer().cursos,data:homeModel,get st(){return HOME_WIDGETS},get x(){return HOME},get tab(){return HOME.tab}});
+mountHomeCompanion($('page'));
 homeInit();
 window.addEventListener('focus',()=>{if(HOME.mode==='profile'&&HOME.user&&!HOME.saving.size)homeLoad(HOME.user)});
 if(homeClient)homeClient.auth.onAuthStateChange((event,session)=>{
@@ -2224,4 +2230,5 @@ if(homeClient)homeClient.auth.onAuthStateChange((event,session)=>{
 </script>
 </body>
 </html>
+
 
