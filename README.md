@@ -35,7 +35,6 @@ El frontend combina HTML, CSS y JavaScript en las páginas de entrada con compon
 | `workers/geoduelo/` | Backend online de Cloudflare Workers y Durable Objects, con despliegue y pruebas propios. |
 | `Mallas curriculares/`, `scripts/` | Fuentes y herramientas de generación de catálogos y datos. |
 | `tests/`, `docs/` | Pruebas, decisiones y guías por función. |
-| `Revisar para limpiar/` | Material archivado para evaluación; no es la aplicación vigente. |
 
 `vite.config.js` compila las cuatro entradas HTML. `vercel.json` redirige `/` a `/login.html` y ofrece `/promocional` como acceso a la landing cuando se despliega el proyecto desde la raíz.
 
@@ -125,7 +124,9 @@ Un build correcto y las pruebas con datos simulados no certifican el correo real
 
 ## Material histórico y limpieza
 
-La SPA anterior, juegos retirados, planes alternativos y herramientas de agentes se conservan en `Revisar para limpiar/`. Su [README](Revisar%20para%20limpiar/README.md) e [inventario](Revisar%20para%20limpiar/inventario.json) documentan el archivo previo; el movimiento posterior de `.agents` está reflejado en `.gitmodules`. No asumir que el inventario enumera incorporaciones posteriores.
+El 19 de octubre de 2026 se retiró `Revisar para limpiar/` de `main` tras revisar importaciones, configuración y fuentes del catálogo. Contenía la SPA anterior, dos planes alternativos no seleccionados, herramientas de agentes y el inventario histórico. También se retiró `.gitmodules`, cuya única entrada correspondía al submódulo archivado de Superpowers. El código y las 18 fuentes del catálogo activo se conservan.
+
+El material eliminado puede consultarse y recuperarse desde la [última revisión anterior a esta limpieza](https://github.com/McEngelsOP/IA/tree/6fdfdf6ef0d5e87bfa41148ef6f08c3aeaa23645/Revisar%20para%20limpiar), incluido su README e inventario. El apéndice histórico de `CONTEXT.md` describe esa versión; no es una implementación disponible en el árbol actual.
 
 El acceso actual usa `public/login-landscape.mp4`, su póster WebP y `public/Cat.jpg` para móvil. El video raíz `270983.mp4` permanece pendiente de limpieza; esta actualización documental no lo mueve ni lo elimina.
 

@@ -27,7 +27,7 @@ El trabajo actual se realiza en `main`. Las referencias a `aea` y `Oficial` en d
 - `workers/geoduelo/`: Cloudflare Worker con Durable Objects, configuración, lockfile y pruebas propios. Publicarlo es independiente del frontend y del SQL.
 - `Mallas curriculares/` y `scripts/`: fuentes y generadores del catálogo; conservar la trazabilidad de IDs y requisitos.
 - `tests/` y `docs/`: verificaciones y guías. Las evidencias fechadas o las versiones desplegadas que mencionan describen el momento de aquellas pruebas.
-- `Revisar para limpiar/`: archivo para revisión, no una fuente alternativa de la aplicación vigente.
+- La antigua carpeta `Revisar para limpiar/` se eliminó tras la revisión del 19 de octubre de 2026. Su contenido sigue disponible en Git; ver la sección de limpieza.
 
 ## Comandos y configuración local
 
@@ -175,17 +175,17 @@ Los documentos de verificación conservan los resultados de sus entregas, inclui
 
 ## Archivo y limpieza
 
-Los componentes exclusivos de la SPA original se conservan en `Revisar para limpiar/src/`; los juegos externos retirados y sus licencias, en `Revisar para limpiar/public/juegos/`; dos planes alternativos, en `Revisar para limpiar/Mallas curriculares/`. Las 18 fuentes activas siguen en `Mallas curriculares/`.
+El 19 de octubre de 2026 se eliminó `Revisar para limpiar/` tras comprobar que no era destino de importaciones del código activo ni de las pruebas, no era una entrada de Vite y sus dos planes alternativos no estaban seleccionados por `curriculumSources.mjs`. La carpeta contenía 37 archivos de la SPA anterior, dos planes alternativos, dos archivos de herramientas de agentes, el gitlink de Superpowers y dos documentos de inventario/revisión. Los juegos externos del antiguo inventario ya habían sido retirados en una limpieza anterior.
 
-Las herramientas de agentes se movieron posteriormente a `Revisar para limpiar/.agents/`. `.gitmodules` apunta allí al submódulo de Superpowers; conservar la referencia mientras exista el submódulo. Su retirada futura debe tratar ambos elementos.
+Se eliminó también `.gitmodules`: su única definición apuntaba al submódulo dentro de la carpeta retirada. No se eliminaron componentes, modelos, recursos, datos geográficos ni fuentes del catálogo activo.
 
-El [README del archivo](Revisar%20para%20limpiar/README.md) y su [inventario](Revisar%20para%20limpiar/inventario.json) documentan la limpieza previa; no asumir que enumeran todos los movimientos posteriores. No reconstruir la SPA archivada como si fuera la web vigente.
+La [revisión anterior a la limpieza](https://github.com/McEngelsOP/IA/tree/6fdfdf6ef0d5e87bfa41148ef6f08c3aeaa23645/Revisar%20para%20limpiar) conserva todos esos archivos, el README de archivo y el inventario. Para recuperar una parte, usar esa revisión como referencia y revisar sus dependencias antes de integrarla. No restaurar la SPA anterior como si fuera el portal vigente.
 
 Los archivos de PWA (`public/manifest.webmanifest`, `public/sw.js` e iconos) permanecen en el repositorio. Las entradas actuales de acceso y portal no enlazan el manifiesto ni registran ese service worker; la instalación y el modo offline no deben darse por activos por la sola presencia de los archivos.
 
 ## Apéndice histórico: SPA original archivada
 
-El bloque siguiente se conserva para no perder decisiones y detalles de la implementación anterior. **No es una descripción de la aplicación actual ni una lista de instrucciones para restaurarla.** Sus rutas a `App.jsx`, `MallaCurricular.jsx`, juegos retirados y registro PWA remiten al archivo en `Revisar para limpiar/`. Sus afirmaciones de catálogo activo, interfaz móvil o funciones pendientes deben interpretarse en aquel contexto. Para editar el portal, usar las secciones anteriores y comprobar el código vigente.
+El bloque siguiente se conserva para no perder decisiones y detalles de la implementación anterior. **No es una descripción de la aplicación actual ni una lista de instrucciones para restaurarla.** Sus rutas a `App.jsx`, `MallaCurricular.jsx`, juegos retirados y registro PWA remiten al contenido eliminado, recuperable desde la revisión de Git enlazada en la sección anterior. Sus afirmaciones de catálogo activo, interfaz móvil o funciones pendientes deben interpretarse en aquel contexto. Para editar el portal, usar las secciones anteriores y comprobar el código vigente.
 
 ### Arquitectura original: index.html
 

@@ -6,10 +6,10 @@ Inicio, la malla, el planificador, las fichas, Calendario/Horarios, Grupos de es
 
 ## Fuentes
 
-Los 18 Markdown de `Mallas curriculares/` corresponden a las 18 carreras ESAN seleccionadas en `scripts/curriculumSources.mjs`. Se eliminó la copia idéntica de IA con sufijo `(1)` y se trasladaron los dos planes alternativos de Industrial y Sistemas a `Revisar para limpiar/Mallas curriculares/`; no se mezclan planes ni se muestran carreras duplicadas.
+Los 18 Markdown de `Mallas curriculares/` corresponden a las 18 carreras ESAN seleccionadas en `scripts/curriculumSources.mjs`. Se eliminó la copia idéntica de IA con sufijo `(1)` y los dos planes alternativos de Industrial y Sistemas se archivaron y después se eliminaron el 19 de octubre de 2026, al no estar seleccionados por el generador; no se mezclan planes ni se muestran carreras duplicadas. Se conservan en el [historial anterior a la limpieza](https://github.com/McEngelsOP/IA/tree/6fdfdf6ef0d5e87bfa41148ef6f08c3aeaa23645/Revisar%20para%20limpiar/Mallas%20curriculares).
 
 - IA, Industrial y Comunicación/Marketing conservan sus catálogos e identificadores existentes, incluidos avances, profesores y notas. Sus nombres y totales coinciden con las fuentes.
-- Para Sistemas se utiliza el archivo identificado como plan 2024 (`INGITIS_2024`), con 78 cursos y 213 créditos. El archivo alternativo sin año se conserva en `Revisar para limpiar/Mallas curriculares/`, sin fusionarlo con ese plan.
+- Para Sistemas se utiliza el archivo identificado como plan 2024 (`INGITIS_2024`), con 78 cursos y 213 créditos. El archivo alternativo sin año no se fusionó con ese plan; se retiró durante la limpieza y puede recuperarse del historial indicado arriba.
 - Las cinco nuevas mallas de la serie 2026 y las otras diez carreras nuevas usan los archivos indicados en `scripts/curriculumSources.mjs`.
 - Los Markdown son datos curriculares, no instrucciones de implementación.
 
