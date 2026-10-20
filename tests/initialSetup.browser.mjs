@@ -2,7 +2,7 @@ import { createRequire } from 'node:module'
 const { chromium } = createRequire(import.meta.url)('playwright')
 import assert from 'node:assert/strict'
 import { mkdir } from 'node:fs/promises'
-import { CARRERAS } from '../src/data/carreras.js'
+import { CARRERAS } from '../src/institutions/esan/carreras.js'
 const base = process.env.SETUP_BASE_URL || 'http://127.0.0.1:5181'
 const out = '/tmp/ia-setup-review'; await mkdir(out, { recursive: true })
 const user = { id: '11111111-1111-4111-8111-111111111111', aud: 'authenticated', role: 'authenticated', email: 'fixture@example.invalid', app_metadata: { provider: 'email' }, user_metadata: { carrera: 'ia' }, created_at: '2024-01-01T00:00:00.000Z' }
@@ -64,18 +64,14 @@ await page.getByRole('button', { name: 'Cerrar perfil' }).click()
 await page.reload(); await page.getByText('Los cursos adelantados los puedes llenar manualmente.').waitFor()
 assert.equal(record.draft.step, 2); assert.ok(saves >= 5)
 await next(); await title.filter({ hasText: '¿Cuántos créditos llevas por ciclo?' }).waitFor(); await dialog.getByRole('button', { name: '14', exact: true }).click(); await next()
-await dialog.getByRole('button', { name: /Sí, tengo un archivo/ }).click()
-const currentCourse = CARRERAS.ia.cursos.find(c => c.c === 3)
-const csv = `dia,hora de inicio,hora de fin,curso,aula\nLunes,08:00,10:00,${currentCourse.n},A-101\nMiércoles,08:00,10:00,${currentCourse.n},A-101`
-await dialog.locator('input[type=file]').setInputFiles({ name: 'horario.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) })
-await dialog.locator('table').waitFor(); await dialog.getByLabel('Inicio del ciclo').fill('2026-10-14'); await dialog.getByLabel('Último día de clases').fill('2026-12-01')
-if (process.env.SETUP_XLSX_FIXTURE) { await dialog.locator('input[type=file]').setInputFiles(process.env.SETUP_XLSX_FIXTURE); await page.getByText('ia-horario-fixture.xlsx', { exact: true }).waitFor(); await page.waitForFunction(() => document.querySelectorAll('.setup-table tbody tr').length === 2); assert.match(await dialog.locator('.setup-table').textContent(), /08:00 – 10:00/) }
+assert.equal(await dialog.locator('input[type=file]').count(), 0)
+await page.getByText('Mi semestre → Importar horario de Excel', {exact:true}).waitFor()
 await screen('schedule-light-1366'); await next(); await screen('space-light-1366')
 await dialog.getByRole('button', { name: /Nube/ }).click(); await dialog.getByRole('button', { name: 'Oscuro', exact: true }).click(); await next(); await screen('summary-light-1366')
 failComplete = true; await dialog.getByRole('button', { name: 'Confirmar y entrar' }).click(); await dialog.getByRole('alert').waitFor(); assert.equal(progress, null)
 failComplete = false; await dialog.getByRole('button', { name: 'Confirmar y entrar' }).click(); await dialog.waitFor({ state: 'detached' }); await page.getByRole('tab', { name: 'Gráficos' }).waitFor()
-assert.ok(lastPayload.done.length > 0); assert.ok(!lastPayload.done.includes(firstCourse.id)); assert.equal(lastPayload.events.length, 2)
-assert.equal(lastPayload.events[0].date, '2026-10-19'); assert.equal(lastPayload.credits, 14)
+assert.ok(lastPayload.done.length > 0); assert.ok(!lastPayload.done.includes(firstCourse.id)); assert.equal(lastPayload.events.length, 0)
+assert.equal(lastPayload.credits, 14)
 assert.equal(await page.locator('html').getAttribute('data-theme'), 'dark')
 await page.reload(); await page.getByRole('tab', { name: 'Gráficos' }).waitFor(); assert.equal(await dialog.count(), 0)
 await page.getByRole('button', { name: 'Abrir perfil' }).click()
@@ -86,8 +82,7 @@ await page.getByRole('button', { name: 'Cerrar perfil' }).click()
 await page.getByRole('button', { name: 'Mod Focus', exact: true }).click(); await page.locator('.k-settings').waitFor()
 assert.equal(await page.locator('[data-a=kpt][data-v=rabbit]').getAttribute('aria-pressed'), 'true')
 assert.equal(await page.locator('#kcs option').count(), lastPayload.enrolled.length + 1)
-await page.getByRole('button', { name: 'Herramientas', exact: true }).click()
-await page.getByRole('button', { name: 'Brújula IA', exact: true }).click()
+await page.getByRole('button', { name: 'Planificar', exact: true }).click()
 await page.locator('.bj-st').filter({ hasText: 'Comparar' }).click()
 await page.getByRole('button', { name: /Tu carga habitual/ }).waitFor()
 assert.match(await page.getByRole('button', { name: /Tu carga habitual/ }).textContent(), /14/)

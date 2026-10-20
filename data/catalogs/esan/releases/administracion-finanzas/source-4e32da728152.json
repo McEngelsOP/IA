@@ -1,0 +1,765 @@
+{
+  "key": "administracion-finanzas",
+  "institutionId": "esan",
+  "uni": "Universidad ESAN",
+  "nombre": "Administración y Finanzas",
+  "total": 215,
+  "source": "ADMINISTRACION_Y_FINANZAS.md",
+  "sourceHash": "3929cab2b0da73a63d9955793eed28c9d6e27f8335eec251fca4d4bc9075f6b7",
+  "version": "source-4e32da728152",
+  "cursos": [
+    {
+      "id": "com0",
+      "n": "Comunicaciones",
+      "c": 0,
+      "cr": 0,
+      "r": [],
+      "a": "hum"
+    },
+    {
+      "id": "mat0",
+      "n": "Matemáticas",
+      "c": 0,
+      "cr": 0,
+      "r": [],
+      "a": "mat"
+    },
+    {
+      "id": "admgen",
+      "n": "Administración General",
+      "c": 1,
+      "cr": 4,
+      "r": [],
+      "a": "gest"
+    },
+    {
+      "id": "adat1",
+      "n": "Análisis de Datos I",
+      "c": 1,
+      "cr": 3,
+      "r": [],
+      "a": "est"
+    },
+    {
+      "id": "com1",
+      "n": "Comunicación y Literatura I",
+      "c": 1,
+      "cr": 3,
+      "r": [
+        "com0"
+      ],
+      "a": "hum"
+    },
+    {
+      "id": "fil",
+      "n": "Filosofía y Ética",
+      "c": 1,
+      "cr": 3,
+      "r": [],
+      "a": "hum"
+    },
+    {
+      "id": "pcrit",
+      "n": "Pensamiento Crítico",
+      "c": 1,
+      "cr": 2,
+      "r": [],
+      "a": "hum"
+    },
+    {
+      "id": "precalc",
+      "n": "Pre Cálculo",
+      "c": 1,
+      "cr": 3,
+      "r": [
+        "mat0"
+      ],
+      "a": "mat"
+    },
+    {
+      "id": "tdcpe1",
+      "n": "Taller: Desarrollo de Competencias Personales I",
+      "c": 1,
+      "cr": 1,
+      "r": [],
+      "a": "tall"
+    },
+    {
+      "id": "calc1",
+      "n": "Cálculo I",
+      "c": 2,
+      "cr": 4,
+      "r": [
+        "precalc"
+      ],
+      "a": "mat"
+    },
+    {
+      "id": "comlit2",
+      "n": "Comunicación y Literatura II",
+      "c": 2,
+      "cr": 3,
+      "r": [
+        "com1"
+      ],
+      "a": "hum"
+    },
+    {
+      "id": "contab",
+      "n": "Contabilidad General",
+      "c": 2,
+      "cr": 3,
+      "r": [
+        "admgen"
+      ],
+      "a": "gest"
+    },
+    {
+      "id": "est1",
+      "n": "Estadística y Probabilidades",
+      "c": 2,
+      "cr": 3,
+      "r": [
+        "precalc"
+      ],
+      "a": "est"
+    },
+    {
+      "id": "fmark",
+      "n": "Fundamentos de Marketing",
+      "c": 2,
+      "cr": 3,
+      "r": [
+        "admgen"
+      ],
+      "a": "mark"
+    },
+    {
+      "id": "tdcpro1",
+      "n": "Taller: Desarrollo de Competencias Profesionales I",
+      "c": 2,
+      "cr": 1,
+      "r": [],
+      "a": "tall"
+    },
+    {
+      "id": "tdo",
+      "n": "Teoría y Diseño Organizacional",
+      "c": 2,
+      "cr": 5,
+      "r": [
+        "admgen"
+      ],
+      "a": "crea"
+    },
+    {
+      "id": "calc2",
+      "n": "Cálculo II",
+      "c": 3,
+      "cr": 4,
+      "r": [
+        "calc1"
+      ],
+      "a": "mat"
+    },
+    {
+      "id": "esan-contabilidad-avanzada-4",
+      "n": "Contabilidad Avanzada",
+      "c": 3,
+      "cr": 4,
+      "r": [
+        "contab"
+      ],
+      "a": "gest"
+    },
+    {
+      "id": "econ",
+      "n": "Economía General",
+      "c": 3,
+      "cr": 4,
+      "r": [
+        "admgen",
+        "calc1"
+      ],
+      "a": "gest"
+    },
+    {
+      "id": "estinf",
+      "n": "Estadística Inferencial",
+      "c": 3,
+      "cr": 5,
+      "r": [
+        "est1"
+      ],
+      "a": "est"
+    },
+    {
+      "id": "esan-gestion-del-capital-humano-3",
+      "n": "Gestión del Capital Humano",
+      "c": 3,
+      "cr": 3,
+      "r": [
+        "tdo"
+      ],
+      "a": "hum"
+    },
+    {
+      "id": "tdcpe2",
+      "n": "Taller: Desarrollo de Competencias Personales II",
+      "c": 3,
+      "cr": 1,
+      "r": [
+        "tdcpe1"
+      ],
+      "a": "tall"
+    },
+    {
+      "id": "adat2",
+      "n": "Análisis de Datos II",
+      "c": 4,
+      "cr": 3,
+      "r": [
+        "adat1",
+        "estinf"
+      ],
+      "a": "est"
+    },
+    {
+      "id": "esan-contabilidad-de-costos-3",
+      "n": "Contabilidad de Costos",
+      "c": 4,
+      "cr": 3,
+      "r": [
+        "esan-contabilidad-avanzada-4"
+      ],
+      "a": "gest"
+    },
+    {
+      "id": "administracion-finanzas-electivo-i-3",
+      "n": "Electivo I",
+      "c": 4,
+      "cr": 3,
+      "r": [],
+      "a": "ele",
+      "requirementNote": "Según Electivo"
+    },
+    {
+      "id": "administracion-finanzas-electivo-ii-3",
+      "n": "Electivo II",
+      "c": 4,
+      "cr": 3,
+      "r": [],
+      "a": "ele",
+      "requirementNote": "Según Electivo"
+    },
+    {
+      "id": "esan-finanzas-i-4",
+      "n": "Finanzas I",
+      "c": 4,
+      "cr": 4,
+      "r": [
+        "contab",
+        "calc1"
+      ],
+      "a": "gest"
+    },
+    {
+      "id": "esan-microeconomia-4",
+      "n": "Microeconomía",
+      "c": 4,
+      "cr": 4,
+      "r": [
+        "econ"
+      ],
+      "a": "gest"
+    },
+    {
+      "id": "tdcpro2",
+      "n": "Taller: Desarrollo de Competencias Profesionales II",
+      "c": 4,
+      "cr": 1,
+      "r": [
+        "tdcpro1"
+      ],
+      "a": "tall"
+    },
+    {
+      "id": "deremp",
+      "n": "Derecho Empresarial",
+      "c": 5,
+      "cr": 4,
+      "r": [],
+      "a": "gest",
+      "rc": 80
+    },
+    {
+      "id": "administracion-finanzas-electivo-iii-3",
+      "n": "Electivo III",
+      "c": 5,
+      "cr": 3,
+      "r": [],
+      "a": "ele",
+      "requirementNote": "Según Electivo"
+    },
+    {
+      "id": "administracion-finanzas-electivo-iv-3",
+      "n": "Electivo IV",
+      "c": 5,
+      "cr": 3,
+      "r": [],
+      "a": "ele",
+      "requirementNote": "Según Electivo"
+    },
+    {
+      "id": "esan-finanzas-ii-4",
+      "n": "Finanzas II",
+      "c": 5,
+      "cr": 4,
+      "r": [
+        "esan-finanzas-i-4"
+      ],
+      "a": "gest"
+    },
+    {
+      "id": "esan-fundamentos-de-banca-y-bolsa-de-valores-4",
+      "n": "Fundamentos de Banca y Bolsa de Valores",
+      "c": 5,
+      "cr": 4,
+      "r": [
+        "esan-finanzas-i-4"
+      ],
+      "a": "gest"
+    },
+    {
+      "id": "esan-planificacion-financiera-4",
+      "n": "Planificación Financiera",
+      "c": 5,
+      "cr": 4,
+      "r": [
+        "esan-contabilidad-de-costos-3"
+      ],
+      "a": "hum"
+    },
+    {
+      "id": "tdcpe3",
+      "n": "Taller: Desarrollo de Competencias Personales III",
+      "c": 5,
+      "cr": 1,
+      "r": [
+        "tdcpe2"
+      ],
+      "a": "tall"
+    },
+    {
+      "id": "administracion-finanzas-electivo-v-3",
+      "n": "Electivo V",
+      "c": 6,
+      "cr": 3,
+      "r": [],
+      "a": "ele",
+      "requirementNote": "Según Electivo"
+    },
+    {
+      "id": "administracion-finanzas-electivo-vi-3",
+      "n": "Electivo VI",
+      "c": 6,
+      "cr": 3,
+      "r": [],
+      "a": "ele",
+      "requirementNote": "Según Electivo"
+    },
+    {
+      "id": "administracion-finanzas-electivo-internacional-i-1_5",
+      "n": "Electivo Internacional I",
+      "c": 6,
+      "cr": 1.5,
+      "r": [],
+      "a": "ele",
+      "requirementNote": "Según Electivo"
+    },
+    {
+      "id": "esan-finanzas-iii-4",
+      "n": "Finanzas III",
+      "c": 6,
+      "cr": 4,
+      "r": [
+        "esan-finanzas-ii-4"
+      ],
+      "a": "gest"
+    },
+    {
+      "id": "esan-finanzas-internacionales-4",
+      "n": "Finanzas Internacionales",
+      "c": 6,
+      "cr": 4,
+      "r": [
+        "esan-finanzas-ii-4",
+        "esan-microeconomia-4"
+      ],
+      "a": "gest"
+    },
+    {
+      "id": "metinv",
+      "n": "Metodología de la Investigación",
+      "c": 6,
+      "cr": 3,
+      "r": [],
+      "a": "proy",
+      "rc": 105
+    },
+    {
+      "id": "tdcpro3",
+      "n": "Taller: Desarrollo de Competencias Profesionales III",
+      "c": 6,
+      "cr": 1,
+      "r": [
+        "tdcpro2"
+      ],
+      "a": "tall"
+    },
+    {
+      "id": "administracion-finanzas-electivo-internacional-ii-1_5",
+      "n": "Electivo Internacional II",
+      "c": 7,
+      "cr": 1.5,
+      "r": [],
+      "a": "ele",
+      "requirementNote": "Según Electivo"
+    },
+    {
+      "id": "administracion-finanzas-electivo-vii-3",
+      "n": "Electivo VII",
+      "c": 7,
+      "cr": 3,
+      "r": [],
+      "a": "ele",
+      "requirementNote": "Según Electivo"
+    },
+    {
+      "id": "administracion-finanzas-electivo-viii-3",
+      "n": "Electivo VIII",
+      "c": 7,
+      "cr": 3,
+      "r": [],
+      "a": "ele",
+      "requirementNote": "Según Electivo"
+    },
+    {
+      "id": "esan-formulacion-y-evaluacion-de-proyectos-4",
+      "n": "Formulación y Evaluación de Proyectos",
+      "c": 7,
+      "cr": 4,
+      "r": [
+        "esan-contabilidad-de-costos-3",
+        "esan-finanzas-ii-4"
+      ],
+      "a": "proy"
+    },
+    {
+      "id": "esan-gerencia-de-operaciones-3",
+      "n": "Gerencia de Operaciones",
+      "c": 7,
+      "cr": 3,
+      "r": [],
+      "a": "gest",
+      "rc": 100
+    },
+    {
+      "id": "esan-instrumentos-financieros-4",
+      "n": "Instrumentos Financieros",
+      "c": 7,
+      "cr": 4,
+      "r": [
+        "esan-finanzas-iii-4",
+        "esan-fundamentos-de-banca-y-bolsa-de-valores-4"
+      ],
+      "a": "hum"
+    },
+    {
+      "id": "tdcpe4",
+      "n": "Taller: Desarrollo de Competencias Personales IV",
+      "c": 7,
+      "cr": 1,
+      "r": [
+        "tdcpe3"
+      ],
+      "a": "tall"
+    },
+    {
+      "id": "esan-tecnologias-de-informacion-para-finanzas-3",
+      "n": "Tecnologías de Información para Finanzas",
+      "c": 7,
+      "cr": 3,
+      "r": [
+        "esan-finanzas-iii-4"
+      ],
+      "a": "gest"
+    },
+    {
+      "id": "administracion-finanzas-electivo-ix-3",
+      "n": "Electivo IX",
+      "c": 8,
+      "cr": 3,
+      "r": [],
+      "a": "ele",
+      "requirementNote": "Según Electivo"
+    },
+    {
+      "id": "administracion-finanzas-electivo-x-3",
+      "n": "Electivo X",
+      "c": 8,
+      "cr": 3,
+      "r": [],
+      "a": "ele",
+      "requirementNote": "Según Electivo"
+    },
+    {
+      "id": "entre",
+      "n": "Entrepreneurship",
+      "c": 8,
+      "cr": 4,
+      "r": [],
+      "a": "gest",
+      "rc": 140
+    },
+    {
+      "id": "esan-etica-y-responsabilidad-social-empresarial-para-finanzas-4",
+      "n": "Ética y Responsabilidad Social Empresarial para Finanzas",
+      "c": 8,
+      "cr": 4,
+      "r": [],
+      "a": "gest",
+      "rc": 140
+    },
+    {
+      "id": "esan-investment-analysis-4",
+      "n": "Investment Analysis",
+      "c": 8,
+      "cr": 4,
+      "r": [
+        "esan-instrumentos-financieros-4"
+      ],
+      "a": "hum"
+    },
+    {
+      "id": "tdcpro4",
+      "n": "Taller: Desarrollo de Competencias Profesionales IV",
+      "c": 8,
+      "cr": 1,
+      "r": [
+        "tdcpro3"
+      ],
+      "a": "tall"
+    },
+    {
+      "id": "esan-teoria-financiera-4",
+      "n": "Teoría Financiera",
+      "c": 8,
+      "cr": 4,
+      "r": [
+        "esan-finanzas-iii-4"
+      ],
+      "a": "hum"
+    },
+    {
+      "id": "esan-analisis-y-gestion-de-riesgos-3",
+      "n": "Análisis y Gestión de Riesgos",
+      "c": 9,
+      "cr": 3,
+      "r": [
+        "esan-instrumentos-financieros-4"
+      ],
+      "a": "hum"
+    },
+    {
+      "id": "administracion-finanzas-electivo-xi-3",
+      "n": "Electivo XI",
+      "c": 9,
+      "cr": 3,
+      "r": [],
+      "a": "ele",
+      "requirementNote": "Según Electivo"
+    },
+    {
+      "id": "administracion-finanzas-electivo-xii-3",
+      "n": "Electivo XII",
+      "c": 9,
+      "cr": 3,
+      "r": [],
+      "a": "ele",
+      "requirementNote": "Según Electivo"
+    },
+    {
+      "id": "esan-financial-markets-3",
+      "n": "Financial Markets",
+      "c": 9,
+      "cr": 3,
+      "r": [
+        "esan-instrumentos-financieros-4"
+      ],
+      "a": "hum"
+    },
+    {
+      "id": "esan-finanzas-sostenibles-3",
+      "n": "Finanzas Sostenibles",
+      "c": 9,
+      "cr": 3,
+      "r": [
+        "esan-etica-y-responsabilidad-social-empresarial-para-finanzas-4",
+        "esan-formulacion-y-evaluacion-de-proyectos-4"
+      ],
+      "a": "gest"
+    },
+    {
+      "id": "esan-management-information-system-4",
+      "n": "Management Information System",
+      "c": 9,
+      "cr": 4,
+      "r": [
+        "esan-tecnologias-de-informacion-para-finanzas-3"
+      ],
+      "a": "gest"
+    },
+    {
+      "id": "tdcpe5",
+      "n": "Taller: Desarrollo de Competencias Personales V",
+      "c": 9,
+      "cr": 1,
+      "r": [
+        "tdcpe4"
+      ],
+      "a": "tall"
+    },
+    {
+      "id": "ttesis1",
+      "n": "Trabajo de Tesis I",
+      "c": 9,
+      "cr": 3,
+      "r": [
+        "metinv"
+      ],
+      "a": "proy",
+      "rc": 140
+    },
+    {
+      "id": "esan-direccion-de-administracion-financiera-4",
+      "n": "Dirección de Administración Financiera",
+      "c": 10,
+      "cr": 4,
+      "r": [
+        "esan-formulacion-y-evaluacion-de-proyectos-4",
+        "esan-financial-markets-3"
+      ],
+      "a": "gest"
+    },
+    {
+      "id": "esan-cfa-training-4",
+      "n": "CFA Training",
+      "c": 10,
+      "cr": 4,
+      "r": [],
+      "a": "hum",
+      "rc": 180
+    },
+    {
+      "id": "administracion-finanzas-electivo-xiii-3",
+      "n": "Electivo XIII",
+      "c": 10,
+      "cr": 3,
+      "r": [],
+      "a": "ele",
+      "requirementNote": "Según Electivo"
+    },
+    {
+      "id": "administracion-finanzas-electivo-xiv-3",
+      "n": "Electivo XIV",
+      "c": 10,
+      "cr": 3,
+      "r": [],
+      "a": "ele",
+      "requirementNote": "Según Electivo"
+    },
+    {
+      "id": "tdcpro5",
+      "n": "Taller: Desarrollo de Competencias Profesionales V",
+      "c": 10,
+      "cr": 1,
+      "r": [
+        "tdcpro4"
+      ],
+      "a": "tall"
+    },
+    {
+      "id": "esan-topics-of-finance-3",
+      "n": "Topics of Finance",
+      "c": 10,
+      "cr": 3,
+      "r": [
+        "esan-investment-analysis-4"
+      ],
+      "a": "hum"
+    },
+    {
+      "id": "ttesis2",
+      "n": "Trabajo de Tesis II",
+      "c": 10,
+      "cr": 3,
+      "r": [
+        "ttesis1"
+      ],
+      "a": "proy"
+    }
+  ],
+  "ciclos": {
+    "0": {
+      "t": "Pre-form.",
+      "s": "convalidable"
+    },
+    "1": {
+      "t": "Ciclo 01",
+      "s": "19 créditos"
+    },
+    "2": {
+      "t": "Ciclo 02",
+      "s": "22 créditos"
+    },
+    "3": {
+      "t": "Ciclo 03",
+      "s": "21 créditos"
+    },
+    "4": {
+      "t": "Ciclo 04",
+      "s": "21 créditos"
+    },
+    "5": {
+      "t": "Ciclo 05",
+      "s": "23 créditos"
+    },
+    "6": {
+      "t": "Ciclo 06",
+      "s": "19.5 créditos"
+    },
+    "7": {
+      "t": "Ciclo 07",
+      "s": "22.5 créditos"
+    },
+    "8": {
+      "t": "Ciclo 08",
+      "s": "23 créditos"
+    },
+    "9": {
+      "t": "Ciclo 09",
+      "s": "23 créditos"
+    },
+    "10": {
+      "t": "Ciclo 10",
+      "s": "21 créditos"
+    }
+  },
+  "ciclosLabel": "10 ciclos + pre-formación",
+  "hint": [
+    "Administración General",
+    "Análisis de Datos I"
+  ],
+  "foot": "PLAN DE ESTUDIOS · UNIVERSIDAD ESAN · ELECTIVOS SUJETOS A VERIFICACIÓN"
+}

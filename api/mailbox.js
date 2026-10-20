@@ -1,4 +1,4 @@
-import { MAILBOX_TYPES } from '../src/data/mailboxTypes.js'
+import { MAILBOX_TYPES } from '../src/shared/data/mailboxTypes.js'
 
 const endpoint = 'https://script.google.com/macros/s/AKfycbxgNhhnNAki37rL0hYDxnpl2ZCO9shPc3WXr5NWjHLouoIitJBUqD9ZeOEzeT3gEkryEQ/exec'
 const safeCell = text => /^[=+@-]/.test(text) ? "'" + text : text

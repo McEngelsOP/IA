@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { newSetup, resumeSetupStep, changeSemester, completedCourses, togglePending, parseCSV, detectColumns, scheduleRows, scheduleEvents, timeValue } from '../src/lib/setupModel.js'
+import { newSetup, resumeSetupStep, changeSemester, completedCourses, togglePending, scheduleEvents, timeValue } from '../src/features/onboarding/setupModel.js'
 const career = { key: 'fixture', cursos: [{ id: 'pre', c: 0, n: 'Pre', cr: 0 }, { id: 'a', c: 1, n: 'Matemática I', cr: 4 }, { id: 'b', c: 2, n: 'Datos', cr: 3 }, { id: 'c', c: 3, n: 'Curso C', cr: 4 }] }
 test('resuming old setup drafts preserves their equivalent step after removing mention', () => {
   assert.equal(resumeSetupStep({ step: 3 }), 3)
@@ -18,18 +18,6 @@ test('semester setup preserves pending exceptions and does not complete current 
   assert.deepEqual(d.enrolled, ['c'])
   assert.deepEqual(togglePending(d, 'c', 3), d)
   assert.deepEqual(changeSemester(career, d, 1).pending, ['a'])
-})
-test('CSV import supports BOM, semicolons and quoted separators', () => {
-  const rows = parseCSV('\uFEFFdía;inicio;fin;curso;aula\r\nLun;08:00;10:00;"Datos; análisis";"A, 101"')
-  assert.equal(rows[1][3], 'Datos; análisis'); assert.equal(rows[1][4], 'A, 101')
-  assert.throws(() => parseCSV('día,curso\nLunes,"Sin cerrar'))
-})
-test('preview rejects invalid days, inverted times, duplicates and reused columns', () => {
-  const rows = parseCSV('día,inicio,fin,curso,aula\nLun,8:00,10:00,Matemática I,A\nLun,8:00,10:00,Matemática I,A\nOtro,8:00,7:00,Datos,B')
-  const mapping = detectColumns(rows[0]), parsed = scheduleRows(rows, mapping, career.cursos)
-  assert.equal(parsed[0].courseId, 'a'); assert.equal(parsed[0].issue, '')
-  assert.equal(parsed[1].issue, 'Clase duplicada'); assert.equal(parsed[2].issue, 'Día inválido')
-  assert.throws(() => scheduleRows(rows, { ...mapping, end: mapping.start }, career.cursos))
 })
 test('Excel fractional hours and am/pm are normalized without a timezone shift', () => {
   assert.equal(timeValue(0.375), '09:00'); assert.equal(timeValue('12:30 am'), '00:30')

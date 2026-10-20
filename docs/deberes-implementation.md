@@ -1,3 +1,5 @@
+> Evidencia histórica del 13 de octubre. Las rutas, cobertura y despliegues mencionados corresponden a esa entrega; el estado vigente está en CONTEXT.md.
+
 # Implementación de Deberes
 
 Cambios solicitados en Deberes.docx, realizados sobre la rama Oficial. La base compartida es Lyra, de McEngelsOP's Org. Main se consultó como referencia y no se modificó.
@@ -9,7 +11,7 @@ Cambios solicitados en Deberes.docx, realizados sobre la rama Oficial. La base c
 - Focus utiliza exclusivamente cursos matriculados de la carrera, excluye los ya completados y los ordena alfabéticamente. Esta selección ya existía; ahora se puede actualizar desde la ficha.
 - Recursos permite publicar nombre, enlace y comentario de hasta 25 palabras. Detecta duplicados por URL normalizada en el servidor, incluidos cambios de protocolo, www, barra final, fragmentos y parámetros de seguimiento. Solo el autor puede editar su descripción. Cada estudiante puede dar o retirar un corazón.
 - Los iconos se cargan desde el favicon del sitio, de forma diferida, con un icono local de enlace como alternativa. No se agregó un servicio de scraping, una API de pago ni una librería de iconos.
-- Dino Run+ y Escuadrón Galáctico se recuperaron del archivo de Oficial. Se conservan Reflejos, Memoria, Reto lógico y Quiz académico. Snake se retiró del HTML y se retiraron 27 archivos de juegos archivados o sustituidos; las copias activas de Dino y Galaxia están en src/components.
+- Dino Run+ y Escuadrón Galáctico se recuperaron del archivo de Oficial. Se conservan Reflejos, Memoria, Reto lógico y Quiz académico. Snake se retiró del HTML y se retiraron 27 archivos de juegos archivados o sustituidos; las copias activas de Dino y Galaxia están ahora en `src/features/arcade/`.
 
 ## Conexiones revisadas
 

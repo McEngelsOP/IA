@@ -113,7 +113,7 @@ El creador puede hacerlo siempre desde la app. Tú también: Table Editor → `t
 
 ## 5. Progreso y notas de un alumno
 
-- `progress`: una fila por alumno, columna `done` = array de ids de cursos marcados (los ids están en `src/data/cursos.js` y `src/data/cursosIndustrial.js`).
+- `progress`: una fila por alumno, columna `done` = array de ids de cursos marcados (los ids están en `src/institutions/esan/cursos.js` y `src/institutions/esan/cursosIndustrial.js`).
 - `grades`: una fila por alumno+curso, nota 0–20.
 - `course_status`: una fila por alumno+curso con el estado de la «Ficha del curso» (aprobado/convalidado/matriculado/desaprobado), veces llevado (1–3), fecha de aprobación y comentario personal. Un curso llevado sin fila aquí cuenta como aprobado; la app mantiene la coherencia con `progress` sola.
 

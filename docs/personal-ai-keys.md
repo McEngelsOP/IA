@@ -12,7 +12,7 @@ El modo personal admite 10 solicitudes cada 15 minutos y 200 al día; las prueba
 
 ## Arquitectura e instalación
 
-La interfaz está en `src/components/PersonalAISettings.jsx`, `src/styles/PersonalAISettings.css` y su integración en `pagina.html`. Conserva el diseño existente. `personal-ai` verifica la identidad con `auth.getUser()` y usa esa identidad para todas las operaciones; no acepta un `userId` del llamador como autorización.
+La interfaz está en `src/features/assistant/PersonalAISettings.jsx`, `src/features/assistant/PersonalAISettings.css` y su integración en `pagina.html`. Conserva el diseño existente. `personal-ai` verifica la identidad con `auth.getUser()` y usa esa identidad para todas las operaciones; no acepta un `userId` del llamador como autorización.
 
 `supabase/personal_ai_keys.sql` almacena configuración, referencias a claves y uso en tablas privadas. Supabase Vault guarda los secretos cifrados. Las RPC de gestión, lectura y cuota solo admiten `service_role`; las funciones privadas con privilegios elevados acotan el acceso a Vault. La respuesta de gestión devuelve metadata enmascarada, nunca la clave completa. Un trigger elimina el secreto de Vault cuando se elimina su registro.
 

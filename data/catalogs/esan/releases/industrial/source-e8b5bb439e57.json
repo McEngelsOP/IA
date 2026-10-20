@@ -1,0 +1,796 @@
+{
+  "key": "industrial",
+  "institutionId": "esan",
+  "uni": "Universidad ESAN",
+  "nombre": "Ingeniería Industrial y Comercial",
+  "total": 215,
+  "source": "Mallas_Pregrado_2024_xlsx_-_INGICO_2024.md",
+  "sourceHash": "32664403a9fdea035e4aaf4c971d80729aed5b134284cfb80a3c2a9a16374105",
+  "version": "source-e8b5bb439e57",
+  "cursos": [
+    {
+      "id": "com0",
+      "n": "Comunicaciones",
+      "c": 0,
+      "cr": 0,
+      "r": [],
+      "a": "hum"
+    },
+    {
+      "id": "mat0",
+      "n": "Matemáticas",
+      "c": 0,
+      "cr": 0,
+      "r": [],
+      "a": "mat"
+    },
+    {
+      "id": "com1",
+      "n": "Comunicación y Literatura I",
+      "c": 1,
+      "cr": 3,
+      "r": [
+        "com0"
+      ],
+      "a": "hum"
+    },
+    {
+      "id": "est1",
+      "n": "Estadística y Probabilidades",
+      "c": 1,
+      "cr": 3,
+      "r": [],
+      "a": "est"
+    },
+    {
+      "id": "prog1",
+      "n": "Fundamentos de Programación",
+      "c": 1,
+      "cr": 3,
+      "r": [],
+      "a": "prog"
+    },
+    {
+      "id": "glob",
+      "n": "Globalización y Realidad Nacional",
+      "c": 1,
+      "cr": 3,
+      "r": [],
+      "a": "hum"
+    },
+    {
+      "id": "iic",
+      "n": "Intro. a la Ing. Industrial y Comercial",
+      "c": 1,
+      "cr": 3,
+      "r": [],
+      "a": "ind"
+    },
+    {
+      "id": "pcrit",
+      "n": "Pensamiento Crítico",
+      "c": 1,
+      "cr": 2,
+      "r": [],
+      "a": "hum"
+    },
+    {
+      "id": "precalc",
+      "n": "Pre Cálculo",
+      "c": 1,
+      "cr": 3,
+      "r": [
+        "mat0"
+      ],
+      "a": "mat"
+    },
+    {
+      "id": "tdcpe1",
+      "n": "Taller: Comp. Personales I",
+      "c": 1,
+      "cr": 1,
+      "r": [],
+      "a": "tall"
+    },
+    {
+      "id": "adat1",
+      "n": "Análisis de Datos I",
+      "c": 2,
+      "cr": 3,
+      "r": [
+        "est1"
+      ],
+      "a": "est"
+    },
+    {
+      "id": "calc1",
+      "n": "Cálculo I",
+      "c": 2,
+      "cr": 4,
+      "r": [
+        "precalc"
+      ],
+      "a": "mat"
+    },
+    {
+      "id": "comlit2",
+      "n": "Comunicación y Literatura II",
+      "c": 2,
+      "cr": 3,
+      "r": [
+        "com1"
+      ],
+      "a": "hum"
+    },
+    {
+      "id": "contab",
+      "n": "Contabilidad General",
+      "c": 2,
+      "cr": 3,
+      "r": [],
+      "a": "gest"
+    },
+    {
+      "id": "dising1",
+      "n": "Diseño de Ingeniería I",
+      "c": 2,
+      "cr": 3,
+      "r": [],
+      "a": "ind"
+    },
+    {
+      "id": "mer1",
+      "n": "Mérito curricular I (Deporte/Arte)",
+      "c": 2,
+      "cr": 0,
+      "r": [],
+      "a": "tall"
+    },
+    {
+      "id": "quim1",
+      "n": "Química I",
+      "c": 2,
+      "cr": 4,
+      "r": [],
+      "a": "cie"
+    },
+    {
+      "id": "tdcpro1",
+      "n": "Taller: Comp. Profesionales I",
+      "c": 2,
+      "cr": 1,
+      "r": [],
+      "a": "tall"
+    },
+    {
+      "id": "calc2",
+      "n": "Cálculo II",
+      "c": 3,
+      "cr": 4,
+      "r": [
+        "calc1"
+      ],
+      "a": "mat"
+    },
+    {
+      "id": "dising2",
+      "n": "Diseño de Ingeniería II",
+      "c": 3,
+      "cr": 4,
+      "r": [
+        "dising1"
+      ],
+      "a": "ind"
+    },
+    {
+      "id": "estinf",
+      "n": "Estadística Inferencial",
+      "c": 3,
+      "cr": 5,
+      "r": [
+        "est1",
+        "calc1"
+      ],
+      "a": "est"
+    },
+    {
+      "id": "fis1",
+      "n": "Física I",
+      "c": 3,
+      "cr": 4,
+      "r": [
+        "calc1"
+      ],
+      "a": "cie"
+    },
+    {
+      "id": "quim2",
+      "n": "Química II",
+      "c": 3,
+      "cr": 4,
+      "r": [
+        "quim1"
+      ],
+      "a": "cie"
+    },
+    {
+      "id": "tdcpe2",
+      "n": "Taller: Comp. Personales II",
+      "c": 3,
+      "cr": 1,
+      "r": [
+        "tdcpe1"
+      ],
+      "a": "tall"
+    },
+    {
+      "id": "calcav",
+      "n": "Cálculo Avanzado",
+      "c": 4,
+      "cr": 4,
+      "r": [
+        "calc2"
+      ],
+      "a": "mat"
+    },
+    {
+      "id": "costos",
+      "n": "Costos y Presupuestos",
+      "c": 4,
+      "cr": 4,
+      "r": [
+        "contab"
+      ],
+      "a": "gest"
+    },
+    {
+      "id": "econ",
+      "n": "Economía General",
+      "c": 4,
+      "cr": 4,
+      "r": [
+        "glob"
+      ],
+      "a": "gest"
+    },
+    {
+      "id": "fis2",
+      "n": "Física II",
+      "c": 4,
+      "cr": 4,
+      "r": [
+        "fis1"
+      ],
+      "a": "cie"
+    },
+    {
+      "id": "io1",
+      "n": "Investigación Operativa I",
+      "c": 4,
+      "cr": 4,
+      "r": [
+        "calc2"
+      ],
+      "a": "ind"
+    },
+    {
+      "id": "mer2",
+      "n": "Mérito curricular II (Resp. Social)",
+      "c": 4,
+      "cr": 0,
+      "r": [],
+      "a": "tall"
+    },
+    {
+      "id": "tdcpro2",
+      "n": "Taller: Comp. Profesionales II",
+      "c": 4,
+      "cr": 1,
+      "r": [
+        "tdcpro1"
+      ],
+      "a": "tall"
+    },
+    {
+      "id": "iele1",
+      "n": "Electivo I",
+      "c": 5,
+      "cr": 3,
+      "r": [],
+      "a": "ele",
+      "requirementNote": "Según electivo. Requisitos pendientes de verificar."
+    },
+    {
+      "id": "estat",
+      "n": "Estática",
+      "c": 5,
+      "cr": 4,
+      "r": [
+        "fis1",
+        "calc2"
+      ],
+      "a": "cie"
+    },
+    {
+      "id": "fin",
+      "n": "Finanzas para Ingeniería I",
+      "c": 5,
+      "cr": 3,
+      "r": [
+        "contab"
+      ],
+      "a": "gest"
+    },
+    {
+      "id": "ingmat",
+      "n": "Ingeniería de Materiales",
+      "c": 5,
+      "cr": 4,
+      "r": [
+        "fis2",
+        "quim2"
+      ],
+      "a": "cie"
+    },
+    {
+      "id": "io2",
+      "n": "Investigación Operativa II",
+      "c": 5,
+      "cr": 4,
+      "r": [
+        "io1"
+      ],
+      "a": "ind"
+    },
+    {
+      "id": "pcp",
+      "n": "Planeamiento y Control de la Producción",
+      "c": 5,
+      "cr": 4,
+      "r": [
+        "io1"
+      ],
+      "a": "ind"
+    },
+    {
+      "id": "tdcpe3",
+      "n": "Taller: Comp. Personales III",
+      "c": 5,
+      "cr": 1,
+      "r": [
+        "tdcpe2"
+      ],
+      "a": "tall"
+    },
+    {
+      "id": "adat2",
+      "n": "Análisis de Datos II",
+      "c": 6,
+      "cr": 3,
+      "r": [
+        "estinf",
+        "adat1"
+      ],
+      "a": "est"
+    },
+    {
+      "id": "iele2",
+      "n": "Electivo II",
+      "c": 6,
+      "cr": 3,
+      "r": [],
+      "a": "ele",
+      "requirementNote": "Según electivo. Requisitos pendientes de verificar."
+    },
+    {
+      "id": "iele3",
+      "n": "Electivo III",
+      "c": 6,
+      "cr": 3,
+      "r": [],
+      "a": "ele",
+      "requirementNote": "Según electivo. Requisitos pendientes de verificar."
+    },
+    {
+      "id": "ingproc",
+      "n": "Ingeniería de Procesos",
+      "c": 6,
+      "cr": 4,
+      "r": [
+        "pcp"
+      ],
+      "a": "ind"
+    },
+    {
+      "id": "mer3",
+      "n": "Mérito curricular III (Círculos acad.)",
+      "c": 6,
+      "cr": 0,
+      "r": [],
+      "a": "tall"
+    },
+    {
+      "id": "metinv",
+      "n": "Metodología de la Investigación",
+      "c": 6,
+      "cr": 3,
+      "r": [],
+      "rc": 105,
+      "a": "proy"
+    },
+    {
+      "id": "procfab",
+      "n": "Procesos de Fabricación",
+      "c": 6,
+      "cr": 3,
+      "r": [
+        "dising1",
+        "ingmat"
+      ],
+      "a": "ind"
+    },
+    {
+      "id": "resmat",
+      "n": "Resistencia de Materiales",
+      "c": 6,
+      "cr": 4,
+      "r": [
+        "estat"
+      ],
+      "a": "cie"
+    },
+    {
+      "id": "tdcpro3",
+      "n": "Taller: Comp. Profesionales III",
+      "c": 6,
+      "cr": 1,
+      "r": [
+        "tdcpro2"
+      ],
+      "a": "tall"
+    },
+    {
+      "id": "iele4",
+      "n": "Electivo IV",
+      "c": 7,
+      "cr": 3,
+      "r": [],
+      "a": "ele",
+      "requirementNote": "Según electivo. Requisitos pendientes de verificar."
+    },
+    {
+      "id": "eia",
+      "n": "Estudio del Impacto Ambiental",
+      "c": 7,
+      "cr": 3,
+      "r": [
+        "ingmat"
+      ],
+      "a": "ind"
+    },
+    {
+      "id": "fin2",
+      "n": "Finanzas para Ingeniería II",
+      "c": 7,
+      "cr": 3,
+      "r": [
+        "fin"
+      ],
+      "a": "gest"
+    },
+    {
+      "id": "oscm1",
+      "n": "Operations & Supply Chain Mgmt. I",
+      "c": 7,
+      "cr": 3,
+      "r": [
+        "io1"
+      ],
+      "a": "ind"
+    },
+    {
+      "id": "pfd",
+      "n": "Procesos de Fabricación Digital",
+      "c": 7,
+      "cr": 3,
+      "r": [
+        "procfab"
+      ],
+      "a": "ind"
+    },
+    {
+      "id": "qmcs",
+      "n": "Quality Mgmt. & Customer Services",
+      "c": 7,
+      "cr": 4,
+      "r": [
+        "estinf"
+      ],
+      "a": "ind"
+    },
+    {
+      "id": "spe",
+      "n": "Strategic Planning for Engineering",
+      "c": 7,
+      "cr": 3,
+      "r": [
+        "pcp",
+        "fin"
+      ],
+      "rc": 110,
+      "a": "gest"
+    },
+    {
+      "id": "tdcpe4",
+      "n": "Taller: Comp. Personales IV",
+      "c": 7,
+      "cr": 1,
+      "r": [
+        "tdcpro3"
+      ],
+      "a": "tall"
+    },
+    {
+      "id": "dep",
+      "n": "Diseño y Evaluación de Proyectos",
+      "c": 8,
+      "cr": 4,
+      "r": [
+        "fin2",
+        "eia"
+      ],
+      "a": "gest"
+    },
+    {
+      "id": "iele5",
+      "n": "Electivo V",
+      "c": 8,
+      "cr": 3,
+      "r": [],
+      "a": "ele",
+      "requirementNote": "Según electivo. Requisitos pendientes de verificar."
+    },
+    {
+      "id": "iele6",
+      "n": "Electivo VI",
+      "c": 8,
+      "cr": 3,
+      "r": [],
+      "a": "ele",
+      "requirementNote": "Según electivo. Requisitos pendientes de verificar."
+    },
+    {
+      "id": "entre",
+      "n": "Entrepreneurship",
+      "c": 8,
+      "cr": 4,
+      "r": [],
+      "rc": 110,
+      "a": "gest"
+    },
+    {
+      "id": "mer4",
+      "n": "Mérito curricular IV (Práctica pre prof.)",
+      "c": 8,
+      "cr": 0,
+      "r": [],
+      "a": "tall"
+    },
+    {
+      "id": "oscm2",
+      "n": "Operations & Supply Chain Mgmt. II",
+      "c": 8,
+      "cr": 3,
+      "r": [
+        "oscm1"
+      ],
+      "a": "ind"
+    },
+    {
+      "id": "peng",
+      "n": "Product Engineering",
+      "c": 8,
+      "cr": 4,
+      "r": [
+        "pfd"
+      ],
+      "a": "ind"
+    },
+    {
+      "id": "tdcpro4",
+      "n": "Taller: Comp. Profesionales IV",
+      "c": 8,
+      "cr": 1,
+      "r": [
+        "entre",
+        "peng"
+      ],
+      "a": "tall"
+    },
+    {
+      "id": "iele7",
+      "n": "Electivo VII",
+      "c": 9,
+      "cr": 3,
+      "r": [],
+      "a": "ele",
+      "requirementNote": "Según electivo. Requisitos pendientes de verificar."
+    },
+    {
+      "id": "iele8",
+      "n": "Electivo VIII",
+      "c": 9,
+      "cr": 3,
+      "r": [],
+      "a": "ele",
+      "requirementNote": "Según electivo. Requisitos pendientes de verificar."
+    },
+    {
+      "id": "iele9",
+      "n": "Electivo IX",
+      "c": 9,
+      "cr": 3,
+      "r": [],
+      "a": "ele",
+      "requirementNote": "Según electivo. Requisitos pendientes de verificar."
+    },
+    {
+      "id": "pmi",
+      "n": "Project Management",
+      "c": 9,
+      "cr": 3,
+      "r": [
+        "oscm2"
+      ],
+      "a": "gest"
+    },
+    {
+      "id": "simproc",
+      "n": "Simulación de Procesos",
+      "c": 9,
+      "cr": 4,
+      "r": [],
+      "rc": 160,
+      "a": "ind"
+    },
+    {
+      "id": "tdcpe5",
+      "n": "Taller: Comp. Personales V",
+      "c": 9,
+      "cr": 1,
+      "r": [
+        "tdcpe4"
+      ],
+      "a": "tall"
+    },
+    {
+      "id": "ttesis1",
+      "n": "Trabajo de Tesis I",
+      "c": 9,
+      "cr": 3,
+      "r": [
+        "metinv"
+      ],
+      "rc": 140,
+      "a": "proy"
+    },
+    {
+      "id": "capstone",
+      "n": "Capstone Project",
+      "c": 10,
+      "cr": 5,
+      "r": [
+        "dep"
+      ],
+      "a": "proy"
+    },
+    {
+      "id": "ieint1",
+      "n": "Electivo Internacional I",
+      "c": 10,
+      "cr": 1.5,
+      "r": [],
+      "a": "ele",
+      "requirementNote": "Según electivo. Requisitos pendientes de verificar."
+    },
+    {
+      "id": "ieint2",
+      "n": "Electivo Internacional II",
+      "c": 10,
+      "cr": 1.5,
+      "r": [],
+      "a": "ele",
+      "requirementNote": "Según electivo. Requisitos pendientes de verificar."
+    },
+    {
+      "id": "iele10",
+      "n": "Electivo X",
+      "c": 10,
+      "cr": 3,
+      "r": [],
+      "a": "ele",
+      "requirementNote": "Según electivo. Requisitos pendientes de verificar."
+    },
+    {
+      "id": "iele11",
+      "n": "Electivo XI",
+      "c": 10,
+      "cr": 3,
+      "r": [],
+      "a": "ele",
+      "requirementNote": "Según electivo. Requisitos pendientes de verificar."
+    },
+    {
+      "id": "tdcpro5",
+      "n": "Taller: Comp. Profesionales V",
+      "c": 10,
+      "cr": 1,
+      "r": [
+        "tdcpro4"
+      ],
+      "a": "tall"
+    },
+    {
+      "id": "ttesis2",
+      "n": "Trabajo de Tesis II",
+      "c": 10,
+      "cr": 3,
+      "r": [
+        "ttesis1"
+      ],
+      "a": "proy"
+    }
+  ],
+  "ciclos": {
+    "0": {
+      "t": "Pre-form.",
+      "s": "convalidable"
+    },
+    "1": {
+      "t": "Ciclo 01",
+      "s": "21 créditos"
+    },
+    "2": {
+      "t": "Ciclo 02",
+      "s": "21 créditos"
+    },
+    "3": {
+      "t": "Ciclo 03",
+      "s": "22 créditos"
+    },
+    "4": {
+      "t": "Ciclo 04",
+      "s": "21 créditos"
+    },
+    "5": {
+      "t": "Ciclo 05",
+      "s": "23 créditos"
+    },
+    "6": {
+      "t": "Ciclo 06",
+      "s": "24 créditos"
+    },
+    "7": {
+      "t": "Ciclo 07",
+      "s": "23 créditos"
+    },
+    "8": {
+      "t": "Ciclo 08",
+      "s": "22 créditos"
+    },
+    "9": {
+      "t": "Ciclo 09",
+      "s": "20 créditos"
+    },
+    "10": {
+      "t": "Ciclo 10",
+      "s": "18 créditos"
+    }
+  },
+  "ciclosLabel": "10 ciclos + pre-formación",
+  "hint": [
+    "Comunicación y Literatura I",
+    "Estadística y Probabilidades"
+  ],
+  "foot": "PLAN DE ESTUDIOS · UNIVERSIDAD ESAN · ELECTIVOS SUJETOS A VERIFICACIÓN"
+}

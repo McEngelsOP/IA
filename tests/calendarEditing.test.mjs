@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { eventPayload, eventGeometry, layoutEvents, validateEvent, timedEventGroups } from '../src/lib/calendarModel.js'
+import { eventPayload, eventGeometry, layoutEvents, validateEvent, timedEventGroups } from '../src/core/calendar/calendarModel.js'
 
 test('Editar desde la cuadrícula guarda solo columnas reales, igual que desde la agenda', () => {
   const event = { id: 'class-1', student_id: 'owner', title: 'Cálculo II', date: '2026-08-17', color: 'gris', event_type: 'clase', start_time: '10:30', end_time: '11:15', location: 'B-502', repeat_rule: 'weekly', repeat_until: '2026-12-11' }

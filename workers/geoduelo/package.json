@@ -1,5 +1,15 @@
 {
-  "name": "geoduelo-online", "private": true, "type": "module",
-  "scripts": {"dev":"wrangler dev", "deploy":"wrangler deploy", "test":"node --test test/*.test.mjs"},
-  "devDependencies": {"wrangler":"4.45.0"}
+  "name": "geoduelo-online",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test": "node --test test/*.test.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "4.45.0",
+    "miniflare": "4.20251011.1",
+    "esbuild": "0.25.4"
+  }
 }

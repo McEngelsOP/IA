@@ -113,6 +113,7 @@ export function createAdvisorHandler({
       catalog[clean(body.careerId, 80)] ||
       Object.values(catalog).find((item) => item.name === body.careerName);
     if (!career) return json({ error: "career_required" }, 400);
+    if (body.careerVersion && career.version && body.careerVersion !== career.version) return json({ error: "curriculum_version_mismatch" }, 409);
     const courses = (Array.isArray(body.courses) ? body.courses : [])
       .slice(0, 30)
       .flatMap((item: any) => {
@@ -127,7 +128,8 @@ export function createAdvisorHandler({
             id: source.id,
             name: source.name,
             credits: source.credits,
-            prerequisitesKnown: true,
+            prerequisitesKnown: source.prerequisitesKnown !== false,
+            requirementNote: source.requirementNote || "",
             prerequisites: source.prerequisites.map((id: string) => ({
               id,
               name: career.courses[id]?.name || id,
@@ -155,7 +157,10 @@ export function createAdvisorHandler({
         (course: any, index: number, all: any[]) =>
           all.findIndex((item) => item.id === course.id) === index,
       );
-    if (!courses.length) return json({ error: "courses_required" }, 400);
+    const enrolledCourses = [...new Set(Array.isArray(body.enrolledCourseIds) ? body.enrolledCourseIds.slice(0,30) : [])]
+      .map((id: any) => career.courses[clean(id,80)]).filter(Boolean)
+      .map((source: any) => ({ id: source.id, name: source.name, credits: source.credits, status: 'matriculado' }));
+    if (!courses.length && !enrolledCourses.length) return json({ error: "courses_required" }, 400);
     const completedCredits =
       body.completedCredits == null
         ? null
@@ -193,14 +198,18 @@ export function createAdvisorHandler({
         questionNormalized,
       )
     ) {
-      const mentioned = courses.filter((course: any) =>
+      const requirementCourses = [...courses, ...enrolledCourses.filter((course: any) => !courses.some((planned: any) => planned.id === course.id)).map((course: any) => {
+        const source = career.courses[course.id];
+        return { ...source, prerequisites: source.prerequisites.map((id: string) => ({id,name:career.courses[id]?.name || id,completed:null})) };
+      })];
+      const mentioned = requirementCourses.filter((course: any) =>
         questionNormalized.includes(normalize(course.name)),
       );
-      const selected = mentioned.length ? mentioned : courses;
+      const selected = mentioned.length ? mentioned : requirementCourses;
       const answer = [
-        "Prerrequisitos directos\nSegún la malla registrada en LESAN:",
+        "Prerrequisitos directos\nSegún la malla registrada en Lyra:",
         ...selected.map((course: any) => {
-          const requirements = course.prerequisites.length
+          const requirements = course.prerequisitesKnown === false ? "pendientes de verificar según el electivo" : course.prerequisites.length
             ? course.prerequisites
                 .map(
                   (r: any) =>
@@ -213,7 +222,7 @@ export function createAdvisorHandler({
             : "";
           return `${course.name}\nRequisitos: ${requirements}.${credits}`;
         }),
-        "Qué revisar\nEl avance corresponde a lo que has marcado en LESAN; confirma tu habilitación en los canales oficiales de matrícula. Esta consulta no consume cuota de IA.",
+        "Qué revisar\nEl avance corresponde a lo que has marcado en Lyra; confirma tu habilitación en los canales oficiales de matrícula. Esta consulta no consume cuota de IA.",
       ].join("\n\n");
       return reply(answer, await usage(false), "curriculum");
     }
@@ -248,7 +257,7 @@ export function createAdvisorHandler({
         return role && content ? [{ role, content }] : [];
       });
     const systemInstruction = [
-      "Eres el asesor académico de LESAN. Responde en español con frases sencillas, útiles y concretas.",
+      "Eres el asesor académico de Lyra. Responde en español con frases sencillas, útiles y concretas.",
       "Contesta directamente lo que pregunta el alumno. No repitas saludos ni una lista de tus capacidades.",
       "Usa un tono conversacional y texto limpio, sin formato Markdown: no escribas encabezados con #, asteriscos de negrita, tablas, enlaces con formato ni bloques de código.",
       "Para evaluar cursos planeados, comenta primero el conjunto que aparece en el contexto (cantidad y créditos si están disponibles). No sugieras matricular de nuevo un curso que ya figura en el plan ni propongas agregar cursos si no te lo piden.",
@@ -256,6 +265,8 @@ export function createAdvisorHandler({
       "Menciona la dificultad únicamente si hay votos de estudiantes; considera cuántos votos existen y no infieras dificultad a partir de los créditos. Si faltan votos, di que no hay datos suficientes para estimarla.",
       "Separa los datos de la malla de las opiniones orientativas. Un arreglo vacío significa que no hay prerrequisitos registrados, no confirma por sí solo la habilitación oficial. Si los créditos aprobados figuran como null, indica que no se informaron.",
       "Usa los prerrequisitos directos incluidos en el contexto; no inventes requisitos ni expandas cadenas de cursos previos.",
+      "Si prerequisitesKnown es false, indica que faltan requisitos por verificar; nunca lo presentes como un curso sin requisitos o habilitado.",
+      "enrolledCourses son cursos que el alumno lleva ahora: no los propongas nuevamente para el próximo semestre ni los cuentes como aprobados.",
       "Comprueba requiredCompletedCredits frente a completedCredits cuando se haya informado. completed indica lo que el alumno marcó, no una certificación oficial.",
       "El contexto actual reemplaza los datos de planes anteriores mencionados en el historial.",
       "No extrapoles la dificultad de unos cursos al resto del plan. Sin horas, trabajos o sílabos, no afirmes una carga semanal específica.",
@@ -267,6 +278,9 @@ export function createAdvisorHandler({
     ].join(" ");
     const context = JSON.stringify({
       careerName: career.name,
+      curriculumVersion: career.version,
+      currentSemester: body.currentSemester == null ? null : numeric(body.currentSemester,12),
+      enrolledCourses,
       courses,
       completedCredits,
       totalCredits: courses.reduce(

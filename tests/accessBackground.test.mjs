@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
-import { initializeAccessBackground } from '../src/lib/accessBackground.js'
+import { initializeAccessBackground } from '../src/features/access/accessBackground.js'
 
 function fixture({ reduced = false, connection, hidden = false, rejectPlay = false } = {}, initialize = initializeAccessBackground) {
   const frames = [], listeners = new Map(), elements = new Map()
@@ -71,7 +71,7 @@ test('autoplay rejection becomes a paused state that the user can resume', async
 // Exercise the production transform; unbundled source alone missed this regression.
 test('production-minified background initializes without blocking access', async () => {
   const { transform } = await import('esbuild')
-  const source = await readFile(new URL('../src/lib/accessBackground.js', import.meta.url), 'utf8')
+  const source = await readFile(new URL('../src/features/access/accessBackground.js', import.meta.url), 'utf8')
   const { code } = await transform(source, { target: 'es2019', format: 'esm', minify: true })
   const module = await import('data:text/javascript;base64,' + Buffer.from(code).toString('base64'))
   const f = fixture({}, module.initializeAccessBackground)

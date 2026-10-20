@@ -12,7 +12,7 @@ En la malla, **Cursos de este semestre** permite seleccionar hasta 30 cursos act
 
 La extensión conserva la paleta, fuentes, superficies y tokens existentes. Las propuestas y la selección del semestre usan dos columnas en escritorio y una en móvil; los controles móviles principales alcanzan 44 px. Se conserva el login y la desactivación del resplandor móvil de la base `cd26dd1` (rama `aea`). No se modifica el sistema de diseño ni su documentación normativa.
 
-Las piezas principales son `TextToTasks.jsx`, `OfficialCalendar.jsx`, `OfficialCurriculum.jsx`, sus estilos y `src/lib/taskExtraction.mjs`. El parser valida JSON, títulos y fechas, descarta asociaciones a cursos desconocidos y elimina propuestas duplicadas.
+Las piezas principales son `TextToTasks.jsx`, `OfficialCalendar.jsx`, `OfficialCurriculum.jsx`, sus estilos y `src/core/calendar/taskExtraction.mjs`. El parser valida JSON, títulos y fechas, descarta asociaciones a cursos desconocidos y elimina propuestas duplicadas.
 
 ## Backend y despliegue
 

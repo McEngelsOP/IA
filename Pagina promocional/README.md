@@ -1,6 +1,6 @@
-# Página promocional de ASEGEM
+# Página promocional de Lyra
 
-Landing en español basada en las funciones de `McEngelsOP/IA`, rama `aea`. Presenta malla curricular, planificación, Asesor IA, Brújula, Focus, Texto → tareas, calendario, Inicio, grupos, recursos, profesores, personalización y Arcade.
+Landing en español basada en las funciones de `McEngelsOP/IA`, rama `aea`. Presenta malla curricular, planificación, Asesor IA, Planificar, Focus, Texto → tareas, calendario, Inicio, grupos, recursos, profesores, personalización y Arcade.
 
 ## Acceso y desarrollo
 

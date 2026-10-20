@@ -6,14 +6,14 @@ import {runtime, ids, capitals} from '../workers/geoduelo/test/runtime.mjs'
 const require=createRequire(import.meta.url)
 const {chromium}=require(process.env.PLAYWRIGHT_PATH || 'playwright')
 const root=new URL('../',import.meta.url).pathname
-const arcadeCSS=(await fs.readFile(root+'pagina.html','utf8')).match(/<style>([\s\S]*?)<\/style>/)[1]
+const arcadeCSS=await fs.readFile(root+'src/app/portal.css','utf8')
 const runtime_=await runtime()
 const endpoint=String(await runtime_.mf.ready).replace(/\/$/,'')
 const server=await createServer({root,configFile:root+'vite.config.js',define:{'import.meta.env.VITE_GEODUELO_ONLINE_URL':JSON.stringify(endpoint)},server:{host:'127.0.0.1',port:5173,strictPort:true},plugins:[{
   name:'online-fixture',configureServer(server){server.middlewares.use('/__online',async(req,res)=>{
     const n=Number(new URL(req.url,'http://fixture').searchParams.get('seat')||0)
     res.setHeader('content-type','text/html');res.end(await server.transformIndexHtml('/__online-'+n,`<html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0"><main class="arc"><section class="gm-play gm-geoduelo"><div class="gm-play-top"><h2>Geoduelo</h2><button class="gm-small-button">Volver a juegos</button></div><div id="game" class="gm-game-body"></div></section></main><script type="module">
-      import {mountOfficialArcadeGame} from '/src/components/OfficialArcadeGame.jsx';
+      import {mountOfficialArcadeGame} from '/src/features/arcade/OfficialArcadeGame.jsx';
       const user={id:'${ids[n]}'},client={auth:{getSession:async()=>({data:{session:{access_token:user.id}}})},rpc:async()=>({data:null})};
       mountOfficialArcadeGame(document.getElementById('game'),{game:'geoduelo',client,user,soundEnabled:false});
       </script><style>${arcadeCSS}</style></body></html>`))

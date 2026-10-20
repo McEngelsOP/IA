@@ -1,6 +1,6 @@
 import data from './game-data.json' with { type: 'json' }
 import world from '../../../public/juegos/geoduelo/world.json' with { type: 'json' }
-import { MODES, DEFAULT_SETTINGS } from '../../../src/lib/geoduelo-modes.js'
+import { MODES, DEFAULT_SETTINGS } from '../../../src/features/arcade/geoduelo-modes.js'
 import { decodeTopology, distance, contains } from '../../../public/juegos/geoduelo/online-geo.js'
 export const ROUNDS = 10
 export const QUESTION_MS = 25000

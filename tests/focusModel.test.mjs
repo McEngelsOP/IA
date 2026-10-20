@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { FOCUS_PRESETS,enrolledFocusCourses,focusRemaining,focusDuration,focusMotivation,todayLima } from '../src/lib/focusModel.js'
+import { FOCUS_PRESETS,enrolledFocusCourses,focusRemaining,focusDuration,focusMotivation,todayLima } from '../src/features/focus/focusModel.js'
 test('only current enrolled courses from the selected career appear, alphabetically, without stale approvals',()=>{
  const courses=[{id:'z',n:'Zoología'},{id:'e2',n:'Estadística 2'},{id:'a',n:'Álgebra'},{id:'e10',n:'Estadística 10'},{id:'done',n:'Aprobado'},{id:'plan',n:'Planificado'}]
  const statuses={z:{status:'matriculado'},e2:{status:'matriculado'},a:{status:'matriculado'},e10:{status:'matriculado'},done:{status:'matriculado'},plan:{status:'pendiente'},otherCareer:{status:'matriculado'}}

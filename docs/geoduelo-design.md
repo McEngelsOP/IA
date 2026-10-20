@@ -4,7 +4,7 @@
 
 Contrato limitado a la integración de Geoduelo en **Arcade → Educativos**. La galería de `pagina.html` conserva su carrusel de portadas, cristal oscuro, filtros y muelle de juego. Dentro del iframe, Geoduelo mantiene el carácter **atlas impreso + marcador de duelo** del juego aportado: papel frío, tinta y dos identidades de jugador.
 
-Las fuentes de verdad son `pagina.html`, `src/components/Geoduelo.jsx`, `src/components/GeodueloOnline.jsx`, `src/components/GeodueloGlobe.jsx`, `src/components/useGeodueloFullscreen.js`, `src/components/geoduelo-online.css`, `src/components/OfficialArcadeGame.jsx` y `public/juegos/geoduelo/`. Este documento describe su implementación y no establece un sistema global. `Pagina promocional/PRODUCT.md` y `Pagina promocional/DESIGN.md` pertenecen a la landing promocional y no rigen Arcade.
+Las fuentes de verdad son `pagina.html`, `src/features/arcade/Geoduelo.jsx`, `src/features/arcade/GeodueloOnline.jsx`, `src/features/arcade/GeodueloGlobe.jsx`, `src/features/arcade/useGeodueloFullscreen.js`, `src/features/arcade/geoduelo-online.css`, `src/features/arcade/OfficialArcadeGame.jsx` y `public/juegos/geoduelo/`. Este documento describe su implementación y no establece un sistema global. `Pagina promocional/PRODUCT.md` y `Pagina promocional/DESIGN.md` pertenecen a la landing promocional y no rigen Arcade.
 
 Offline y Online comparten una interfaz de atlas: jugador y pregunta, globo y acción, resultado y conexión. Online adapta el marcador, el escenario y el pie a rondas simultáneas, conservando el canvas y la identidad local; esta adaptación de presentación no redefine el protocolo ni las reglas del servidor.
 
