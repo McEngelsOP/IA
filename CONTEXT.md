@@ -1,6 +1,6 @@
 # Contexto técnico de Lyra Campus
 
-Actualizado el 19 de octubre de 2026 para la reestructuración en `aea`. El código y las pruebas son la referencia de implementación. Los archivos de servidor no implican que estén desplegados remotamente.
+Actualizado el 20 de octubre de 2026 para la reestructuración en `aea`. El código y las pruebas son la referencia de implementación. El catálogo ESAN y `study-advisor` v14 están activados en Lyra; el alcance comprobado se registra en `docs/backend-activation.md`.
 
 ## Alcance y entradas
 
@@ -26,7 +26,7 @@ Cada carrera tiene institución, revisión, documento y hash de fuente. Los snap
 
 `supabase/careers_catalog.sql` añade `profiles.institution_id`, `profiles.curriculum_version` y `curriculum_versions`. Asigna la revisión actual solo a perfiles sin asignación y protege los campos desde el cliente. Regenerar no cambia revisiones ya asignadas. El portal carga un snapshot anterior si corresponde; si no existe, presenta un error recuperable sin sustituirlo silenciosamente.
 
-La interfaz admite la base anterior: perfiles sin asignación usan el catálogo activo. La persistencia de versión requiere aplicar la migración preparada. No renombrar IDs sin una migración específica: progreso, notas, profesores y comunidad dependen de ellos.
+La interfaz admite la base anterior: perfiles sin asignación usan el catálogo activo. La migración de persistencia está aplicada en Lyra; otros entornos requieren instalarla. No renombrar IDs sin una migración específica: progreso, notas, profesores y comunidad dependen de ellos.
 
 ## Reglas que deben conservarse
 
@@ -57,7 +57,7 @@ Conservar RLS, candado de carrera y verificación de usuario antes de escrituras
 
 Focus usa matrícula real, reloj del servidor e idempotencia. Los grupos exigen membresía para mensajes privados. Recursos conserva atribución y edición por autor. Arcade y Geoduelo siguen como complementos; el buzón usa `/api/mailbox`.
 
-Base y Edge Functions son compartidas por los despliegues con las mismas variables. La reestructuración prepara cambios en `aea`; no modifica automáticamente producción ni Cloudflare.
+Base y Edge Functions son compartidas por los despliegues con las mismas variables. El 20 de octubre de 2026 se activaron explícitamente el catálogo y el asesor de `aea` en Lyra. Esto no publica el frontend ni cambia el Worker de Cloudflare.
 
 ## Comprobación y mantenimiento
 

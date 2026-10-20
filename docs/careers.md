@@ -46,9 +46,9 @@ La cuenta histórica externa a ESAN no se elimina ni convierte. La interfaz ofre
 
 ## Activación
 
-La migración y `study-advisor` están preparadas en `aea`; no se aplican automáticamente en producción. Para activar esta versión en un entorno conectado, ejecutar solo `supabase/careers_catalog.sql` y desplegar la función `study-advisor` de la misma revisión. No volver a ejecutar todos los scripts de configuración históricos.
+Activada en Lyra el 20 de octubre de 2026 mediante `20261020011415_esan_curriculum_versions_activation`; `study-advisor` está en v14 con verificación JWT. Ver [registro de activación](backend-activation.md).
 
-La interfaz admite el esquema anterior mientras se prepara la activación. Hasta aplicar el SQL, perfiles sin asignación usan el catálogo activo y el servidor anterior conserva sus propias reglas de registro. Un preview que apunte a producción no aísla los servicios remotos.
+Para instalar esta versión en otro entorno con el esquema previo, ejecutar solo `supabase/careers_catalog.sql` y desplegar la función `study-advisor` de la misma revisión. No volver a ejecutar todos los scripts históricos. La interfaz admite el esquema anterior, usando el catálogo activo para perfiles sin asignación. Un preview que apunte a producción no aísla los servicios remotos.
 
 ## Comprobaciones
 

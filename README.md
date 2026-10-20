@@ -63,9 +63,9 @@ node scripts/generateCurricula.mjs --check
 
 El generador sincroniza opciones, catálogos, revisiones, catálogo del asesor y SQL. No editar salidas generadas ni renombrar IDs de cursos: están ligados a avances, notas y comunidad.
 
-Antes de activar esta versión en un entorno conectado, ejecutar **`supabase/careers_catalog.sql`** y desplegar **`study-advisor`** de esta rama. La migración conserva datos, registra revisiones y bloquea registros externos a ESAN. No ejecutar todos los SQL históricos. El frontend admite el esquema anterior; la asignación persistente de revisión requiere la migración.
+El backend de Lyra quedó activado el 20 de octubre de 2026: catálogo de 18 carreras, asignación persistente de revisión y `study-advisor` v14. La migración conserva los datos existentes y bloquea registros externos a ESAN. Ver [activación y comprobaciones](docs/backend-activation.md).
 
-Cambiar de rama no despliega automáticamente SQL o Edge Functions. Un preview que comparte variables de producción utiliza los mismos servicios remotos. Esta tarea prepara los cambios de servidor en `aea`; no los aplica a producción.
+Para otro entorno con el esquema previo, ejecutar **`supabase/careers_catalog.sql`** y desplegar **`study-advisor`** de la misma revisión. No ejecutar todos los SQL históricos. Cambiar de rama no despliega automáticamente SQL o Edge Functions; un preview que comparte variables de producción utiliza los mismos servicios remotos.
 
 Vite genera `dist/`. Las entradas y rutas de publicación permanecen en `vite.config.js` y `vercel.json`. La validación automática incluye `aea`; GitHub Pages conserva su despliegue de `main`.
 
