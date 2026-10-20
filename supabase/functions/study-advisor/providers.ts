@@ -48,7 +48,7 @@ function retryAfter(response: Response, body: any): number {
 }
 
 export async function generateAdvisorAnswer({
-  providers, system, context, history, fetch, reserve, report, validateAnswer = () => true, maxOutputTokens = 1800,
+  providers, system, context, history, fetch, reserve, report, validateAnswer = () => true, maxOutputTokens = 1800, maxAttempts = 4, deadlineMs = 42000,
 }: {
   providers: Provider[];
   system: string;
@@ -57,18 +57,20 @@ export async function generateAdvisorAnswer({
   fetch: typeof globalThis.fetch;
   validateAnswer?: (answer: string) => boolean;
   maxOutputTokens?: number;
+  maxAttempts?: number;
+  deadlineMs?: number;
   reserve: (provider: string, model: string) => Promise<Gate | null>;
   report: (provider: string, model: string, status: string, wait: number, duration: number) => Promise<void>;
 }): Promise<Outcome> {
   if (!providers.length) return { error: "configuration_missing", attempts: 0 };
-  const deadline = Date.now() + 42000;
+  const deadline = Date.now() + Math.min(42000, Math.max(1,deadlineMs));
   let attempts = 0, lastError = "provider_unavailable";
   const waits: number[] = [];
   for (const provider of providers) {
     const models = provider.name === "gemini" && provider.model !== DEFAULT_GEMINI_MODEL
       ? [provider.model, DEFAULT_GEMINI_MODEL] : [provider.model];
     for (const model of models) {
-      if (attempts >= 4 || Date.now() >= deadline) break;
+      if (attempts >= Math.min(4,Math.max(1,maxAttempts)) || Date.now() >= deadline) break;
       let gate: Gate | null;
       try { gate = await reserve(provider.name, model); }
       catch { gate = null; }
@@ -164,4 +166,5 @@ export async function generateAdvisorAnswer({
   }
   return { error: lastError, retryAfterSeconds: Math.max(1, waits.length ? Math.min(...waits) : 60), attempts };
 }
+
 

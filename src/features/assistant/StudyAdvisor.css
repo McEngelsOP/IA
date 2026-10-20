@@ -257,3 +257,29 @@
     border-radius: 14px;
   }
 }
+
+
+.advisor-history { display:flex;flex-wrap:wrap;align-items:end;gap:8px;padding:12px 0;color:var(--txt,#15202e); }
+.advisor-history label { display:grid;gap:4px;font-size:14px;flex:1 1 210px;min-width:0; }
+.advisor-history select { width:100%;min-width:0;max-width:100%; }
+.advisor-history :is(button,select),.advisor-draft :is(input,button) {font:inherit;color:inherit;background:var(--tile,#f3f5f3);border:1px solid var(--bar-b,#c4cec7);border-radius:10px;padding:9px 12px;min-height:44px;}
+.advisor-history button {cursor:pointer;font-size:14px;}
+.advisor-history button:hover,.advisor-draft button:hover {background:var(--on,#dae8dd);color:var(--on-t,#183624);}
+.advisor-history button:disabled,.advisor-draft button:disabled {opacity:.6;cursor:default;}
+.advisor-history :focus-visible,.advisor-draft :focus-visible {outline:2px solid var(--ic,#345f43);outline-offset:3px;}
+.advisor-history>p,.advisor-clear {flex-basis:100%;margin:0;font-size:14px;}
+.advisor-clear {display:flex;flex-wrap:wrap;align-items:center;gap:8px;}
+.advisor-draft {margin-block:16px;padding-block:16px;border-block:1px solid var(--bar-b,#c4cec7);color:var(--txt,#15202e);max-width:100%;overflow-wrap:anywhere;}
+.advisor-draft p {margin:6px 0 12px;font-size:14px;}
+.advisor-draft fieldset {border:0;padding:0;margin:0;display:grid;gap:12px;min-width:0;}
+.advisor-draft label {display:grid;gap:5px;font-size:14px;min-width:0;}
+.advisor-draft input {width:100%;min-width:0;box-sizing:border-box;font-size:16px;}
+.advisor-draft-hours {display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.advisor-draft button {justify-self:start;cursor:pointer;}
+.official-advisor>.advisor-history {max-width:840px;width:100%;margin-inline:auto;box-sizing:border-box;}
+.study-advisor>.advisor-history {padding:12px 20px;}
+.a-bm>div {min-width:0;max-width:100%;}
+
+.advisor-history-panel {max-width:840px;width:100%;margin-inline:auto;flex:none;}
+.advisor-history-panel>summary {cursor:pointer;min-height:44px;display:list-item;align-content:center;font-size:14px;}
+.advisor-history-panel>summary:focus-visible {outline:2px solid var(--ic,#345f43);outline-offset:3px;}

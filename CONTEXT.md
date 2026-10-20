@@ -1,6 +1,6 @@
 # Contexto técnico de Lyra Campus
 
-Actualizado el 20 de octubre de 2026 para la reestructuración en `aea`. El código y las pruebas son la referencia de implementación. El catálogo ESAN y `study-advisor` v14 están activados en Lyra; el alcance comprobado se registra en `docs/backend-activation.md`.
+Actualizado el 20 de octubre de 2026 para la reestructuración en `aea`. El código y las pruebas son la referencia de implementación. El catálogo ESAN y `study-advisor` v15 están activados en Lyra; el alcance comprobado se registra en `docs/backend-activation.md`.
 
 ## Alcance y entradas
 
@@ -45,7 +45,7 @@ Mi semestre reúne Calendario y tareas, Notas y objetivos y Cursos actuales. El 
 
 Solo Mi semestre ofrece importación de horario `.xlsx`. La propuesta se revisa y edita antes de guardar únicamente clases confirmadas. El onboarding remite allí y conserva clases de borradores anteriores, sin ofrecer CSV ni otro importador.
 
-Planificar reúne diagnóstico, comparación, proyección y plan guardado. Se eliminó el modal duplicado `SemesterRoadmap`; la superficie activa usa directamente el motor. El asesor recibe plan vigente, requisitos estructurados, revisión, créditos aprobados y matrícula actual. Este contexto no envía código de alumno ni notas individuales. El servidor consulta su catálogo, identifica requisitos desconocidos y rechaza revisiones incompatibles.
+Planificar reúne diagnóstico, comparación, proyección y plan guardado. Se eliminó el modal duplicado `SemesterRoadmap`; la superficie activa usa directamente el motor. El asesor mantiene chats y borradores únicamente en IndexedDB por cuenta. El servidor obtiene perfil y datos académicos relevantes con la identidad del estudiante: plan guardado, requisitos, revisión, créditos aprobados, matrícula, agenda y tareas. No acepta el avance del cliente como autoridad ni envía código, correo o notas individuales. Permite crear tareas y eventos individuales desde borradores revisados con Guardar, aprobación firmada y RPC idempotente. No persiste mensajes ni resúmenes en Supabase; se deshabilitan las escrituras del historial antiguo sin borrar registros. Ver `docs/assistant-local.md` para límites y activación.
 
 ## Sesión, exportación y servicios
 

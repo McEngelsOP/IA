@@ -80,3 +80,7 @@ Vite genera `dist/`. Las entradas y rutas de publicación permanecen en `vite.co
 - [Matrícula y tareas](docs/text-tasks-semester.md)
 - [Geoduelo](docs/geoduelo.md) y [partidas en línea](docs/geoduelo-online.md)
 - [Mantenimiento SQL](supabase/SQL_MAINTENANCE.md)
+
+## Asistente personal
+
+El historial del asistente se conserva únicamente en el navegador y dispositivo, separado por cuenta. Consulta datos académicos autorizados cuando son necesarios y ofrece borradores editables de tareas/eventos con guardado validado. Arquitectura, límites y activación: [docs/assistant-local.md](docs/assistant-local.md).
