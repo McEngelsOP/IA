@@ -1,90 +1,86 @@
-# IA · Malla curricular interactiva
+# Lyra Campus
 
-Para mejorar la visualización de los cursos y lo que conlleva cada uno. ¿La razón? El sistema de nuestra U está zzzzz.
+Lyra ayuda a estudiantes de Universidad ESAN a entender su avance, planificar sus cursos y organizar el semestre. El catálogo activo incluye las 18 carreras ESAN presentes en las fuentes del proyecto. Es una herramienta independiente de apoyo; no confirma matrícula ni sustituye información institucional.
 
-Aplicación web de la malla de **Ingeniería en IA (ESAN)**: cada alumno inicia sesión con su código, marca los cursos que ya llevó y explora qué cursos abre o requiere cada uno. El progreso se guarda en su cuenta (Supabase).
+La rama de trabajo es **`aea`**. Esta reorganización incorpora la limpieza de `main`; los cambios nuevos se mantienen en `aea`.
 
-## Características
+## Recorrido del estudiante
 
-- 🎓 Registro con las **18 carreras ESAN** de `Mallas curriculares/` y Mecatrónica PUCP; [fuentes, generación y activación](docs/careers.md)
-- 🔐 Login con **código de alumno** (ESAN / PUCP) y contraseña
-- ✉️ Registro con correo real: confirmación de cuenta y recuperación de contraseña
-- 🗺️ Malla interactiva con cálculo heurístico de cruces mínimos y **filtro por áreas formativas**
-- 🔗 Modos **"Qué abre"** / **"Qué requiere"** y **"Qué puedo llevar"**
-- ✅ Modo **"Marcar llevados"**: requisitos previos en cascada y persistencia en Supabase
-- 📅 **Planificador de ciclo y Calendario Académico** (eventos oficiales + personales sincronizados en la nube)
-- 📝 **Ficha del curso**: notas, veces llevado, comentarios personales, reseñas anónimas y estrellas de dificultad
-- 🤖 **Asesor académico Gemini, Groq y OpenRouter**: estima la carga del plan con créditos y dificultad agregada
-- 🧭 **Proyección de ciclos**: compara rutas ligeras, equilibradas e intensivas respetando prerrequisitos
-- 👨‍🏫 **Directorio de profesores**: likes/dislikes y etiquetas comunitarias
-- 📊 **Mi Panel**: estadísticas, histogramas y línea de tiempo con logros desbloqueables
-- 🕹️ **Arcade Retro**: 5 juegos nativos con ranking por temporada + juegos locales
+| Sección | Funciones |
+| --- | --- |
+| Inicio | Actividades, pendientes, avance, calificaciones y logros privados. |
+| Mi carrera | Malla, requisitos, progreso, matrícula, fichas y fuente del catálogo. |
+| Mi semestre | Calendario y tareas, horario Excel, notas y objetivos, cursos actuales. |
+| Planificar | Diagnóstico, comparación de cargas, proyección y plan guardado. |
+| Asistente | Consultas con el plan, requisitos, créditos aprobados y matrícula actual. |
 
-## Stack
+Grupos, Mod Focus, Recursos y Buzón están en Más herramientas. Arcade y las claves personales de IA están en el perfil. El mismo portal funciona en escritorio y móvil; `ios-android.html` conserva el enlace antiguo mediante una redirección.
 
-- **React + Vite** (frontend SPA con PWA y chunks lazy)
-- **Supabase** (autenticación Edge Function, base de datos PostgreSQL con RLS y Storage)
-- **Brevo** (SMTP para correos de confirmación/recuperación)
+## Desarrollo y comprobaciones
 
-## Instalación
+Requisitos: Node.js 20 o posterior y npm. El workspace raíz incluye el Worker de Geoduelo y usa un solo lockfile.
 
 ```bash
-git clone https://github.com/McEngelsOP/IA.git
-cd IA
-npm install
-```
-
-Crea `.env.local` con tus credenciales de Supabase:
-
-```
-VITE_SUPABASE_URL=https://tuproyecto.supabase.co
-VITE_SUPABASE_ANON_KEY=tu-clave-anon
-```
-
-Y ejecuta:
-
-```bash
+npm ci
+cp .env.example .env.local
 npm run dev
 ```
 
-## Configuración de Supabase
+Configura las variables públicas `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`. Las claves de IA, `service_role` y secretos del Worker permanecen en sus servidores. La interfaz de visitante funciona sin credenciales, pero no guarda datos privados.
 
-Ejecuta en el **SQL Editor** los scripts de la carpeta [`supabase/`](supabase/), según corresponda:
-- `setup.sql` — perfiles y triggers de autenticación
-- `careers_catalog.sql` — ampliación a todas las carreras; ejecutar antes de publicar el registro actualizado, sin repetir los scripts históricos
-- `progress.sql` — avance de malla
-- `sync_features.sql` — plan, eventos con horarios/repetición semanal y tareas privadas; ejecutar antes de publicar `pagina.html`
-- `focus_sessions.sql` — temporizador persistente e historial privado de Mod Focus; [guía de activación](supabase/FOCUS_SETUP.md)
-- `study_groups.sql` — salas públicas/privadas, participantes, mensajes (`study_room_messages`) y funciones con permisos de membresía; conserva el chat anterior `study_messages`
-- [`STUDY_GROUPS_SETUP.md`](supabase/STUDY_GROUPS_SETUP.md) — activación y pruebas de Grupos de estudio
-- [`CALENDAR_SETUP.md`](supabase/CALENDAR_SETUP.md) — migración, revisión de RLS y orden de instalación de los scripts consolidados
-- `course_detail.sql`, `arcade.sql`, `logros.sql` — ficha de curso, rankings de arcade y sistema de logros
-- `GEMINI_ADVISOR.md` — configuración del asesor académico y respaldo automático Gemini → Groq → OpenRouter
+```bash
+npm run check
+npx playwright install chromium
+npm run test:browser
+```
 
-## Scripts
+`check` verifica catálogo reproducible, reglas, PostgreSQL local, Worker y compilación. Las pruebas de navegador usan credenciales fixture y respuestas simuladas, sin cuentas reales ni consumo de IA. `SETUP_BROWSER` indica un Chromium instalado y `WORKSPACE_SCREENSHOTS` una carpeta opcional de capturas.
 
-- `npm run dev` — servidor de desarrollo
-- `npm run build` — build de producción
-- `npm run preview` — previsualizar el build
-- `node --test tests/calendarModel.test.mjs tests/studyGroups.test.mjs tests/focusModel.test.mjs` — calendario, conversación y validación de salas
+## Organización
 
+| Ruta | Responsabilidad |
+| --- | --- |
+| `src/app/` | Composición, navegación, montaje y estilos del portal. |
+| `src/core/` | Reglas académicas y modelos de calendario independientes de universidad. |
+| `src/features/` | Funciones y estilos agrupados por responsabilidad. |
+| `src/institutions/` | Registro de instituciones y configuración/catálogos ESAN. |
+| `src/shared/` | Componentes, cliente Supabase, sesión y recursos compartidos. |
+| `data/catalogs/esan/` | Markdown de origen y revisiones inmutables de las mallas. |
+| `scripts/` | Generación, comprobaciones de navegador y datos de Geoduelo. |
+| `supabase/` | SQL y Edge Functions; restauración en `history/`. |
+| `workers/geoduelo/` | Servidor de partidas en Cloudflare. |
+| `Pagina promocional/` | Landing independiente con demostraciones ilustrativas. |
+| `tests/` | Pruebas de reglas, SQL y navegador. |
 
-## Oficial: información real por usuario
+`pagina.html` contiene la estructura; su lógica y CSS están en `src/app/portal.js` y `portal.css`. Las superficies React se importan por demanda.
 
-La rama `Oficial` corresponde a producción en `https://l-esan.vercel.app`. La arquitectura SPA anterior se conserva en `Revisar para limpiar/src/`; no se incluye en las entradas de Vite actuales.
+## Catálogo y activación del servidor
 
-`login.html` abre `pagina.html` en Inicio. Calendario/Horarios permite crear, editar y eliminar eventos y tareas de la cuenta, con vistas Día/Semana/Mes, horarios semanales, filtros y agenda accesible. Los cambios fallidos conservan los registros anteriores y el borrador. Inicio y Malla usan el mismo progreso privado.
+```bash
+node scripts/generateCurricula.mjs
+node scripts/generateCurricula.mjs --check
+```
 
-El acceso incluye registro, recuperación por código, aviso de correo y cambio de contraseña dentro del mismo diseño. `src/lib/accessController.js` registra con `auth.signUp` y metadatos `student_code`/`carrera`, que consume el trigger existente del perfil. Con confirmación de correo activa, hay que abrir el enlace antes de entrar. Recuperación y reenvío usan la Edge Function `auth-by-code`; el contador de 45 segundos se calcula con una fecha límite del cliente y no es un límite de seguridad del servidor. La nueva contraseña se guarda con `auth.updateUser` después de verificar la sesión mediante `auth.getUser`.
+El generador sincroniza opciones, catálogos, revisiones, catálogo del asesor y SQL. No editar salidas generadas ni renombrar IDs de cursos: están ligados a avances, notas y comunidad.
 
-En Supabase → Authentication → URL Configuration, permite `https://l-esan.vercel.app/login.html` como URL de redirección de correo; el acceso completado continúa a `pagina.html` en Inicio. Estas pantallas no requieren SQL nuevo ni redesplegar `auth-by-code`. El panel se adapta al viewport sin scroll de página y el éxito lleva directamente a Inicio, sin pantalla final. [Matriz de pruebas y capturas del acceso](docs/access-layout/verification.md). Se verificaron el build y siete grupos de pruebas de navegador con Supabase simulado; no se crearon cuentas reales ni se comprobó el envío de correo o el despliegue en producción.
+El backend de Lyra quedó activado el 20 de octubre de 2026: catálogo de 18 carreras, asignación persistente de revisión y `study-advisor` v14. La migración conserva los datos existentes y bloquea registros externos a ESAN. Ver [activación y comprobaciones](docs/backend-activation.md).
 
-Se retiraron las notas, horarios, conversaciones, menciones y enlaces de muestra. Asesor y Brújula reutilizan las herramientas reales; Recursos consulta los enlaces compartidos en Supabase. Grupos de estudio permite crear salas públicas o privadas por curso, entrar por código, consultar participantes y conversar con mensajes persistentes. Empieza vacío hasta que alguien cree una sala. Buzón sigue pendiente, sin simular envíos.
+Para otro entorno con el esquema previo, ejecutar **`supabase/careers_catalog.sql`** y desplegar **`study-advisor`** de la misma revisión. No ejecutar todos los SQL históricos. Cambiar de rama no despliega automáticamente SQL o Edge Functions; un preview que comparte variables de producción utiliza los mismos servicios remotos.
 
-Para activar Calendario y Grupos en la base existente, ejecuta `supabase/sync_features.sql` y después `supabase/study_groups.sql` en el SQL Editor. Las migraciones no se aplicaron a producción desde este entorno: su proxy rechaza la conexión PostgreSQL. Consulta [la guía de Grupos de estudio](supabase/STUDY_GROUPS_SETUP.md). La variable administrativa `SUPABASE_DB_URL` nunca se incluye en el frontend.
+Vite genera `dist/`. Las entradas y rutas de publicación permanecen en `vite.config.js` y `vercel.json`. La validación automática incluye `aea`; GitHub Pages conserva su despliegue de `main`.
 
-Mod Focus ofrece sesiones persistentes con pausa y recuperación al recargar, historial por fecha y mensajes según el tiempo registrado. El selector muestra únicamente los cursos marcados como Matriculado de la carrera, en orden alfabético. Para activar esta versión, ejecutar `supabase/focus_sessions.sql` completo y recargar; no incluye sesiones de muestra.
+## Documentación
 
-## Material archivado
+- [Contexto técnico](CONTEXT.md)
+- [Carreras y revisiones](docs/careers.md)
+- [Arquitectura](docs/architecture.md)
+- [Piloto y expansión](docs/esan-pilot.md)
+- [Limpieza](docs/cleanup.md)
+- [Configuración inicial](docs/initial-setup.md)
+- [Matrícula y tareas](docs/text-tasks-semester.md)
+- [Geoduelo](docs/geoduelo.md) y [partidas en línea](docs/geoduelo-online.md)
+- [Mantenimiento SQL](supabase/SQL_MAINTENANCE.md)
 
-`Revisar para limpiar/README.md` describe los componentes de la aplicación anterior, juegos externos y planes alternativos que se conservaron para revisión. `Revisar para limpiar/inventario.json` registra sus rutas originales y motivos. `Mallas curriculares/` conserva las 18 fuentes activas; el prototipo HTML de IA y su hoja de fuentes se eliminaron, junto con la copia idéntica del Markdown de IA.
+## Asistente personal
+
+El historial del asistente se conserva únicamente en el navegador y dispositivo, separado por cuenta. Consulta datos académicos autorizados cuando son necesarios y ofrece borradores editables de tareas/eventos con guardado validado. Arquitectura, límites y activación: [docs/assistant-local.md](docs/assistant-local.md).

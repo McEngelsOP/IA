@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { normalizeAdvisorAnswer } from '../src/lib/advisorFormatting.mjs'
+import { normalizeAdvisorAnswer } from '../src/features/assistant/advisorFormatting.mjs'
 
 test('converts the advisor response format to clean readable text', () => {
   const answer = [

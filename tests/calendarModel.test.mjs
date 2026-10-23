@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { civil, addDays, monday, todayLima, monthDays, occurs, layoutEvents, validateEvent } from '../src/lib/calendarModel.js'
+import { civil, addDays, monday, todayLima, monthDays, occurs, layoutEvents, validateEvent } from '../src/core/calendar/calendarModel.js'
 
 test('fechas civiles: días inválidos, bisiestos y cambio de año', () => {
   assert.equal(civil('2026-02-30'), null)

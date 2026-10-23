@@ -1,0 +1,24 @@
+/* Marca discreta, con las variantes del logo pixel art original. */
+#app .dh{min-height:34px;gap:8px;padding:2px 10px 10px;margin-bottom:4px}
+#app .dh .brand{display:flex;align-items:center;justify-content:center;flex:none;width:76px;height:34px;color:var(--txt);opacity:.6}
+#app .dh .lyra-logo-full{display:block;width:74px;height:32px}
+#app .dh .lyra-logo-symbol{display:none}
+#app .dh .lyra-brand-spacer{flex:1;min-width:0}
+#app .dh .hb{flex:none;opacity:.75}
+#app .dh .hb:hover,#app .dh .hb:focus-visible{opacity:1}
+#app[data-side=rail] .dh .brand{width:28px;height:30px}
+#app[data-side=rail] .dh .lyra-logo-full{display:none}
+#app[data-side=rail] .dh .lyra-logo-symbol{display:block;width:18px;height:21px}
+#app .trig .lyra-logo-trigger{display:block;width:23px;height:27px;transform:none;transition:none;color:var(--txt)}
+#app .brand svg{image-rendering:pixelated}
+#app .brand:focus-visible{outline:2px solid var(--hx,var(--txt));outline-offset:4px;border-radius:6px}
+#app .uni{padding:14px 10px 4px;opacity:.75}
+#app .uni .um{flex:0 0 30px;width:30px;height:30px;border-radius:10px;background:transparent;border:1px solid var(--bar-b)}
+#app .uni .um svg{width:16px;height:16px}
+#app .uni b{font-size:13px;font-weight:500}
+#app .uni span{font-size:11px;opacity:1;color:var(--txt)}
+/* En PC la barra siempre permanece visible, completa o compacta. */
+@media(min-width:861px){#app #bHide{display:none}}
+/* Entrada móvil de referencia, que comparte la identidad de la app. */
+#phone .dh .lyra-logo-full{display:block;width:74px;height:32px;color:var(--txt);opacity:.6}
+#phone .trig .lyra-logo-trigger{width:23px;height:27px;color:var(--txt);transform:none}

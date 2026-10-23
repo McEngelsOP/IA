@@ -2,18 +2,17 @@
 <html lang="es">
 
 <head>
-<link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#18110f">
   <meta name="description"
     content="Accede con tu cuenta universitaria a tus notas, avance y logros académicos.">
   <title>ESAN · Inicia sesión</title>
-  <link rel="preload" href="/entry-regular.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/entry-regular.woff" as="font" type="font/woff" crossorigin>
   <style>
     @font-face {
       font-family: Entry;
-      src: url(/entry-regular.woff2) format('woff2');
+      src: url(/entry-regular.woff) format('woff');
       font-style: normal;
       font-weight: 400;
       font-display: swap
@@ -21,7 +20,7 @@
 
     @font-face {
       font-family: Entry;
-      src: url(/entry-semibold.woff2) format('woff2');
+      src: url(/entry-semibold.woff) format('woff');
       font-style: normal;
       font-weight: 600 800;
       font-display: swap
@@ -836,14 +835,14 @@
   
 
   </style>
-  <link rel="stylesheet" href="./src/styles/accessViewport.css">
+  <link rel="stylesheet" href="./src/features/access/accessViewport.css">
 </head>
 
 <body data-video-background="true" data-state="loginScreen">
 
   <div class="environment" aria-hidden="true">
-    <picture class="mobile-landscape"><source media="(max-width:860px)" srcset="./access-mobile.webp"><img src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" width="736" height="1311" alt="" decoding="async" fetchpriority="high"></picture>
-    <video class="landscape" id="landscape" data-src="./access-landscape-720.mp4" poster="./access-poster.webp" width="1920" height="1080" muted loop playsinline preload="none" disablepictureinpicture></video>
+    <picture class="mobile-landscape"><source media="(max-width:860px)" srcset="./Cat.jpg"><img src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" width="736" height="1311" alt="" decoding="async" fetchpriority="high"></picture>
+    <video class="landscape" id="landscape" data-src="./login-landscape.mp4" poster="./login-landscape.webp" width="1920" height="1080" muted loop playsinline preload="none" disablepictureinpicture></video>
   </div>
 
   <p class="sr-only" id="accessStatus" role="status" aria-live="polite" aria-atomic="true"></p>
@@ -907,7 +906,7 @@
           <p class="subtitle">Primera vez aquí: elige cómo entrar.</p>
           <form class="access-form" id="registerForm" novalidate>
             <div class="field"><label for="registerCode">Código universitario</label><input id="registerCode" type="text" inputmode="numeric" maxlength="8" autocomplete="username" placeholder="8 dígitos" required></div>
-            <div class="field"><label for="registerCareer">Carrera</label><select id="registerCareer" required><option value="" disabled selected>Elige tu carrera</option></select></div>
+            <div class="field"><label for="registerCareer">Carrera en ESAN</label><select id="registerCareer" required><option value="" disabled selected>Elige tu carrera</option></select></div>
             <div class="field"><label for="registerEmail">Correo de recuperación</label><input id="registerEmail" type="email" autocomplete="email" placeholder="tucorreo@gmail.com" required></div>
             <div class="field"><label for="registerPassword">Nueva contraseña</label><div class="password-wrap"><input id="registerPassword" type="password" autocomplete="new-password" placeholder="Mínimo 6 caracteres" minlength="6" required><button class="eye" type="button" data-password="registerPassword" aria-label="Mostrar contraseña" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2 12s3.7-7 10-7 10 7 10 7-3.7 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/><path class="eye-slash" d="m3 3 18 18" hidden/></svg></button></div></div>
             <div class="field"><label for="registerConfirm">Confirmar contraseña</label><div class="password-wrap"><input id="registerConfirm" type="password" autocomplete="new-password" placeholder="Repite tu contraseña" minlength="6" required><button class="eye" type="button" data-password="registerConfirm" aria-label="Mostrar contraseña" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2 12s3.7-7 10-7 10 7 10 7-3.7 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/><path class="eye-slash" d="m3 3 18 18" hidden/></svg></button></div></div>
@@ -986,7 +985,7 @@
     </div>
   </aside>
 
-  <script type="module" src="./src/lib/accessController.js"></script>
+  <script type="module" src="./src/features/access/accessController.js"></script>
 </body>
 
 </html>

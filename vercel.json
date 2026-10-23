@@ -6,15 +6,11 @@
       "permanent": false
     }
   ],
-  "headers": [
+  "rewrites": [
     {
-      "source": "/assets/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
-        }
-      ]
+      "source": "/promocional",
+      "destination": "/Pagina%20promocional/index.html"
     }
   ]
 }
+

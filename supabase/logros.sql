@@ -88,7 +88,7 @@ begin
     from public.game_scores where student_id = uid;
   select alias, carrera, created_at into a, car, creado from public.profiles where id = uid;
 
-  -- total de cursos de la malla (duplicado de src/data/* a propósito)
+  -- total de cursos de la malla (sincronizado desde src/institutions/esan/)
   total_malla := case car
     when 'administracion' then 69
     when 'administracion-finanzas' then 73
@@ -108,7 +108,6 @@ begin
     when 'ia' then 69
     when 'industrial' then 77
     when 'marketing' then 75
-    when 'pucp-mecatronica' then 64
     else null
   end;
 

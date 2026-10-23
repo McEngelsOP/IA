@@ -3,7 +3,7 @@
 begin;
 create table if not exists public.game_scores (
   student_id uuid not null references auth.users (id) on delete cascade,
-  game       text not null check (game in ('dino', 'astro', 'galaxia', 'frogger', 'memoria')),
+  game       text not null check (game in ('dino', 'astro', 'galaxia', 'frogger', 'memoria', 'geoduelo')),
   alias      text not null,
   score      integer not null check (score between 1 and 100000),
   updated_at timestamptz not null default now(),
@@ -27,7 +27,7 @@ revoke all on table public.game_scores from anon, authenticated;
 grant select (game, alias, score, updated_at) on public.game_scores to authenticated;
 
 alter table public.game_scores drop constraint if exists game_scores_game_check;
-alter table public.game_scores add constraint game_scores_game_check check (game in ('dino','astro','galaxia','frogger','memoria'));
+alter table public.game_scores add constraint game_scores_game_check check (game in ('dino','astro','galaxia','frogger','memoria','geoduelo'));
 create or replace function public.temporada_actual()
 returns text
 language sql
@@ -66,7 +66,7 @@ begin
   if auth.uid() is null then
     raise exception 'NO_AUTH';
   end if;
-  if g not in ('dino', 'galaxia', 'memoria') then
+  if g not in ('dino', 'galaxia', 'memoria', 'geoduelo') then
     raise exception 'BAD_GAME';
   end if;
   if s < 1 or s > 100000 then
@@ -107,3 +107,4 @@ grant execute on function public.submit_game_score(text, integer) to authenticat
 revoke execute on function public.my_game_score(text) from public, anon;
 grant execute on function public.my_game_score(text) to authenticated;
 commit;
+

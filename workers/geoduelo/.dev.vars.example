@@ -1,0 +1,6 @@
+# Copiar a .dev.vars SOLO para pruebas locales; nunca subir claves.
+ALLOWED_ORIGINS=http://127.0.0.1:5173
+SUPABASE_URL=https://TU_PROYECTO.supabase.co
+SUPABASE_ANON_KEY=tu_clave_anon_o_publishable
+SUPABASE_SERVICE_ROLE_KEY=tu_clave_service_role_solo_servidor
+TICKET_SECRET=genera_64_caracteres_aleatorios

@@ -1,0 +1,2613 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#E9EEF2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#07121C" media="(prefers-color-scheme: dark)">
+<title>Geoduelo · duelo de geografía</title>
+<link rel="stylesheet" href="./fonts.css">
+
+<!--
+  GEODUELO — un solo archivo, por decisión de arquitectura.
+  ---------------------------------------------------------
+  No hay "varios juegos": hay un motor único (globo + turnos + puntaje + reloj)
+  y once tipos de pregunta que lo reutilizan. Separarlos en archivos obligaría a
+  duplicar o a empaquetar el motor, y rompería la propiedad más valiosa del
+  proyecto: abrir el HTML y jugar, sin servidor ni build.
+  Lo que sí se separa son las *responsabilidades*, en secciones numeradas:
+     1 utilidades   2 datos   3 geometría y globo   4 tipos de pregunta (registro)
+     5 estado       6 tema y dibujo   7 vista y gestos   8 sonido
+     9 generación de preguntas   10 flujo   11 interfaz   12 bucle
+    13 configuración   14 arranque
+  Añadir un tipo de pregunta = una entrada en KINDS, un caso en mkItem() y,
+  si estrena fuente de datos, una rama en pool().
+-->
+
+<style>
+/* ============================================================
+   1. Tokens de diseño
+   ============================================================ */
+:root{
+  color-scheme:light;
+  --bg:#E9EEF2; --panel:#FBFCFD; --panel-2:#DEE7EE;
+  --ink:#0C1A26; --ink-2:#3E5265; --ink-3:#536B80;
+  --line:#CFDAE3; --line-2:#E4EBF1;
+  --scrim:rgba(10,22,33,.62); --grid:rgba(12,26,38,.045);
+  --ocean-a:#D9EBF7; --ocean-mid:#AACBDF; --ocean-b:#6F9DBF;
+  --land:#E3E8D6; --land-hi:#F1F4E7; --land-line:rgba(40,60,52,.50);
+  --grat:rgba(12,26,38,.085); --rim:rgba(12,26,38,.26);
+  --halo-a:rgba(96,158,212,.36); --halo-mid:rgba(96,158,212,.13); --halo-b:rgba(96,158,212,0);
+  --limb-a:rgba(9,32,54,.10); --limb-b:rgba(6,22,38,.40);
+  --spec:rgba(255,255,255,.20);
+  --hover:rgba(12,26,38,.14); --ring-fill:rgba(12,26,38,.07); --ring-line:#0C1A26;
+  --label:#0C1A26; --label-halo:rgba(255,255,255,.9);
+  --p1:#C24E0A; --p1-ink:#FFFFFF; --p2:#1D6EC2; --p2-ink:#FFFFFF;
+  --warn:#B4301F; --good:#15754A;
+  --sh-1:0 1px 2px rgba(12,26,38,.07);
+  --sh-2:0 6px 20px -8px rgba(12,26,38,.25);
+  --sh-3:0 22px 60px -22px rgba(12,26,38,.42);
+  --r-s:10px; --r-m:14px; --r-l:20px; --r-xl:26px;
+  --pc:var(--p1); --pc-ink:var(--p1-ink);
+  --f-display:"Archivo",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-body:"Hanken Grotesk",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"DM Mono",ui-monospace,"SF Mono",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#07121C; --panel:#0D1B28; --panel-2:#15293A;
+    --ink:#E8F0F7; --ink-2:#A6B8C8; --ink-3:#7F94A7;
+    --line:#22384C; --line-2:#1A2B3B;
+    --scrim:rgba(3,9,15,.76); --grid:rgba(150,190,230,.05);
+    --ocean-a:#1E4F7C; --ocean-mid:#123A5D; --ocean-b:#06182A;
+    --land:#51616D; --land-hi:#64747F; --land-line:rgba(4,12,20,.7);
+    --grat:rgba(170,205,240,.07); --rim:rgba(150,195,235,.28);
+    --halo-a:rgba(64,140,215,.34); --halo-mid:rgba(64,140,215,.10); --halo-b:rgba(64,140,215,0);
+    --limb-a:rgba(0,8,18,.18); --limb-b:rgba(0,6,14,.55);
+    --spec:rgba(180,220,255,.13);
+    --hover:rgba(255,255,255,.16); --ring-fill:rgba(255,255,255,.09); --ring-line:#E8F0F7;
+    --label:#FFFFFF; --label-halo:rgba(4,12,20,.85);
+    --p1:#FF8A3D; --p1-ink:#1A0E04; --p2:#5CB1FF; --p2-ink:#04131F;
+    --warn:#FF6B57; --good:#4FD08F;
+    --sh-1:0 1px 2px rgba(0,0,0,.4);
+    --sh-2:0 8px 24px -10px rgba(0,0,0,.6);
+    --sh-3:0 24px 64px -24px rgba(0,0,0,.75);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#07121C; --panel:#0D1B28; --panel-2:#15293A;
+  --ink:#E8F0F7; --ink-2:#A6B8C8; --ink-3:#7F94A7;
+  --line:#22384C; --line-2:#1A2B3B;
+  --scrim:rgba(3,9,15,.76); --grid:rgba(150,190,230,.05);
+  --ocean-a:#1E4F7C; --ocean-mid:#123A5D; --ocean-b:#06182A;
+  --land:#51616D; --land-hi:#64747F; --land-line:rgba(4,12,20,.7);
+  --grat:rgba(170,205,240,.07); --rim:rgba(150,195,235,.28);
+  --halo-a:rgba(64,140,215,.34); --halo-mid:rgba(64,140,215,.10); --halo-b:rgba(64,140,215,0);
+  --limb-a:rgba(0,8,18,.18); --limb-b:rgba(0,6,14,.55);
+  --spec:rgba(180,220,255,.13);
+  --hover:rgba(255,255,255,.16); --ring-fill:rgba(255,255,255,.09); --ring-line:#E8F0F7;
+  --label:#FFFFFF; --label-halo:rgba(4,12,20,.85);
+  --p1:#FF8A3D; --p1-ink:#1A0E04; --p2:#5CB1FF; --p2-ink:#04131F;
+  --warn:#FF6B57; --good:#4FD08F;
+  --sh-1:0 1px 2px rgba(0,0,0,.4);
+  --sh-2:0 8px 24px -10px rgba(0,0,0,.6);
+  --sh-3:0 24px 64px -24px rgba(0,0,0,.75);
+}
+
+/* ============================================================
+   2. Base
+   ============================================================ */
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{
+  margin:0;color:var(--ink);background-color:var(--bg);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:48px 48px;background-position:center top;
+  font:400 15px/1.45 var(--f-body);
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  overscroll-behavior:none;
+}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+h1,h2,p{margin:0}
+kbd{font:500 .72rem/1 var(--f-mono)}
+
+/* ============================================================
+   3. Estructura: marcador / escenario / muelle
+   ============================================================ */
+#app{
+  height:100vh;height:100dvh;min-height:0;display:grid;
+  grid-template-rows:auto minmax(0,1fr) auto;
+  gap:10px;padding:12px 16px calc(10px + env(safe-area-inset-bottom,0px));
+  max-width:1440px;margin-inline:auto;
+}
+#app[data-active="1"]{--pc:var(--p2);--pc-ink:var(--p2-ink)}
+
+/* --- marcador --- */
+.hud{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.6fr) minmax(0,1fr);gap:12px;align-items:center}
+
+.pcard{
+  --c:var(--p1);--c-ink:var(--p1-ink);
+  display:grid;grid-template-columns:auto minmax(0,1fr) auto;
+  grid-template-areas:"mark name tag" "score score meta";
+  align-items:center;gap:2px 9px;
+  padding:10px 14px;background:var(--panel);border:1px solid var(--line);
+  border-radius:var(--r-m);color:var(--ink);
+  transition:border-color .25s,box-shadow .25s;
+}
+.pcard:not(.active){background:var(--panel-2)}
+.pcard:not(.active) .pmeta{color:var(--ink-2)}
+#card1{--c:var(--p2);--c-ink:var(--p2-ink)}
+.pcard.active{opacity:1;border-color:var(--c);box-shadow:0 0 0 1px var(--c) inset,var(--sh-2)}
+.mark{grid-area:mark;width:10px;height:10px;background:var(--c);flex:none}
+.pcard.active .mark{background:var(--c)}
+.m0{border-radius:50%}
+.m1{transform:rotate(45deg);border-radius:2px;width:9px;height:9px}
+.pname{grid-area:name;font-weight:700;font-size:.92rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ptag{grid-area:tag;font:500 .7rem/1.3 var(--f-mono);letter-spacing:.1em;text-transform:uppercase;
+  padding:4px 7px;border-radius:99px;background:var(--c);color:var(--c-ink)}
+.pscore{grid-area:score;font:800 2.1rem/1.05 var(--f-display);font-stretch:118%;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.pcard.active .pscore{color:var(--c)}
+.pmeta{grid-area:meta;font:400 .72rem/1 var(--f-mono);color:var(--ink-3);text-align:right;font-variant-numeric:tabular-nums}
+
+/* --- pregunta --- */
+.prompt{display:grid;row-gap:5px;justify-items:center;text-align:center;min-width:0}
+.kicker{font:500 .68rem/1.2 var(--f-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+.cname{
+  font:800 clamp(1.35rem,3.4vw,2.15rem)/1.08 var(--f-display);font-stretch:118%;
+  text-wrap:balance;min-height:2.05em;display:flex;align-items:center;justify-content:center;
+  overflow-wrap:anywhere;max-width:26ch;letter-spacing:-.01em;
+}
+.timer{display:flex;align-items:center;gap:10px;width:min(420px,100%)}
+.timer .bar{flex:1;height:6px;border-radius:99px;background:var(--panel-2);overflow:hidden}
+.timer .bar i{display:block;height:100%;background:var(--pc);transform-origin:left;transform:scaleX(1);
+  transition:background .3s}
+.timer.low .bar i{background:var(--warn)}
+#tnum{font:500 .86rem/1 var(--f-mono);min-width:5.4ch;text-align:right;font-variant-numeric:tabular-nums;color:var(--ink-2)}
+.timer.low #tnum{color:var(--warn)}
+.mult{
+  flex:none;font:500 .68rem/1 var(--f-mono);letter-spacing:.02em;
+  padding:4px 7px;border-radius:6px;background:var(--pc);color:var(--pc-ink);
+}
+.mult[data-high]{background:var(--warn);color:#fff}
+
+/* el robo se anuncia como una insignia, no como un cambio de pantalla */
+#app[data-phase="steal"] .kicker{
+  background:var(--pc);color:var(--pc-ink);
+  padding:4px 11px;border-radius:99px;letter-spacing:.1em;
+}
+.say{min-height:1.35em;color:var(--ink-2);font-size:.86rem;max-width:52ch}
+.say.bad{color:var(--warn)}
+
+/* --- escenario --- */
+.stage{position:relative;min-height:0;overflow:hidden;border-radius:var(--r-l)}
+#globe{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+#globe.dragging{cursor:grabbing}
+#app[data-phase="playing"] #globe:not(.dragging){cursor:crosshair}
+
+.coords{
+  position:absolute;left:12px;top:10px;z-index:2;pointer-events:none;
+  font:500 .64rem/1.4 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;
+  color:var(--ink-3);font-variant-numeric:tabular-nums;
+  padding:4px 9px;border-radius:99px;background:var(--panel);border:1px solid var(--line);
+  opacity:.55;transition:opacity .2s;
+}
+.stage:hover .coords{opacity:1}
+
+.zoomer{
+  position:absolute;right:10px;top:10px;z-index:2;display:grid;gap:1px;padding:3px;
+  background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--sh-1);
+  opacity:.55;transition:opacity .2s;
+}
+.stage:hover .zoomer,.zoomer:focus-within{opacity:1}
+.zoomer button{width:30px;height:28px;border:0;background:transparent;border-radius:9px;
+  display:grid;place-items:center;font-size:.95rem;line-height:1;color:var(--ink)}
+.zoomer button:hover{background:var(--panel-2)}
+
+/* --- tarjeta de turno / resultado --- */
+.turncard,.optbox,.panelbox{
+  position:absolute;left:50%;bottom:14px;transform:translateX(-50%);
+  width:min(460px,calc(100% - 20px));z-index:3;
+}
+.turncard{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--r-l);
+  padding:16px 18px;box-shadow:var(--sh-3);display:grid;gap:6px;
+}
+.tc-kicker{font:500 .68rem/1.2 var(--f-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+.tc-title{font:800 1.45rem/1.12 var(--f-display);font-stretch:118%;letter-spacing:-.01em}
+.tc-title.ok{color:var(--good)}
+.tc-title.no{color:var(--warn)}
+.tc-text{color:var(--ink-2);font-size:.88rem}
+.tc-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.tc-actions .btn{flex:1;min-width:120px}
+
+/* apuesta a ciegas: tres niveles de riesgo, elegidos antes de ver la pregunta */
+.bets{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:6px}
+.bet{
+  display:grid;gap:2px;padding:8px 4px;text-align:center;
+  border:1px solid var(--line);border-radius:var(--r-s);background:var(--bg);
+  transition:background .15s,border-color .15s,transform .1s;
+}
+.bet b{font:800 1.1rem/1 var(--f-display);font-stretch:118%;letter-spacing:-.01em}
+.bet span{font:500 .6rem/1 var(--f-mono);letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3)}
+.bet:hover{background:var(--panel-2)}
+.bet:active{transform:scale(.98)}
+.bet.on{background:var(--pc);border-color:transparent;color:var(--pc-ink)}
+.bet.on span{color:inherit;opacity:.82}
+.betline{min-height:1.25em;font-size:.8rem;color:var(--ink-3)}
+
+.optbox{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.optbox.wide{grid-template-columns:1fr}
+.opt{
+  min-height:56px;padding:10px 12px;border-radius:var(--r-m);
+  border:1px solid var(--line);background:var(--panel);box-shadow:var(--sh-2);
+  font-weight:700;font-size:.95rem;display:flex;align-items:center;gap:10px;text-align:left;min-width:0;
+  transition:background .15s,border-color .15s,transform .1s;
+}
+.opt span{min-width:0;overflow-wrap:anywhere}
+.opt kbd{flex:none;color:var(--ink-3);border:1px solid var(--line);border-radius:5px;padding:2px 5px}
+.opt:hover:not(:disabled){background:var(--panel-2);border-color:var(--ink-3)}
+.opt:active:not(:disabled){transform:scale(.99)}
+.opt:disabled{opacity:.3;cursor:not-allowed}
+
+.panelbox{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--r-l);
+  padding:14px 16px;box-shadow:var(--sh-3);display:grid;gap:10px;
+}
+.est{font:800 1.6rem/1 var(--f-display);font-stretch:118%;font-variant-numeric:tabular-nums}
+.est-head,.est-foot{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.panelbox input[type="range"]{width:100%;accent-color:var(--pc);height:26px;margin:0}
+.est-scale{font:500 .68rem/1 var(--f-mono);color:var(--ink-3)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{
+  display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:6px 12px;
+  border-radius:var(--r-s);border:1px solid var(--line);background:var(--bg);
+  font-weight:600;font-size:.9rem;
+}
+.chip b{font:500 .7rem/1 var(--f-mono);background:var(--pc);color:var(--pc-ink);border-radius:99px;padding:3px 6px}
+.chip:hover:not(:disabled){background:var(--panel-2)}
+.chip:disabled{opacity:.55;cursor:default}
+
+@media (min-width:1000px){
+  .turncard,.optbox,.panelbox{
+    left:auto;right:18px;bottom:auto;top:50%;transform:translateY(-50%);width:318px;
+  }
+  .optbox{grid-template-columns:1fr}
+  #app[data-phase="result"] .coords{visibility:hidden}
+}
+
+/* --- muelle de acciones --- */
+.dock{display:flex;justify-content:center;align-items:center;gap:6px;min-height:0}
+.dgrp{
+  display:flex;gap:3px;padding:3px;background:var(--panel);
+  border:1px solid var(--line);border-radius:var(--r-l);box-shadow:var(--sh-1);
+}
+.dbtn{
+  min-height:36px;padding:0 12px;border:0;background:transparent;border-radius:calc(var(--r-l) - 3px);
+  font-weight:600;font-size:.85rem;display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  color:var(--ink);transition:background .15s,color .15s;
+}
+.dbtn b{font:500 .66rem/1 var(--f-mono);background:var(--panel-2);padding:3px 5px;border-radius:99px;color:var(--ink-3)}
+.dbtn:hover:not(:disabled){background:var(--panel-2)}
+.dbtn:disabled{opacity:.32;cursor:not-allowed}
+.dbtn.icon{width:36px;padding:0;font-size:.95rem}
+.dbtn.primary{background:var(--pc);color:var(--pc-ink)}
+.dbtn.primary b{background:rgba(255,255,255,.22);color:inherit}
+
+/* ============================================================
+   4. Botones genéricos
+   ============================================================ */
+.btn{
+  min-height:42px;padding:0 16px;border-radius:var(--r-s);
+  border:1px solid var(--line);background:var(--panel);
+  font-weight:600;font-size:.9rem;display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  transition:background .15s,border-color .15s;
+}
+.btn:hover:not(:disabled){background:var(--panel-2)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.primary{background:var(--ink);color:var(--bg);border-color:transparent}
+.btn.primary:hover:not(:disabled){background:var(--ink);filter:brightness(1.15)}
+.btn.ghost{background:transparent}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+
+/* ============================================================
+   5. Ventanas
+   ============================================================ */
+.modal{
+  position:fixed;inset:0;z-index:10;display:grid;place-items:center;overflow:auto;
+  background:var(--scrim);backdrop-filter:blur(3px);
+  padding:max(16px,env(safe-area-inset-top)) 16px max(16px,env(safe-area-inset-bottom));
+  animation:fade .18s ease-out;
+}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.sheet{
+  width:min(560px,100%);background:var(--panel);border:1px solid var(--line);
+  border-radius:var(--r-xl);padding:26px;box-shadow:var(--sh-3);
+  display:grid;gap:18px;margin-block:auto;
+}
+.sheet.wide{width:min(900px,100%)}
+.brand{display:flex;align-items:center;gap:9px;font:800 1rem/1 var(--f-display);font-stretch:118%;letter-spacing:.01em}
+.brand svg{width:26px;height:26px}
+.sheet h1,.sheet h2{font:800 clamp(1.6rem,4.6vw,2.4rem)/1.06 var(--f-display);font-stretch:118%;text-wrap:balance;letter-spacing:-.015em}
+.sheet .lead{color:var(--ink-2);max-width:58ch;font-size:.94rem}
+.intro{display:grid;gap:8px}
+.lbl{font:500 .68rem/1.2 var(--f-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
+.hintp{font-size:.82rem;color:var(--ink-3);min-height:1.25em;line-height:1.35}
+
+/* --- configuración --- */
+#setup{display:grid;gap:22px;align-content:start}
+@media (min-width:800px){
+  #setup{grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:30px;align-items:start}
+}
+.cfg{display:grid;gap:16px;align-content:start}
+fieldset{border:0;margin:0;padding:0;min-width:0;display:grid;gap:7px}
+
+.cats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+@media (min-width:520px){.cats{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.cat{
+  display:grid;gap:2px;padding:9px 10px;text-align:left;
+  border:1px solid var(--line);border-radius:var(--r-m);background:var(--bg);
+  transition:background .15s,border-color .15s,color .15s;
+}
+.cat b{font:700 .88rem/1.2 var(--f-display)}
+.cat span{font-size:.7rem;line-height:1.25;color:var(--ink-3)}
+.cat[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.cat[aria-pressed="true"] span{color:inherit;opacity:.72}
+
+.modes{display:grid;gap:6px;margin-top:9px}
+.mode{
+  display:grid;gap:1px;padding:9px 12px;text-align:left;
+  border:1px solid var(--line);border-radius:var(--r-m);background:var(--bg);
+  transition:background .15s,box-shadow .15s;
+}
+.mode b{font-weight:700;font-size:.92rem}
+.mode span{font-size:.76rem;color:var(--ink-3);line-height:1.3}
+.mode:hover{background:var(--panel-2)}
+.mode[aria-pressed="true"]{background:var(--panel);box-shadow:0 0 0 2px var(--ink) inset}
+.mode[aria-pressed="true"] span{color:var(--ink-2)}
+.mnote{font-size:.84rem;color:var(--ink-2);padding:12px 14px;border:1px dashed var(--line);border-radius:var(--r-m)}
+
+.names{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.names label{display:grid;gap:5px;min-width:0}
+.names .lbl{display:flex;align-items:center;gap:7px}
+.names .m0{--c:var(--p1)}
+.names .m1{--c:var(--p2)}
+input[type="text"]{
+  height:44px;padding:0 12px;border-radius:var(--r-s);border:1px solid var(--line);
+  background:var(--bg);width:100%;min-width:0;
+}
+input[type="text"]:focus{border-color:var(--ink-3)}
+
+.seg{position:relative;display:flex;gap:5px;flex-wrap:wrap}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg label{
+  min-height:40px;padding:0 15px;display:inline-flex;align-items:center;justify-content:center;
+  border:1px solid var(--line);border-radius:var(--r-s);background:var(--bg);
+  cursor:pointer;font-weight:600;font-size:.88rem;transition:background .15s,color .15s,border-color .15s;
+}
+.seg label:hover{background:var(--panel-2)}
+.seg input:checked+label{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.seg input:focus-visible+label{outline:2px solid var(--ink);outline-offset:2px}
+
+details.rules{font-size:.85rem;color:var(--ink-2);border-top:1px solid var(--line-2);padding-top:10px}
+details.rules summary{cursor:pointer;font-weight:600;color:var(--ink);padding:2px 0}
+details.rules ul{margin:8px 0 0;padding-left:18px;display:grid;gap:4px}
+
+/* --- carga --- */
+.spin{width:26px;height:26px;border-radius:50%;border:2.5px solid var(--line);border-top-color:var(--ink);animation:rot .9s linear infinite}
+@keyframes rot{to{transform:rotate(360deg)}}
+
+/* --- resultado final --- */
+.score2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sbox{
+  --c:var(--p1);--c-ink:var(--p1-ink);
+  border:1px solid var(--line);border-top:3px solid var(--c);border-radius:var(--r-m);
+  padding:12px 14px;display:grid;gap:3px;min-width:0;background:var(--bg);
+}
+.sbox.p1{--c:var(--p2);--c-ink:var(--p2-ink)}
+.sbox .n{display:flex;align-items:center;gap:7px;font-weight:700;min-width:0;font-size:.9rem}
+.sbox .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
+.sbox .big{font:800 1.9rem/1.1 var(--f-display);font-stretch:118%;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.sbox.win{background:var(--c);color:var(--c-ink);border-color:var(--c)}
+.sbox.win .mark{background:var(--c-ink)}
+.sbox ul{margin:0;padding:0;list-style:none;font-size:.8rem;color:var(--ink-2);display:grid;gap:1px}
+.sbox.win ul{color:inherit;opacity:.9}
+details.log{border-top:1px solid var(--line-2);padding-top:12px}
+details.log summary{cursor:pointer;font:500 .72rem/1.2 var(--f-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
+.tablewrap{overflow:auto;max-height:220px;border:1px solid var(--line);border-radius:var(--r-s);margin-top:10px}
+table{width:100%;border-collapse:collapse;font-size:.8rem}
+th,td{padding:6px 10px;text-align:left;border-bottom:1px solid var(--line-2);white-space:nowrap}
+th{position:sticky;top:0;background:var(--panel);font:500 .64rem/1 var(--f-mono);letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3)}
+td.no{color:var(--warn)}
+tr:last-child td{border-bottom:0}
+
+/* ============================================================
+   6. Adaptación a pantallas pequeñas
+   ============================================================ */
+@media (max-width:760px){
+  #app{padding:8px 10px calc(8px + env(safe-area-inset-bottom,0px));gap:8px}
+  .hud{grid-template-columns:1fr 1fr;grid-template-areas:"a b" "p p";gap:8px}
+  #card0{grid-area:a}#card1{grid-area:b}.prompt{grid-area:p}
+  .pcard{padding:8px 11px}
+  .pscore{font-size:1.6rem}
+  .cname{min-height:1.6em;font-size:1.3rem}
+  .timer{width:min(250px,80%)}
+  .sheet{padding:20px;border-radius:var(--r-l)}
+  .optbox{grid-template-columns:1fr 1fr;bottom:10px}
+  .turncard,.panelbox{bottom:10px}
+  .coords{display:none}
+}
+@media (max-width:520px){
+  .sheet{padding:16px;gap:13px}
+  #setup{gap:14px}
+  .cfg{gap:12px}
+  .cats{gap:6px}
+  .cat{padding:8px 9px}
+  .cat b{font-size:.82rem}
+  .cat span{display:none}
+  .mode{padding:7px 10px}
+  .mode b{font-size:.86rem}
+  .mode span{font-size:.72rem;line-height:1.25}
+  input[type="text"]{height:40px}
+  .seg label{min-height:36px;padding:0 12px;font-size:.84rem}
+  .names{gap:7px}
+  .names .lbl{font-size:.6rem}
+  .hintp{font-size:.76rem}
+  .score2{grid-template-columns:1fr}
+  .optbox{grid-template-columns:1fr}
+  .opt{min-height:48px}
+  .ptag{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.01ms!important;transition-duration:.01ms!important}
+  .spin{animation-duration:2.4s!important}
+}
+
+::selection{background:var(--p2);color:var(--p2-ink)}
+input{caret-color:var(--pc)}
+.modal{scrollbar-color:var(--ink-3) var(--panel);overscroll-behavior:contain}
+input[type="text"]{font-size:16px}
+.btn,.dbtn,.seg label,.mode,.cat{min-height:44px}
+.zoomer button{width:40px;height:40px}
+.dbtn.icon{width:44px}
+.dbtn.icon svg,.zoomer button svg{width:18px;height:18px;flex:none}
+.lbl,.names .lbl,.kicker,.tc-kicker,.bet span,.coords,.dbtn b{font-size:.72rem;line-height:1.4}
+#load-file .lbl{text-transform:none}
+@media(max-width:999px){
+  .stage{display:grid;grid-template-rows:minmax(160px,1fr) auto;overflow:auto;align-content:start}
+  #globe{position:relative;grid-row:1;min-height:160px}
+  .turncard,.optbox,.panelbox{position:relative;grid-row:2;left:auto;right:auto;top:auto;bottom:auto;transform:none;width:100%;max-width:100%;margin:6px 0 0}
+  .optbox{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .opt{padding:10px;overflow-wrap:anywhere}
+  .dock{flex-wrap:wrap}
+}
+@media(max-width:520px){
+  .hud{gap:5px}.pcard{padding:7px 9px}.pscore{font-size:1.5rem}
+  .cname{font-size:1.1rem;min-height:0}.say{min-height:0;font-size:.8rem}
+  .dgrp{flex-wrap:wrap;justify-content:center}.dbtn{padding:0 8px;font-size:.8rem}
+  .stage{grid-template-rows:minmax(140px,1fr) auto}#globe{min-height:140px}
+  .dgrp .dbtn b{display:none}
+}
+@media(max-width:999px) and (max-height:480px){
+  html,body{height:auto;min-height:100%;overflow-y:auto}
+  #app{height:auto;min-height:100dvh;grid-template-rows:auto auto auto}
+  .stage{min-height:360px;grid-template-rows:200px auto;overflow:visible}
+  #globe{height:200px;min-height:200px}
+  .modal{place-items:start center}
+}
+@media(prefers-reduced-motion:reduce){.spin{animation:none!important}}
+</style>
+</head>
+<body>
+
+<div id="app" data-phase="loading" data-active="">
+  <header class="hud">
+    <section class="pcard" id="card0" aria-label="Jugador 1">
+      <span class="mark m0" aria-hidden="true"></span>
+      <span class="pname" id="pn0">Jugador 1</span>
+      <span class="ptag" id="pt0" hidden>Turno</span>
+      <span class="pscore" id="ps0">0</span>
+      <span class="pmeta" id="pm0">0/10</span>
+    </section>
+
+    <section class="prompt">
+      <p class="kicker" id="kick">Duelo de países</p>
+      <h1 class="cname" id="cname">—</h1>
+      <div class="timer" id="timer" hidden>
+        <span class="mult" id="mult" hidden>×2</span>
+        <div class="bar"><i id="tfill"></i></div>
+        <span id="tnum">30,0 s</span>
+      </div>
+      <p class="say" id="say" aria-live="polite"></p>
+    </section>
+
+    <section class="pcard" id="card1" aria-label="Jugador 2">
+      <span class="mark m1" aria-hidden="true"></span>
+      <span class="pname" id="pn1">Jugador 2</span>
+      <span class="ptag" id="pt1" hidden>Turno</span>
+      <span class="pscore" id="ps1">0</span>
+      <span class="pmeta" id="pm1">0/10</span>
+    </section>
+  </header>
+
+  <main class="stage" id="stage">
+    <canvas id="globe" tabindex="0" role="img"
+      aria-label="Globo terráqueo interactivo. Arrastra para girar, rueda o pellizca para acercar, toca para elegir un país."></canvas>
+    <div class="coords" id="coords" aria-hidden="true"></div>
+    <div class="zoomer" role="group" aria-label="Vista del globo">
+      <button type="button" data-z="in" aria-label="Acercar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+      <button type="button" data-z="out" aria-label="Alejar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+      <button type="button" data-z="reset" aria-label="Ver el mundo entero"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18"/></svg></button>
+    </div>
+    <div class="turncard" id="turncard" hidden></div>
+    <div class="panelbox" id="panel" hidden></div>
+    <div class="optbox" id="optbox" role="group" aria-label="Opciones de respuesta" hidden></div>
+  </main>
+
+  <footer class="dock" id="dock" hidden>
+    <div class="dgrp" role="group" aria-label="Ayudas">
+      <button class="dbtn" id="bHint" type="button">Pista</button>
+      <button class="dbtn" id="bPass" type="button">Pasar</button>
+    </div>
+    <div class="dgrp" role="group" aria-label="Sesión">
+      <button class="dbtn icon" id="bPause" type="button" aria-label="Pausa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><path d="M7 5h3v14H7zM14 5h3v14h-3z"/></svg></button>
+      <button class="dbtn icon" id="bSnd" type="button" aria-pressed="true" aria-label="Sonido"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m11 5-5 4H3v6h3l5 4zM15 8a6 6 0 0 1 0 8M18 5a10 10 0 0 1 0 14"/></svg></button>
+    </div>
+  </footer>
+
+  <!-- Carga del mapa -->
+  <div class="modal" id="m-load">
+    <div class="sheet">
+      <div class="brand" aria-hidden="true">Geoduelo</div>
+      <div class="row" id="load-wait" style="align-items:center;gap:14px">
+        <div class="spin" aria-hidden="true"></div>
+        <p class="lead">Cargando el mundo…</p>
+      </div>
+      <div id="load-err" hidden style="display:grid;gap:12px">
+        <p class="lead" id="load-msg">No se pudo cargar el mapa.</p>
+        <div id="load-file" hidden style="display:grid;gap:8px">
+          <label class="lbl" for="mapfile">Cargar un mapa propio (TopoJSON o GeoJSON de países)</label>
+          <input id="mapfile" type="file" accept=".json,.geojson,.topojson,application/json">
+        </div>
+        <div class="row"><button class="btn primary" id="bRetry" type="button">Reintentar</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Configuración: primero el juego, después los ajustes -->
+  <div class="modal" id="m-menu" role="dialog" aria-modal="true" aria-label="Configurar Geoduelo" hidden>
+    <div class="sheet wide">
+      <div class="brand">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"/><ellipse cx="12" cy="12" rx="4.2" ry="10"/><path d="M2 12h20M4 7h16M4 17h16"/>
+        </svg>
+        Geoduelo
+      </div>
+      <p class="lead" style="margin-top:-6px">Dos jugadores, un globo y once formas de preguntar geografía.</p>
+
+      <p class="hintp" id="account-note">Duelo local para dos personas en el mismo dispositivo.</p>
+      <form id="setup" autocomplete="off">
+        <div class="cfg">
+          <fieldset>
+            <legend class="lbl">Qué se juega</legend>
+            <div class="cats" id="cats" role="group" aria-label="Categoría de juego"></div>
+            <div class="modes" id="modes" role="group" aria-label="Tipo de pregunta"></div>
+          </fieldset>
+          <details class="rules">
+            <summary>Cómo se puntúa</summary>
+            <ul>
+              <li>Cada turno vale entre 60 y 160 puntos: 60 base más hasta 100 según la rapidez.</li>
+              <li>Antes de ver la pregunta puedes arriesgar. ×2 duplica el acierto y resta 30 si fallas; ×3 lo triplica y resta 60.</li>
+              <li>Al buscar en el globo tienes 3 intentos. Cada fallo reduce el valor del acierto.</li>
+              <li>En las preguntas con opciones hay un solo intento. La pista 50/50 descarta dos respuestas (−15).</li>
+              <li>Si fallas, el rival hereda la pregunta con 6 segundos y un intento: es el robo. Lo robado no da racha.</li>
+              <li>Lo que falles vuelve a aparecer más adelante como repaso, y entonces vale un 25 % más.</li>
+              <li>Distancias: aciertas si tu estimación queda dentro del margen (20, 12 o 6 % según la dificultad).</li>
+              <li>Husos horarios: se calculan con la hora y el horario de verano vigentes hoy.</li>
+              <li>Ordenar países: ganas puntos parciales según cuántos dejes en su lugar.</li>
+              <li>Tras cada fallo ves a cuántos kilómetros estabas y en qué dirección.</li>
+              <li>La pista de zona resta 30 puntos. Acertar varias veces seguidas da hasta +50 de racha.</li>
+              <li>En cada ronda los dos elementos son de dificultad parecida, para que sea justo.</li>
+            </ul>
+          </details>
+        </div>
+
+        <div class="cfg">
+          <div class="names">
+            <label for="n0"><span class="lbl"><span class="mark m0" aria-hidden="true"></span>Jugador 1</span>
+              <input type="text" id="n0" maxlength="14" value="Jugador 1"></label>
+            <label for="n1"><span class="lbl"><span class="mark m1" aria-hidden="true" style="--c:var(--p2)"></span>Jugador 2</span>
+              <input type="text" id="n1" maxlength="14" value="Jugador 2"></label>
+          </div>
+
+          <fieldset>
+            <legend class="lbl">Rondas</legend>
+            <div class="seg">
+              <input type="radio" name="rounds" id="r5" value="5"><label for="r5">5</label>
+              <input type="radio" name="rounds" id="r10" value="10" checked><label for="r10">10</label>
+              <input type="radio" name="rounds" id="r15" value="15"><label for="r15">15</label>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend class="lbl">Tiempo por turno</legend>
+            <div class="seg">
+              <input type="radio" name="limit" id="t20" value="20"><label for="t20">20 s</label>
+              <input type="radio" name="limit" id="t30" value="30" checked><label for="t30">30 s</label>
+              <input type="radio" name="limit" id="t45" value="45"><label for="t45">45 s</label>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend class="lbl">Dificultad</legend>
+            <div class="seg">
+              <input type="radio" name="level" id="dF" value="facil"><label for="dF">Fácil</label>
+              <input type="radio" name="level" id="dM" value="medio" checked><label for="dM">Medio</label>
+              <input type="radio" name="level" id="dD" value="dificil"><label for="dD">Difícil</label>
+            </div>
+            <p class="hintp" id="lvlhint"></p>
+          </fieldset>
+
+          <button class="btn primary" type="submit" style="min-height:50px;font-size:.98rem">Empezar duelo</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Pausa -->
+  <div class="modal" id="m-pause" role="dialog" aria-modal="true" aria-label="Partida en pausa" hidden>
+    <div class="sheet">
+      <h2>En pausa</h2>
+      <p class="lead">El país está oculto y el tiempo no corre.</p>
+      <div class="row"><button class="btn primary" id="bResume" type="button">Continuar</button></div>
+    </div>
+  </div>
+
+  <!-- Final -->
+  <div class="modal" id="m-final" role="dialog" aria-modal="true" aria-label="Resultado del duelo" hidden>
+    <div class="sheet" id="final-sheet"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* ============================================================
+   1. Utilidades
+   ============================================================ */
+const $=s=>document.querySelector(s);
+const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+const norm180=l=>(((l+540)%360)+360)%360-180;
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const REDUCE=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const KM=6371, RAD=Math.PI/180, TAU=Math.PI*2;
+const fmtInt={format:n=>String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g,'\u202f')};
+const fmtSec=s=>s.toFixed(1).replace('.',',')+' s';
+const nrm=s=>String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+const pad2=n=>String(n).padStart(2,'0');
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+/* ============================================================
+   2. Datos
+   ============================================================ */
+/* --- nombres de país en español --- */
+const ES_RAW={
+'Afghanistan':'Afganistán','Albania':'Albania','Algeria':'Argelia','Andorra':'Andorra','Angola':'Angola',
+'Antigua and Barb.':'Antigua y Barbuda','Antigua and Barbuda':'Antigua y Barbuda','Argentina':'Argentina','Armenia':'Armenia',
+'Australia':'Australia','Austria':'Austria','Azerbaijan':'Azerbaiyán','Bahamas':'Bahamas','The Bahamas':'Bahamas','Bahrain':'Baréin',
+'Bangladesh':'Bangladés','Barbados':'Barbados','Belarus':'Bielorrusia','Belgium':'Bélgica','Belize':'Belice','Benin':'Benín',
+'Bhutan':'Bután','Bolivia':'Bolivia','Bosnia and Herz.':'Bosnia y Herzegovina','Bosnia and Herzegovina':'Bosnia y Herzegovina',
+'Botswana':'Botsuana','Brazil':'Brasil','Brunei':'Brunéi','Brunei Darussalam':'Brunéi','Bulgaria':'Bulgaria','Burkina Faso':'Burkina Faso',
+'Burundi':'Burundi','Cambodia':'Camboya','Cameroon':'Camerún','Canada':'Canadá','Cape Verde':'Cabo Verde',
+'Central African Rep.':'República Centroafricana','Central African Republic':'República Centroafricana','Chad':'Chad','Chile':'Chile',
+'China':'China','Colombia':'Colombia','Comoros':'Comoras','Congo':'República del Congo','Republic of the Congo':'República del Congo',
+'Dem. Rep. Congo':'República Democrática del Congo','Democratic Republic of the Congo':'República Democrática del Congo',
+'Costa Rica':'Costa Rica',"Côte d'Ivoire":'Costa de Marfil','Ivory Coast':'Costa de Marfil','Croatia':'Croacia','Cuba':'Cuba',
+'Cyprus':'Chipre','Czechia':'Chequia','Czech Rep.':'Chequia','Czech Republic':'Chequia','Denmark':'Dinamarca','Djibouti':'Yibuti',
+'Dominica':'Dominica','Dominican Rep.':'República Dominicana','Dominican Republic':'República Dominicana','East Timor':'Timor Oriental',
+'Timor-Leste':'Timor Oriental','Ecuador':'Ecuador','Egypt':'Egipto','El Salvador':'El Salvador','Eq. Guinea':'Guinea Ecuatorial',
+'Equatorial Guinea':'Guinea Ecuatorial','Eritrea':'Eritrea','Estonia':'Estonia','eSwatini':'Esuatini','Swaziland':'Esuatini','Ethiopia':'Etiopía',
+'Falkland Is.':'Islas Malvinas','Falkland Islands':'Islas Malvinas','Fiji':'Fiyi','Finland':'Finlandia','France':'Francia',
+'Fr. S. Antarctic Lands':'Tierras Australes Francesas','Gabon':'Gabón','Gambia':'Gambia','The Gambia':'Gambia','Georgia':'Georgia',
+'Germany':'Alemania','Ghana':'Ghana','Greece':'Grecia','Greenland':'Groenlandia','Grenada':'Granada','Guatemala':'Guatemala',
+'Guinea':'Guinea','Guinea-Bissau':'Guinea-Bisáu','Guinea Bissau':'Guinea-Bisáu','Guyana':'Guyana','Haiti':'Haití','Honduras':'Honduras',
+'Hungary':'Hungría','Iceland':'Islandia','India':'India','Indonesia':'Indonesia','Iran':'Irán','Islamic Republic of Iran':'Irán','Iraq':'Irak',
+'Ireland':'Irlanda','Israel':'Israel','Italy':'Italia','Jamaica':'Jamaica','Japan':'Japón','Jordan':'Jordania','Kazakhstan':'Kazajistán',
+'Kenya':'Kenia','Kiribati':'Kiribati','Kosovo':'Kosovo','Kuwait':'Kuwait','Kyrgyzstan':'Kirguistán','Laos':'Laos','Lao PDR':'Laos',
+'Latvia':'Letonia','Lebanon':'Líbano','Lesotho':'Lesoto','Liberia':'Liberia','Libya':'Libia','Liechtenstein':'Liechtenstein',
+'Lithuania':'Lituania','Luxembourg':'Luxemburgo','Macedonia':'Macedonia del Norte','North Macedonia':'Macedonia del Norte',
+'Madagascar':'Madagascar','Malawi':'Malaui','Malaysia':'Malasia','Maldives':'Maldivas','Mali':'Malí','Malta':'Malta','Mauritania':'Mauritania',
+'Mauritius':'Mauricio','Mexico':'México','Moldova':'Moldavia','Republic of Moldova':'Moldavia','Monaco':'Mónaco','Mongolia':'Mongolia',
+'Montenegro':'Montenegro','Morocco':'Marruecos','Mozambique':'Mozambique','Myanmar':'Birmania (Myanmar)','Burma':'Birmania (Myanmar)',
+'Namibia':'Namibia','Nepal':'Nepal','Netherlands':'Países Bajos','New Caledonia':'Nueva Caledonia','New Zealand':'Nueva Zelanda',
+'Nicaragua':'Nicaragua','Niger':'Níger','Nigeria':'Nigeria','North Korea':'Corea del Norte','Dem. Rep. Korea':'Corea del Norte',
+'N. Cyprus':'Chipre del Norte','Northern Cyprus':'Chipre del Norte','Norway':'Noruega','Oman':'Omán','Pakistan':'Pakistán',
+'Palestine':'Palestina','Panama':'Panamá','Papua New Guinea':'Papúa Nueva Guinea','Paraguay':'Paraguay','Peru':'Perú','Philippines':'Filipinas',
+'Poland':'Polonia','Portugal':'Portugal','Puerto Rico':'Puerto Rico','Qatar':'Catar','Romania':'Rumanía','Russia':'Rusia',
+'Russian Federation':'Rusia','Rwanda':'Ruanda','Saudi Arabia':'Arabia Saudita','Senegal':'Senegal','Serbia':'Serbia','Republic of Serbia':'Serbia',
+'Seychelles':'Seychelles','Sierra Leone':'Sierra Leona','Singapore':'Singapur','Slovakia':'Eslovaquia','Slovenia':'Eslovenia',
+'Solomon Is.':'Islas Salomón','Solomon Islands':'Islas Salomón','Somalia':'Somalia','Somaliland':'Somalilandia','South Africa':'Sudáfrica',
+'South Korea':'Corea del Sur','Korea':'Corea del Sur','S. Sudan':'Sudán del Sur','South Sudan':'Sudán del Sur','Spain':'España',
+'Sri Lanka':'Sri Lanka','Sudan':'Sudán','Suriname':'Surinam','Sweden':'Suecia','Switzerland':'Suiza','Syria':'Siria','Syrian Arab Republic':'Siria',
+'Taiwan':'Taiwán','Tajikistan':'Tayikistán','Tanzania':'Tanzania','United Republic of Tanzania':'Tanzania','Thailand':'Tailandia','Togo':'Togo',
+'Tonga':'Tonga','Trinidad and Tobago':'Trinidad y Tobago','Tunisia':'Túnez','Turkey':'Turquía','Turkmenistan':'Turkmenistán','Uganda':'Uganda',
+'Ukraine':'Ucrania','United Arab Emirates':'Emiratos Árabes Unidos','United Kingdom':'Reino Unido','United States of America':'Estados Unidos',
+'United States':'Estados Unidos','Uruguay':'Uruguay','Uzbekistan':'Uzbekistán','Vanuatu':'Vanuatu','Vatican':'Ciudad del Vaticano',
+'Venezuela':'Venezuela','Vietnam':'Vietnam','Viet Nam':'Vietnam','W. Sahara':'Sáhara Occidental','Western Sahara':'Sáhara Occidental',
+'Yemen':'Yemen','Zambia':'Zambia','Zimbabwe':'Zimbabue'
+};
+const ES={}; for(const k in ES_RAW) ES[nrm(k)]=ES_RAW[k];
+const esName=en=>ES[nrm(en)]||en;
+const EXCL=new Set(['antarctica','fr s antarctic lands','french southern and antarctic lands','n cyprus','northern cyprus','somaliland',
+  'falkland is','falkland islands','new caledonia','puerto rico','w sahara','western sahara']);
+const LEVELS={facil:50,medio:110,dificil:9999};
+
+/* --- carga de librerías --- */
+const D3_URLS=['./vendor/d3.v3.min.js'];
+
+function loadScript(urls){
+  return new Promise((res,rej)=>{
+    let i=0;
+    (function next(){
+      if(i>=urls.length) return rej(new Error('script'));
+      const s=document.createElement('script');
+      s.src=urls[i++]; s.async=true;
+      const timeout=setTimeout(()=>{s.remove();next();},12000);
+      s.onload=()=>{clearTimeout(timeout);res();};
+      s.onerror=()=>{clearTimeout(timeout);s.remove();next();};
+      document.head.appendChild(s);
+    })();
+  });
+}
+
+/* ============================================================
+   3. Geometría y globo
+   ============================================================ */
+function topoToFeatures(topo){
+  const tf=topo.transform;
+  const arcs=topo.arcs.map(a=>{
+    let x=0,y=0;
+    return a.map(p=>{
+      if(tf){x+=p[0];y+=p[1];return [x*tf.scale[0]+tf.translate[0],y*tf.scale[1]+tf.translate[1]];}
+      return [p[0],p[1]];
+    });
+  });
+  const ringOf=idxs=>{
+    const out=[];
+    idxs.forEach(i=>{
+      let a=i<0?arcs[~i].slice().reverse():arcs[i];
+      if(out.length) a=a.slice(1);
+      for(const p of a) out.push(p);
+    });
+    return out;
+  };
+  const geomOf=g=>{
+    if(g.type==='Polygon') return {type:'Polygon',coordinates:g.arcs.map(ringOf)};
+    if(g.type==='MultiPolygon') return {type:'MultiPolygon',coordinates:g.arcs.map(poly=>poly.map(ringOf))};
+    return null;
+  };
+  const keys=Object.keys(topo.objects);
+  const pickKey=topo.objects.countries?'countries':(topo.objects.world?'world':keys[0]);
+  const obj=topo.objects[pickKey];
+  const geoms=obj.type==='GeometryCollection'?obj.geometries:[obj];
+  return geoms.map(g=>({type:'Feature',id:g.id,properties:g.properties||{},geometry:geomOf(g)})).filter(f=>f.geometry);
+}
+function anyToFeatures(json){
+  if(json&&json.type==='Topology') return topoToFeatures(json);
+  if(json&&json.type==='FeatureCollection') return json.features.filter(f=>f.geometry&&/Polygon/.test(f.geometry.type));
+  throw new Error('formato');
+}
+function findTopo(){
+  const D=window.Datamap; if(!D||!D.prototype) return null;
+  let t=D.prototype.worldTopo;
+  if(typeof t==='string'){try{t=JSON.parse(t);}catch(e){t=null;}}
+  if(t&&t.type==='Topology') return t;
+  for(const k in D.prototype){
+    const v=D.prototype[k];
+    if(v&&typeof v==='object'&&v.type==='Topology') return v;
+  }
+  return null;
+}
+const nameOf=f=>{const p=f.properties||{};return p.name||p.NAME||p.ADMIN||p.name_en||p.NAME_EN||String(f.id||'');};
+
+const ringsOf=g=>{const o=[];if(g.type==='Polygon')g.coordinates.forEach(r=>o.push(r));else if(g.type==='MultiPolygon')g.coordinates.forEach(p=>p.forEach(r=>o.push(r)));return o;};
+function rewind(f){
+  const g=f.geometry; if(!g) return;
+  if(d3.geo.area(f)>2*Math.PI){
+    const rev=rs=>rs.map(r=>r.slice().reverse());
+    if(g.type==='Polygon') g.coordinates=rev(g.coordinates);
+    else g.coordinates=g.coordinates.map(rev);
+  }
+}
+function mainPolygon(g){
+  if(g.type==='Polygon') return g;
+  let best=null,ba=-1;
+  g.coordinates.forEach(c=>{const pg={type:'Polygon',coordinates:c};const a=d3.geo.area(pg);if(a>ba){ba=a;best=pg;}});
+  return best;
+}
+function maxDist(c,rings){
+  let m=0;
+  for(const r of rings) for(const v of r){const d=d3.geo.distance(c,v);if(d>m)m=d;}
+  return m;
+}
+function densify(rings){
+  const pts=[];
+  for(const r of rings){
+    for(let i=0;i<r.length;i++){
+      const a=r[i]; pts.push(a);
+      const b=r[i+1]; if(!b) continue;
+      const d=d3.geo.distance(a,b);
+      if(d>0.025){
+        const n=Math.ceil(d/0.025), it=d3.geo.interpolate(a,b);
+        for(let k=1;k<n;k++) pts.push(it(k/n));
+      }
+    }
+  }
+  return pts;
+}
+function prepare(raw){
+  const out=[];
+  raw.forEach(f=>{
+    if(!f.geometry) return;
+    rewind(f);
+    const en=nameOf(f);
+    f.en=en; f.es=esName(en);
+    const mp=mainPolygon(f.geometry);
+    f._ctr=d3.geo.centroid(mp);
+    f._mrad=maxDist(f._ctr,ringsOf(mp));
+    f._rad=maxDist(f._ctr,ringsOf(f.geometry));
+    f._area=d3.geo.area(f);
+    f._km2=f._area*KM*KM;
+    f._tol=f._km2<40000?150:(f._km2<150000?70:0);
+    f._own=undefined;
+    f._ok=!EXCL.has(nrm(en));
+    out.push(f);
+  });
+  out.forEach((f,i)=>f._i=i);
+  return out;
+}
+function nearest(pt,f){
+  if(!f._dense) f._dense=densify(ringsOf(f.geometry));
+  let best=Infinity,bp=null;
+  for(const v of f._dense){const d=d3.geo.distance(pt,v);if(d<best){best=d;bp=v;}}
+  return {km:best*KM,pt:bp};
+}
+function bearing(a,b){
+  const l1=a[0]*RAD,p1=a[1]*RAD,l2=b[0]*RAD,p2=b[1]*RAD;
+  const y=Math.sin(l2-l1)*Math.cos(p2);
+  const x=Math.cos(p1)*Math.sin(p2)-Math.sin(p1)*Math.cos(p2)*Math.cos(l2-l1);
+  return (Math.atan2(y,x)/RAD+360)%360;
+}
+const DIRS=['norte','noreste','este','sureste','sur','suroeste','oeste','noroeste'];
+const compass=b=>DIRS[Math.round(b/45)%8];
+const kmText=km=>km<100?Math.round(km)+' km':fmtInt.format(Math.round(km/10)*10)+' km';
+function dest(c,brg,d){
+  const p1=c[1]*RAD,l1=c[0]*RAD;
+  const p2=Math.asin(Math.sin(p1)*Math.cos(d)+Math.cos(p1)*Math.sin(d)*Math.cos(brg));
+  const l2=l1+Math.atan2(Math.sin(brg)*Math.sin(d)*Math.cos(p1),Math.cos(d)-Math.sin(p1)*Math.sin(p2));
+  return [norm180(l2/RAD),p2/RAD];
+}
+
+/* ============================================================
+   4. Tipos de pregunta — registro único
+   Cada entrada describe el juego; mkItem() construye el turno.
+   ============================================================ */
+const KINDS={
+  country:{cat:'ubicar',name:'Países',       desc:'Encuentra el país en el globo'},
+  cap:    {cat:'ubicar',name:'Capitales',    desc:'Ubica la ciudad capital'},
+  place:  {cat:'ubicar',name:'Lugares',      desc:'Montañas, ríos, mares y monumentos'},
+  who:    {cat:'elegir',name:'¿Qué país es?',desc:'Reconoce el país resaltado'},
+  cap4:   {cat:'elegir',name:'Capital del país',desc:'Elige la capital del país resaltado'},
+  cur:    {cat:'elegir',name:'Moneda oficial',desc:'Elige la moneda del país resaltado'},
+  lang:   {cat:'elegir',name:'Idioma oficial',desc:'Elige el idioma oficial del país'},
+  falso:  {cat:'elegir',name:'Detecta el error',desc:'Señala la afirmación falsa'},
+  dist:   {cat:'calcular',name:'Distancias', desc:'Estima los kilómetros entre dos ciudades'},
+  tz:     {cat:'calcular',name:'Huso horario',desc:'Calcula la hora en otra ciudad'},
+  rank:   {cat:'calcular',name:'Ordenar países',desc:'Por superficie o población'}
+};
+const CATS=[
+  {id:'ubicar',  name:'Ubicar',  desc:'Toca el globo'},
+  {id:'elegir',  name:'Elegir',  desc:'Cuatro opciones'},
+  {id:'calcular',name:'Calcular',desc:'Estima y ordena'},
+  {id:'mixto',   name:'Mixto',   desc:'Todo mezclado'}
+];
+const MIXED_KINDS=['country','cap','place','who','cap4','cur','lang','falso','dist','tz','rank'];
+
+/* ============================================================
+   5. Estado
+   ============================================================ */
+const mkPlayer=name=>({name,score:0,streak:0,found:0,first:0,times:[],steals:0});
+const G={
+  phase:'loading',
+  players:[mkPlayer('Jugador 1'),mkPlayer('Jugador 2')],
+  settings:{rounds:10,limit:30,level:'medio',mode:'country'},
+  pick:{cat:'ubicar',mode:'country'},
+  startFirst:0,turns:[],ti:-1,cur:null,log:[],marks:[],say:'',sayBad:false,viewMap:false,
+  review:[],pausedFrom:null
+};
+let feats=[], ELIG=[];
+let proj=null, path=null, grat=null;
+const app=$('#app'), stage=$('#stage'), canvas=$('#globe');
+const ctx=canvas.getContext('2d');
+let W=1,H=1,DPR=1,baseR=100,T={},dirty=true;
+const view={lon:-70,lat:12,zoom:1};
+const ZMIN=0.75, ZMAX=8;
+let anim=null, inertia=null, drag=null, pinch=null, hoverPos=null, hoverDirty=false, hoverIdx=-1;
+let camY=0, camTarget=0;
+const P=new Map();
+
+/* ============================================================
+   6. Tema y dibujo del globo
+   ============================================================ */
+function readTheme(){
+  const cs=getComputedStyle(document.documentElement);
+  const g=n=>cs.getPropertyValue(n).trim();
+  T={
+    oceanA:g('--ocean-a'),oceanMid:g('--ocean-mid'),oceanB:g('--ocean-b'),
+    land:g('--land'),landHi:g('--land-hi'),landLine:g('--land-line'),
+    grat:g('--grat'),rim:g('--rim'),
+    haloA:g('--halo-a'),haloMid:g('--halo-mid'),haloB:g('--halo-b'),
+    limbA:g('--limb-a'),limbB:g('--limb-b'),spec:g('--spec'),
+    hover:g('--hover'),ringFill:g('--ring-fill'),ringLine:g('--ring-line'),
+    label:g('--label'),labelHalo:g('--label-halo'),
+    p:[g('--p1'),g('--p2')],warn:g('--warn'),good:g('--good'),panel:g('--panel')
+  };
+  dirty=true;
+}
+function resize(){
+  const r=canvas.getBoundingClientRect();
+  W=Math.max(1,r.width);H=Math.max(1,r.height);
+  DPR=Math.min(window.devicePixelRatio||1,matchMedia('(pointer:coarse)').matches?1.5:2);
+  canvas.width=Math.round(W*DPR);canvas.height=Math.round(H*DPR);
+  baseR=Math.min(W,H)/2*0.88;
+  camTarget=camOffsetFor(G.phase);
+  dirty=true;
+}
+function setProj(){
+  proj.scale(baseR*view.zoom).translate([W/2,H/2+camY]).rotate([-view.lon,-view.lat,0]);
+}
+const visible=pt=>d3.geo.distance([view.lon,view.lat],pt)<Math.PI/2-0.02;
+
+function marker(x,y,shape,color,r){
+  r=r||5.4;
+  ctx.save();ctx.translate(x,y);
+  ctx.shadowColor='rgba(6,18,30,.45)';ctx.shadowBlur=7;ctx.shadowOffsetY=2;
+  ctx.fillStyle=color;
+  ctx.beginPath();
+  if(shape===0) ctx.arc(0,0,r,0,TAU);
+  else{ctx.rotate(Math.PI/4);ctx.rect(-r*.8,-r*.8,r*1.6,r*1.6);}
+  ctx.fill();
+  ctx.shadowColor='transparent';ctx.shadowBlur=0;ctx.shadowOffsetY=0;
+  ctx.strokeStyle='rgba(255,255,255,.92)';ctx.lineWidth=1.7;ctx.stroke();
+  ctx.restore();
+}
+function label(text,x,y,dy){
+  ctx.font='700 13px "Hanken Grotesk",system-ui,sans-serif';
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.lineJoin='round';ctx.lineWidth=4.5;ctx.strokeStyle=T.labelHalo;
+  ctx.strokeText(text,x,y+dy);
+  ctx.fillStyle=T.label;ctx.fillText(text,x,y+dy);
+}
+
+function draw(now){
+  const cx=W/2, cy=H/2+camY;
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  ctx.clearRect(0,0,W,H);
+  setProj();
+  const R=proj.scale();
+
+  /* atmósfera */
+  let g=ctx.createRadialGradient(cx,cy,R*.9,cx,cy,R*1.17);
+  g.addColorStop(0,T.haloA);g.addColorStop(.45,T.haloMid);g.addColorStop(1,T.haloB);
+  ctx.fillStyle=g;ctx.beginPath();ctx.arc(cx,cy,R*1.17,0,TAU);ctx.fill();
+
+  /* océano */
+  g=ctx.createRadialGradient(cx-R*.38,cy-R*.44,R*.04,cx,cy,R*1.02);
+  g.addColorStop(0,T.oceanA);g.addColorStop(.6,T.oceanMid);g.addColorStop(1,T.oceanB);
+  ctx.fillStyle=g;ctx.beginPath();ctx.arc(cx,cy,R,0,TAU);ctx.fill();
+
+  ctx.save();
+  ctx.beginPath();ctx.arc(cx,cy,R,0,TAU);ctx.clip();
+
+  /* retícula */
+  ctx.beginPath();path(grat);
+  ctx.strokeStyle=T.grat;ctx.lineWidth=Math.max(.45,.6*Math.min(1,1.6/view.zoom));ctx.stroke();
+
+  /* tierra, fronteras, países ya jugados */
+  if(feats.length){
+    ctx.beginPath();feats.forEach(f=>path(f));
+    g=ctx.createLinearGradient(cx-R*.95,cy-R,cx+R*.6,cy+R);
+    g.addColorStop(0,T.landHi);g.addColorStop(1,T.land);
+    ctx.fillStyle=g;ctx.fill();
+    ctx.strokeStyle=T.landLine;ctx.lineWidth=Math.min(1.1,.4+view.zoom*.13);ctx.stroke();
+
+    feats.forEach(f=>{
+      if(f._own===undefined) return;
+      ctx.beginPath();path(f);
+      ctx.globalAlpha=.9;
+      ctx.fillStyle=f._own>=0?T.p[f._own]:T.land;
+      ctx.fill();
+      ctx.globalAlpha=1;
+      ctx.strokeStyle=f._own>=0?T.p[f._own]:T.landLine;
+      ctx.stroke();
+    });
+    if(hoverIdx>=0&&feats[hoverIdx]){
+      ctx.beginPath();path(feats[hoverIdx]);
+      ctx.fillStyle=T.hover;ctx.fill();
+      ctx.strokeStyle=T.labelHalo;ctx.lineWidth=1.4;ctx.stroke();
+    }
+  }
+
+  /* zona de pista */
+  const c=G.cur;
+  if(c&&c.ring&&(G.phase==='playing'||G.phase==='paused')){
+    ctx.beginPath();path(c.ring);ctx.fillStyle=T.ringFill;ctx.fill();
+    ctx.setLineDash([6,5]);ctx.strokeStyle=T.ringLine;ctx.lineWidth=1.5;ctx.stroke();ctx.setLineDash([]);
+  }
+
+  /* país resaltado en preguntas de opciones */
+  const ht=G.turns[G.ti];
+  if(ht&&ht.item.hl&&c&&(G.phase==='playing'||G.phase==='steal')){
+    const owner=(G.phase==='steal'&&c.steal)?c.steal.player:ht.player;
+    ctx.beginPath();path(ht.item.country);
+    ctx.globalAlpha=.45;ctx.fillStyle=T.p[owner];ctx.fill();ctx.globalAlpha=1;
+    ctx.strokeStyle=T.p[owner];ctx.lineWidth=2.2;ctx.stroke();
+  }
+
+  /* sombreado esférico: limbo + brillo especular */
+  g=ctx.createRadialGradient(cx-R*.32,cy-R*.38,R*.08,cx,cy,R*1.01);
+  g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(.62,'rgba(0,0,0,0)');
+  g.addColorStop(.86,T.limbA);g.addColorStop(1,T.limbB);
+  ctx.fillStyle=g;ctx.beginPath();ctx.arc(cx,cy,R,0,TAU);ctx.fill();
+
+  g=ctx.createRadialGradient(cx-R*.46,cy-R*.5,0,cx-R*.46,cy-R*.5,R*.6);
+  g.addColorStop(0,T.spec);g.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.fillStyle=g;ctx.beginPath();ctx.arc(cx,cy,R,0,TAU);ctx.fill();
+
+  ctx.restore();
+
+  /* borde del planeta */
+  ctx.beginPath();ctx.arc(cx,cy,R,0,TAU);
+  ctx.strokeStyle=T.rim;ctx.lineWidth=1.1;ctx.stroke();
+
+  /* marcas de intentos anteriores */
+  G.marks.forEach(m=>{
+    if(!visible(m.pt))return;
+    const s=proj(m.pt);if(s)marker(s[0],s[1],m.own<0?0:m.own,m.own<0?T.landLine:T.p[m.own],4.6);
+  });
+
+  /* ciudades de la pregunta (distancias y husos) */
+  const tp=G.turns[G.ti];
+  if(tp&&tp.item.pts&&c&&(G.phase==='playing'||G.phase==='result')){
+    const pts=tp.item.pts;
+    ctx.beginPath();path({type:'LineString',coordinates:[pts[0].pt,pts[1].pt]});
+    ctx.setLineDash([6,5]);ctx.strokeStyle=T.ringLine;ctx.lineWidth=1.5;ctx.stroke();ctx.setLineDash([]);
+    pts.forEach((q,i)=>{
+      if(!visible(q.pt))return;
+      const s=proj(q.pt);if(!s)return;
+      marker(s[0],s[1],i,T.p[tp.player]);
+      label(q.label,s[0],s[1],-19);
+    });
+  }
+
+  /* resultado del turno */
+  const t=G.turns[G.ti];
+  if(t&&c&&G.phase==='result'){
+    const f=t.item.country,res=c.result;
+    if(f&&res&&!res.ok){
+      ctx.beginPath();path(f);
+      ctx.globalAlpha=.3;ctx.fillStyle=T.warn;ctx.fill();ctx.globalAlpha=1;
+      ctx.strokeStyle=T.warn;ctx.lineWidth=2.2;ctx.stroke();
+    }
+    ctx.setLineDash([5,5]);ctx.strokeStyle=T.ringLine;ctx.lineWidth=1.3;
+    c.guesses.forEach(q=>{ctx.beginPath();path({type:'LineString',coordinates:[q.pt,q.near]});ctx.stroke();});
+    ctx.setLineDash([]);
+  }
+
+  /* intentos fallidos del turno en curso */
+  if(c&&(G.phase==='playing'||G.phase==='steal'||G.phase==='result'||G.phase==='paused')){
+    c.guesses.forEach(q=>{
+      if(q.ok||!visible(q.pt)) return;
+      const s=proj(q.pt);if(s) marker(s[0],s[1],q.p,T.p[q.p]);
+    });
+  }
+
+  /* pulso y etiqueta del objetivo */
+  if(t&&c&&G.phase==='result'&&t.item.ctr&&visible(t.item.ctr)){
+    const s=proj(t.item.ctr);
+    if(s){
+      const col=c.result&&c.result.ok?T.good:T.warn;
+      for(let i=0;i<2;i++){
+        const ph=((now/1100)+i*.5)%1;
+        ctx.globalAlpha=(1-ph)*.7;ctx.strokeStyle=col;ctx.lineWidth=2;
+        ctx.beginPath();ctx.arc(s[0],s[1],9+ph*52,0,TAU);ctx.stroke();
+      }
+      ctx.globalAlpha=1;
+      if(!t.item.country)marker(s[0],s[1],t.player,col);
+      label(t.item.label,s[0],s[1],t.item.country?24:22);
+    }
+  }
+}
+
+function hitAt(x,y){
+  const dx=x-W/2,dy=y-(H/2+camY),R=proj.scale();
+  if(dx*dx+dy*dy>R*R) return -2;
+  const px=x*DPR,py=y*DPR,cen=[view.lon,view.lat];
+  for(let i=feats.length-1;i>=0;i--){
+    const f=feats[i];
+    if(d3.geo.distance(cen,f._ctr)>Math.PI/2+f._rad+.05) continue;
+    ctx.beginPath();path(f);
+    if(ctx.isPointInPath(px,py)) return i;
+  }
+  return -1;
+}
+
+/* ============================================================
+   7. Vista y gestos
+   ============================================================ */
+function flyTo(lon,lat,zoom,ms){
+  zoom=clamp(zoom,ZMIN,ZMAX);lat=clamp(lat,-88,88);
+  if(REDUCE||!ms){view.lon=norm180(lon);view.lat=lat;view.zoom=zoom;anim=null;dirty=true;return;}
+  anim={t0:performance.now(),dur:ms,lon0:view.lon,lat0:view.lat,z0:view.zoom,dl:norm180(lon-view.lon),lat1:lat,z1:zoom};
+}
+const zoomFor=f=>clamp(.5/Math.sin(Math.max(f._mrad,.012)),1.15,7);
+
+function initPointer(){
+  const rel=e=>{const r=canvas.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top};};
+  canvas.addEventListener('pointerdown',e=>{
+    canvas.setPointerCapture(e.pointerId);
+    const p=rel(e);P.set(e.pointerId,p);anim=null;inertia=null;
+    if(P.size===1){drag={sx:p.x,sy:p.y,lx:p.x,ly:p.y,lt:e.timeStamp,t0:e.timeStamp,moved:0,vx:0,vy:0};}
+    else if(P.size===2){const [a,b]=[...P.values()];pinch={d:Math.hypot(a.x-b.x,a.y-b.y)||1,z:view.zoom};drag=null;}
+  });
+  canvas.addEventListener('pointermove',e=>{
+    const p=rel(e);
+    if(P.has(e.pointerId)){
+      P.set(e.pointerId,p);
+      if(pinch&&P.size>=2){
+        const [a,b]=[...P.values()];
+        view.zoom=clamp(pinch.z*Math.hypot(a.x-b.x,a.y-b.y)/pinch.d,ZMIN,ZMAX);dirty=true;
+      }else if(drag){
+        const dx=p.x-drag.lx,dy=p.y-drag.ly;drag.moved+=Math.abs(dx)+Math.abs(dy);
+        const k=(180/Math.PI)/(baseR*view.zoom);
+        view.lon=norm180(view.lon-dx*k);view.lat=clamp(view.lat+dy*k,-88,88);
+        const dtm=Math.max(1,e.timeStamp-drag.lt);
+        drag.vx=.8*drag.vx+.2*(-dx*k/dtm);drag.vy=.8*drag.vy+.2*(dy*k/dtm);
+        drag.lx=p.x;drag.ly=p.y;drag.lt=e.timeStamp;
+        if(drag.moved>6) canvas.classList.add('dragging');
+        hoverIdx=-1;dirty=true;
+      }
+    }else if(e.pointerType==='mouse'){hoverPos=p;hoverDirty=true;}
+  });
+  const up=(e,cancel)=>{
+    if(drag&&P.size===1&&!cancel){
+      const dt=e.timeStamp-drag.t0;
+      if(drag.moved<8&&dt<700) onGlobeClick(drag.sx,drag.sy);
+      else if(Math.hypot(drag.vx,drag.vy)>.01&&e.timeStamp-drag.lt<80&&!REDUCE) inertia={vx:drag.vx,vy:drag.vy};
+    }
+    P.delete(e.pointerId);
+    if(P.size<2){pinch=null;drag=null;}
+    if(P.size===0){drag=null;canvas.classList.remove('dragging');}
+  };
+  canvas.addEventListener('pointerup',e=>up(e,false));
+  canvas.addEventListener('pointercancel',e=>up(e,true));
+  canvas.addEventListener('lostpointercapture',e=>{if(P.has(e.pointerId))up(e,true);});
+  canvas.addEventListener('pointerleave',()=>{hoverPos=null;hoverIdx=-1;dirty=true;});
+  canvas.addEventListener('wheel',e=>{
+    e.preventDefault();anim=null;
+    view.zoom=clamp(view.zoom*Math.exp(-e.deltaY*(e.ctrlKey?.01:.0015)),ZMIN,ZMAX);dirty=true;
+  },{passive:false});
+  canvas.addEventListener('dblclick',e=>{
+    const r=canvas.getBoundingClientRect();
+    setProj();
+    const pt=proj.invert([e.clientX-r.left,e.clientY-r.top]);
+    if(pt&&!isNaN(pt[0]))flyTo(pt[0],pt[1],view.zoom*1.7,REDUCE?0:420);
+  });
+  canvas.addEventListener('keydown',e=>{
+    const s=10/view.zoom;let h=true;
+    if(e.key==='ArrowLeft')view.lon=norm180(view.lon-s);
+    else if(e.key==='ArrowRight')view.lon=norm180(view.lon+s);
+    else if(e.key==='ArrowUp')view.lat=clamp(view.lat+s,-88,88);
+    else if(e.key==='ArrowDown')view.lat=clamp(view.lat-s,-88,88);
+    else if(e.key==='+'||e.key==='=')view.zoom=clamp(view.zoom*1.25,ZMIN,ZMAX);
+    else if(e.key==='-')view.zoom=clamp(view.zoom/1.25,ZMIN,ZMAX);
+    else h=false;
+    if(h){e.preventDefault();dirty=true;}
+  });
+}
+
+/* ============================================================
+   8. Sonido
+   ============================================================ */
+const Snd={ctx:null,on:true,
+  init(){
+    if(this.ctx){if(this.ctx.state==='suspended')this.ctx.resume().catch(()=>{});return;}
+    try{const A=window.AudioContext||window.webkitAudioContext;if(A)this.ctx=new A();}catch(e){}
+    if(this.ctx&&this.ctx.state==='suspended'){try{this.ctx.resume();}catch(e){}}
+  },
+  tone(f,d,type,v,delay){
+    if(!this.on||!this.ctx)return;
+    const c=this.ctx,t=c.currentTime+(delay||0),o=c.createOscillator(),g=c.createGain();
+    o.type=type||'sine';o.frequency.setValueAtTime(f,t);
+    g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(v||.08,t+.012);
+    g.gain.exponentialRampToValueAtTime(.0001,t+d);
+    o.connect(g);g.connect(c.destination);o.onended=()=>{o.disconnect();g.disconnect();};o.start(t);o.stop(t+d+.03);
+  },
+  ok(){this.tone(660,.12,'triangle',.1);this.tone(880,.16,'triangle',.1,.1);this.tone(1320,.24,'triangle',.08,.2);},
+  bad(){this.tone(190,.22,'sawtooth',.05);this.tone(140,.3,'sawtooth',.05,.12);},
+  tick(){this.tone(1000,.05,'square',.025);},
+  go(){this.tone(520,.1,'sine',.08);this.tone(780,.14,'sine',.08,.09);},
+  win(){[523,659,784,1047].forEach((f,i)=>this.tone(f,.28,'triangle',.09,i*.12));}
+};
+
+/* ---------- Capitales: nombre|país|lat|lon|dificultad ---------- */
+const CAP_RAW=`Washington D. C.|Estados Unidos|38.90|-77.04|1
+Ottawa|Canadá|45.42|-75.70|1
+Ciudad de México|México|19.43|-99.13|1
+Brasilia|Brasil|-15.79|-47.88|1
+Buenos Aires|Argentina|-34.60|-58.38|1
+Lima|Perú|-12.05|-77.04|1
+Bogotá|Colombia|4.71|-74.07|1
+Santiago|Chile|-33.45|-70.67|1
+Quito|Ecuador|-0.18|-78.47|1
+Caracas|Venezuela|10.48|-66.90|1
+La Paz|Bolivia|-16.50|-68.15|2
+Asunción|Paraguay|-25.26|-57.58|2
+Montevideo|Uruguay|-34.90|-56.16|2
+La Habana|Cuba|23.11|-82.37|1
+Ciudad de Panamá|Panamá|8.98|-79.52|2
+San José|Costa Rica|9.93|-84.08|2
+Ciudad de Guatemala|Guatemala|14.63|-90.51|2
+Tegucigalpa|Honduras|14.07|-87.19|3
+Managua|Nicaragua|12.13|-86.25|3
+San Salvador|El Salvador|13.69|-89.22|3
+Santo Domingo|República Dominicana|18.49|-69.93|2
+Puerto Príncipe|Haití|18.54|-72.34|3
+Kingston|Jamaica|17.97|-76.79|3
+Londres|Reino Unido|51.51|-0.13|1
+París|Francia|48.86|2.35|1
+Madrid|España|40.42|-3.70|1
+Lisboa|Portugal|38.72|-9.14|1
+Dublín|Irlanda|53.35|-6.26|2
+Roma|Italia|41.90|12.50|1
+Berlín|Alemania|52.52|13.40|1
+Ámsterdam|Países Bajos|52.37|4.90|1
+Bruselas|Bélgica|50.85|4.35|2
+Berna|Suiza|46.95|7.45|3
+Viena|Austria|48.21|16.37|2
+Varsovia|Polonia|52.23|21.01|2
+Praga|Chequia|50.08|14.44|2
+Budapest|Hungría|47.50|19.04|2
+Bucarest|Rumanía|44.43|26.10|3
+Sofía|Bulgaria|42.70|23.32|3
+Belgrado|Serbia|44.79|20.45|3
+Zagreb|Croacia|45.81|15.98|3
+Atenas|Grecia|37.98|23.73|1
+Estocolmo|Suecia|59.33|18.07|2
+Oslo|Noruega|59.91|10.75|1
+Helsinki|Finlandia|60.17|24.94|2
+Copenhague|Dinamarca|55.68|12.57|2
+Reikiavik|Islandia|64.15|-21.94|2
+Kiev|Ucrania|50.45|30.52|2
+Minsk|Bielorrusia|53.90|27.57|3
+Moscú|Rusia|55.76|37.62|1
+Ankara|Turquía|39.93|32.86|2
+Teherán|Irán|35.69|51.39|2
+Bagdad|Irak|33.31|44.37|2
+Riad|Arabia Saudita|24.71|46.68|2
+Ammán|Jordania|31.95|35.93|3
+Beirut|Líbano|33.89|35.50|3
+Damasco|Siria|33.51|36.29|3
+Kabul|Afganistán|34.53|69.17|3
+Islamabad|Pakistán|33.69|73.05|2
+Nueva Delhi|India|28.61|77.21|1
+Daca|Bangladés|23.81|90.41|3
+Katmandú|Nepal|27.72|85.32|3
+Pekín|China|39.90|116.41|1
+Tokio|Japón|35.68|139.69|1
+Seúl|Corea del Sur|37.57|126.98|1
+Pionyang|Corea del Norte|39.04|125.76|3
+Ulán Bator|Mongolia|47.89|106.91|3
+Bangkok|Tailandia|13.76|100.50|1
+Hanói|Vietnam|21.03|105.85|2
+Yakarta|Indonesia|-6.21|106.85|2
+Manila|Filipinas|14.60|120.98|2
+Kuala Lumpur|Malasia|3.14|101.69|3
+Astaná|Kazajistán|51.17|71.45|3
+Taskent|Uzbekistán|41.30|69.24|3
+Canberra|Australia|-35.28|149.13|1
+Wellington|Nueva Zelanda|-41.29|174.78|2
+El Cairo|Egipto|30.04|31.24|1
+Rabat|Marruecos|34.02|-6.84|2
+Argel|Argelia|36.75|3.06|2
+Túnez|Túnez|36.81|10.18|3
+Trípoli|Libia|32.89|13.19|3
+Jartum|Sudán|15.50|32.56|3
+Adís Abeba|Etiopía|9.03|38.74|2
+Nairobi|Kenia|-1.29|36.82|1
+Dodoma|Tanzania|-6.16|35.75|3
+Kampala|Uganda|0.35|32.58|3
+Kinsasa|República Democrática del Congo|-4.44|15.27|3
+Luanda|Angola|-8.84|13.23|3
+Pretoria|Sudáfrica|-25.75|28.19|2
+Windhoek|Namibia|-22.56|17.08|3
+Antananarivo|Madagascar|-18.88|47.51|3
+Abuya|Nigeria|9.08|7.40|2
+Accra|Ghana|5.60|-0.19|3
+Dakar|Senegal|14.72|-17.47|3
+Bamako|Malí|12.64|-8.00|3
+Yamena|Chad|12.13|15.06|3
+Yaundé|Camerún|3.85|11.50|3
+Lusaka|Zambia|-15.39|28.32|3
+Maputo|Mozambique|-25.97|32.57|3
+Harare|Zimbabue|-17.83|31.05|3
+Mogadiscio|Somalia|2.05|45.32|3`;
+const CAPS=CAP_RAW.trim().split('\n').map(l=>{const a=l.split('|');return {name:a[0],country:a[1],lat:+a[2],lon:+a[3],d:+a[4]};});
+const CAPBY={};CAPS.forEach(c=>{CAPBY[nrm(c.country)]=c;});
+
+/* ---------- Lugares: nombre|tipo|lat|lon|radio km|dificultad ---------- */
+const PLACE_RAW=`Machu Picchu|Monumento|-13.16|-72.55|0|1
+Pirámides de Guiza|Monumento|29.98|31.13|0|1
+Taj Mahal|Monumento|27.17|78.04|0|1
+Gran Muralla China|Monumento|40.43|116.57|0|1
+Estatua de la Libertad|Monumento|40.69|-74.04|0|1
+Cristo Redentor|Monumento|-22.95|-43.21|0|1
+Chichén Itzá|Monumento|20.68|-88.57|0|1
+Coliseo de Roma|Monumento|41.89|12.49|0|1
+Torre Eiffel|Monumento|48.86|2.29|0|1
+Ópera de Sídney|Monumento|-33.86|151.21|0|1
+Petra|Monumento|30.33|35.44|0|2
+Angkor Wat|Monumento|13.41|103.87|0|2
+Stonehenge|Monumento|51.18|-1.83|0|2
+Cataratas del Iguazú|Cascada|-25.69|-54.44|0|2
+Cataratas del Niágara|Cascada|43.08|-79.07|0|2
+Cataratas Victoria|Cascada|-17.92|25.86|0|2
+Salto Ángel|Cascada|5.97|-62.54|0|3
+Gran Cañón del Colorado|Cañón|36.10|-112.11|0|1
+Uluru|Roca|-25.34|131.04|0|2
+Isla de Pascua|Isla|-27.11|-109.35|80|2
+Islas Galápagos|Isla|-0.74|-90.31|150|1
+Hawái|Isla|20.5|-157.0|250|2
+Madagascar|Isla|-19.0|47.0|350|2
+Groenlandia|Isla|72|-40|700|1
+Islandia|Isla|64.9|-18.5|250|2
+Monte Everest|Montaña|27.99|86.93|0|1
+Aconcagua|Montaña|-32.65|-70.01|0|1
+Kilimanjaro|Montaña|-3.07|37.35|0|1
+Monte Fuji|Volcán|35.36|138.73|0|1
+Mont Blanc|Montaña|45.83|6.86|0|2
+Monte Elbrús|Montaña|43.35|42.44|0|3
+Denali|Montaña|63.07|-151.00|0|2
+Huascarán|Montaña|-9.12|-77.60|0|2
+Volcán Cotopaxi|Volcán|-0.68|-78.44|0|2
+Vesubio|Volcán|40.82|14.43|0|2
+Etna|Volcán|37.75|14.99|0|2
+Cordillera de los Andes|Cordillera|-20|-68.5|500|1
+Himalaya|Cordillera|28.5|84|450|1
+Alpes|Cordillera|46.5|9.5|250|1
+Montañas Rocosas|Cordillera|46|-111|600|1
+Montes Urales|Cordillera|60|60|500|2
+Montes Atlas|Cordillera|31.5|-7|400|3
+Sahara|Desierto|23|13|1200|1
+Desierto de Atacama|Desierto|-23.9|-69.1|350|2
+Desierto de Gobi|Desierto|43.5|104|700|2
+Desierto de Kalahari|Desierto|-23.5|22|500|2
+Desierto de Arabia|Desierto|22|47|700|2
+Selva amazónica|Selva|-4|-62|900|1
+Selva del Congo|Selva|-1|22|700|2
+Desembocadura del Amazonas|Río|-0.1|-50.0|250|2
+Delta del Nilo|Río|31.0|31.0|150|2
+Desembocadura del Misisipi|Río|29.15|-89.25|150|3
+Río de la Plata|Río|-35.0|-57.2|200|2
+Delta del Ganges|Río|22.2|89.5|200|3
+Lago Titicaca|Lago|-15.84|-69.37|120|1
+Lago Victoria|Lago|-1.0|33.0|250|2
+Lago Baikal|Lago|53.5|108.0|300|2
+Lago Superior|Lago|47.7|-87.5|250|2
+Mar Muerto|Lago|31.5|35.5|100|3
+Mar Caribe|Mar|15|-75|600|1
+Mar Mediterráneo|Mar|35|18|700|1
+Mar Rojo|Mar|20|38|450|2
+Mar Negro|Mar|43.5|34|400|2
+Mar del Norte|Mar|56|3|400|2
+Golfo de México|Mar|25|-90|500|1
+Mar de Japón|Mar|40|134|450|3
+Océano Atlántico|Océano|0|-25|2000|1
+Océano Pacífico|Océano|0|-150|3000|1
+Océano Índico|Océano|-20|80|1800|1
+Océano Ártico|Océano|85|0|1200|2
+Canal de Panamá|Canal|9.1|-79.7|60|1
+Canal de Suez|Canal|30.5|32.3|60|2
+Estrecho de Gibraltar|Estrecho|36.0|-5.6|60|2
+Estrecho de Magallanes|Estrecho|-53.5|-70.5|120|3
+Cabo de Hornos|Cabo|-55.98|-67.27|120|2
+Cabo de Buena Esperanza|Cabo|-34.36|18.47|100|3
+Polo Norte|Polo|89.9|0|300|2
+Polo Sur|Polo|-89.9|0|300|2`;
+const PLACES=PLACE_RAW.trim().split('\n').map(l=>{const a=l.split('|');return {name:a[0],type:a[1],lat:+a[2],lon:+a[3],r:+a[4],d:+a[5]};});
+
+/* ---------- País: moneda | idiomas | superficie (miles km²) | población (millones) ---------- */
+const EX_RAW=`Estados Unidos|Dólar estadounidense|inglés|9834|335
+Canadá|Dólar canadiense|inglés;francés|9985|40
+México|Peso mexicano|español|1964|129
+Brasil|Real brasileño|portugués|8516|212
+Argentina|Peso argentino|español|2780|46
+Perú|Sol peruano|español;quechua;aimara|1285|34
+Colombia|Peso colombiano|español|1142|52
+Chile|Peso chileno|español|756|19.6
+Ecuador|Dólar estadounidense|español|284|18
+Venezuela|Bolívar digital|español|916|28
+Bolivia|Boliviano|español;quechua;aimara;guaraní|1099|12
+Paraguay|Guaraní|español;guaraní|407|6.9
+Uruguay|Peso uruguayo|español|176|3.4
+Cuba|Peso cubano|español|110|11
+Panamá|Balboa|español|75|4.4
+Costa Rica|Colón costarricense|español|51|5.2
+Guatemala|Quetzal|español|109|17.8
+Honduras|Lempira|español|112|10.7
+Nicaragua|Córdoba|español|130|6.9
+El Salvador|Dólar estadounidense|español|21|6.3
+República Dominicana|Peso dominicano|español|48.7|11.3
+Haití|Gourde|francés;criollo haitiano|27.8|11.7
+Jamaica|Dólar jamaiquino|inglés|11|2.8
+Reino Unido|Libra esterlina|inglés|244|68
+Francia|Euro|francés|551|68
+España|Euro|español;catalán;gallego;euskera|506|48
+Portugal|Euro|portugués|92|10.4
+Irlanda|Euro|irlandés;inglés|70|5.3
+Italia|Euro|italiano|301|59
+Alemania|Euro|alemán|358|84
+Países Bajos|Euro|neerlandés|42|17.9
+Bélgica|Euro|neerlandés;francés;alemán|30.5|11.7
+Suiza|Franco suizo|alemán;francés;italiano;romanche|41|8.8
+Austria|Euro|alemán|84|9.1
+Polonia|Esloti|polaco|313|36.6
+Chequia|Corona checa|checo|79|10.9
+Hungría|Forinto|húngaro|93|9.6
+Rumanía|Leu rumano|rumano|238|19
+Bulgaria|Euro|búlgaro|111|6.4
+Serbia|Dinar serbio|serbio|88|6.7
+Croacia|Euro|croata|56.6|3.9
+Grecia|Euro|griego|132|10.4
+Suecia|Corona sueca|sueco|450|10.5
+Noruega|Corona noruega|noruego|385|5.5
+Finlandia|Euro|finés;sueco|338|5.6
+Dinamarca|Corona danesa|danés|43|5.9
+Islandia|Corona islandesa|islandés|103|0.39
+Ucrania|Grivna|ucraniano|604|37
+Bielorrusia|Rublo bielorruso|bielorruso;ruso|208|9.2
+Rusia|Rublo ruso|ruso|17098|144
+Turquía|Lira turca|turco|784|85
+Irán|Rial iraní|persa|1648|89
+Irak|Dinar iraquí|árabe;kurdo|438|45
+Arabia Saudita|Riyal saudí|árabe|2150|36
+Jordania|Dinar jordano|árabe|89|11.3
+Líbano|Libra libanesa|árabe|10.5|5.4
+Siria|Libra siria|árabe|185|23
+Afganistán|Afgani|pastún;darí|653|42
+Pakistán|Rupia pakistaní|urdu;inglés|882|241
+India|Rupia india|hindi;inglés|3287|1429
+Bangladés|Taka|bengalí|148|173
+Nepal|Rupia nepalí|nepalí|147|30
+China|Yuan renminbi|chino mandarín|9597|1411
+Japón|Yen|japonés|378|124
+Corea del Sur|Won surcoreano|coreano|100|51.7
+Corea del Norte|Won norcoreano|coreano|121|26
+Mongolia|Tugrik|mongol|1564|3.4
+Tailandia|Baht|tailandés|513|71.8
+Vietnam|Dong|vietnamita|331|100
+Indonesia|Rupia indonesia|indonesio|1905|277
+Filipinas|Peso filipino|filipino;inglés|300|117
+Malasia|Ringgit|malayo|330|34
+Kazajistán|Tenge|kazajo;ruso|2725|20
+Uzbekistán|Som uzbeko|uzbeko|449|36
+Australia|Dólar australiano|inglés|7692|26.6
+Nueva Zelanda|Dólar neozelandés|inglés;maorí|268|5.2
+Egipto|Libra egipcia|árabe|1002|112
+Marruecos|Dírham marroquí|árabe;amazigh|447|37
+Argelia|Dinar argelino|árabe;amazigh|2382|45
+Túnez|Dinar tunecino|árabe|164|12
+Libia|Dinar libio|árabe|1760|6.9
+Sudán|Libra sudanesa|árabe;inglés|1861|48
+Etiopía|Birr|amárico|1104|126
+Kenia|Chelín keniano|suajili;inglés|580|55
+Tanzania|Chelín tanzano|suajili;inglés|945|67
+Uganda|Chelín ugandés|inglés;suajili|241|48
+República Democrática del Congo|Franco congoleño|francés|2345|102
+Angola|Kuanza|portugués|1247|36
+Sudáfrica|Rand|zulú;xhosa;afrikáans;inglés|1221|60
+Namibia|Dólar namibio|inglés|825|2.6
+Madagascar|Ariary|malgache;francés|587|30
+Nigeria|Naira|inglés|924|224
+Ghana|Cedi|inglés|239|34
+Senegal|Franco CFA de África Occidental|francés|197|18
+Malí|Franco CFA de África Occidental|francés|1240|23
+Chad|Franco CFA de África Central|francés;árabe|1284|18
+Camerún|Franco CFA de África Central|francés;inglés|475|28
+Zambia|Kwacha zambiano|inglés|753|20
+Mozambique|Metical|portugués|802|33
+Zimbabue|Zimbabwe Gold (ZiG)|inglés;shona;ndebele|391|16.6
+Somalia|Chelín somalí|somalí;árabe|638|18`;
+const EXD={};
+EX_RAW.trim().split('\n').forEach(l=>{const a=l.split('|');EXD[nrm(a[0])]={cur:a[1],lang:a[2].split(';'),area:+a[3],pop:+a[4]};});
+const exOf=f=>EXD[nrm(f.es)]||null;
+
+/* ---------- Ciudades: nombre|país|lat|lon|zona horaria|dificultad ---------- */
+const CITY_RAW=`Lima|Perú|-12.05|-77.04|America/Lima|1
+Cusco|Perú|-13.53|-71.97|America/Lima|1
+Arequipa|Perú|-16.41|-71.54|America/Lima|1
+Iquitos|Perú|-3.75|-73.25|America/Lima|2
+Trujillo|Perú|-8.11|-79.03|America/Lima|2
+Piura|Perú|-5.19|-80.63|America/Lima|2
+Puno|Perú|-15.84|-70.02|America/Lima|2
+Tacna|Perú|-18.01|-70.25|America/Lima|3
+Chiclayo|Perú|-6.77|-79.84|America/Lima|3
+Huancayo|Perú|-12.07|-75.21|America/Lima|3
+Ayacucho|Perú|-13.16|-74.22|America/Lima|3
+Pucallpa|Perú|-8.38|-74.55|America/Lima|3
+Cajamarca|Perú|-7.16|-78.51|America/Lima|3
+Tumbes|Perú|-3.57|-80.45|America/Lima|3
+Puerto Maldonado|Perú|-12.59|-69.19|America/Lima|3
+Huaraz|Perú|-9.53|-77.53|America/Lima|3
+Tarapoto|Perú|-6.49|-76.37|America/Lima|3
+Ica|Perú|-14.07|-75.73|America/Lima|3
+Nueva York|Estados Unidos|40.71|-74.01|America/New_York|1
+Los Ángeles|Estados Unidos|34.05|-118.24|America/Los_Angeles|1
+Miami|Estados Unidos|25.76|-80.19|America/New_York|2
+Chicago|Estados Unidos|41.88|-87.63|America/Chicago|2
+Toronto|Canadá|43.65|-79.38|America/Toronto|2
+Vancouver|Canadá|49.28|-123.12|America/Vancouver|3
+Ciudad de México|México|19.43|-99.13|America/Mexico_City|1
+La Habana|Cuba|23.11|-82.37|America/Havana|2
+Bogotá|Colombia|4.71|-74.07|America/Bogota|1
+Quito|Ecuador|-0.18|-78.47|America/Guayaquil|2
+Caracas|Venezuela|10.48|-66.90|America/Caracas|2
+Santiago|Chile|-33.45|-70.67|America/Santiago|1
+Buenos Aires|Argentina|-34.60|-58.38|America/Argentina/Buenos_Aires|1
+São Paulo|Brasil|-23.55|-46.63|America/Sao_Paulo|1
+Honolulu|Estados Unidos|21.31|-157.86|Pacific/Honolulu|3
+Reikiavik|Islandia|64.15|-21.94|Atlantic/Reykjavik|3
+Londres|Reino Unido|51.51|-0.13|Europe/London|1
+Madrid|España|40.42|-3.70|Europe/Madrid|1
+París|Francia|48.86|2.35|Europe/Paris|1
+Berlín|Alemania|52.52|13.40|Europe/Berlin|2
+Roma|Italia|41.90|12.50|Europe/Rome|2
+Atenas|Grecia|37.98|23.73|Europe/Athens|2
+Estambul|Turquía|41.01|28.98|Europe/Istanbul|2
+Moscú|Rusia|55.76|37.62|Europe/Moscow|1
+El Cairo|Egipto|30.04|31.24|Africa/Cairo|1
+Lagos|Nigeria|6.52|3.38|Africa/Lagos|3
+Nairobi|Kenia|-1.29|36.82|Africa/Nairobi|2
+Johannesburgo|Sudáfrica|-26.20|28.05|Africa/Johannesburg|2
+Dubái|Emiratos Árabes Unidos|25.20|55.27|Asia/Dubai|2
+Teherán|Irán|35.69|51.39|Asia/Tehran|3
+Karachi|Pakistán|24.86|67.01|Asia/Karachi|3
+Nueva Delhi|India|28.61|77.21|Asia/Kolkata|2
+Mumbai|India|19.08|72.88|Asia/Kolkata|2
+Katmandú|Nepal|27.72|85.32|Asia/Kathmandu|3
+Daca|Bangladés|23.81|90.41|Asia/Dhaka|3
+Bangkok|Tailandia|13.76|100.50|Asia/Bangkok|2
+Singapur|Singapur|1.35|103.82|Asia/Singapore|2
+Yakarta|Indonesia|-6.21|106.85|Asia/Jakarta|3
+Pekín|China|39.90|116.41|Asia/Shanghai|1
+Shanghái|China|31.23|121.47|Asia/Shanghai|2
+Hong Kong|China|22.32|114.17|Asia/Hong_Kong|2
+Tokio|Japón|35.68|139.69|Asia/Tokyo|1
+Seúl|Corea del Sur|37.57|126.98|Asia/Seoul|2
+Sídney|Australia|-33.87|151.21|Australia/Sydney|1
+Perth|Australia|-31.95|115.86|Australia/Perth|3
+Adelaida|Australia|-34.93|138.60|Australia/Adelaide|3
+Auckland|Nueva Zelanda|-36.85|174.76|Pacific/Auckland|2`;
+const CITIES=CITY_RAW.trim().split('\n').map(l=>{const a=l.split('|');return {name:a[0],country:a[1],lat:+a[2],lon:+a[3],tz:a[4],d:+a[5],pt:[+a[3],+a[2]]};});
+
+/* ============================================================
+   9. Parámetros de juego y generación de preguntas
+   ============================================================ */
+const LTOL={facil:450,medio:260,dificil:130};
+const LMAXD={facil:1,medio:2,dificil:3};
+const DTOL={facil:.20,medio:.12,dificil:.06};
+const RRATIO={facil:2,medio:1.4,dificil:1.15};
+
+const curItem=()=>{const t=G.turns[G.ti];return t&&t.item;};
+const isPanelKind=()=>{const i=curItem();return !!(i&&i.ui!=='globe');};
+const isOptKind=()=>{const i=curItem();return !!(i&&i.ui==='opts');};
+const capOf=f=>CAPBY[nrm(f.es)]||null;
+const gkm=(a,b)=>d3.geo.distance(a,b)*KM;
+const kmFromSv=sv=>Math.round(Math.pow(sv/1000,2)*20000/10)*10;
+const newCur=()=>({started:0,pausedAt:0,guesses:[],wrongs:0,hintL:false,hintZ:false,ring:null,result:null,lastTick:-1,order:[],sv:500,bet:1,steal:null});
+/* apuesta a ciegas: se elige antes de ver la pregunta, sin saber qué tocará */
+const BETS=[{m:1,name:'Seguro',cost:0},{m:2,name:'Doble',cost:30},{m:3,name:'Triple',cost:60}];
+const STEAL_LIMIT=6;   /* segundos que tiene el rival para robar */
+function setPhase(p){G.phase=p;dirty=true;ui();arcadeSend('phase',{phase:p});}
+function elapsed(){
+  const c=G.cur;if(!c||!c.started)return 0;
+  return ((G.phase==='paused'?c.pausedAt:performance.now())-c.started)/1000;
+}
+function stealLeft(){
+  const s=G.cur&&G.cur.steal;if(!s)return 0;
+  const now=G.phase==='paused'?s.pausedAt:performance.now();
+  return Math.max(0,s.limit-(now-s.started)/1000);
+}
+const pz=it=>clamp(.45/Math.sin(Math.max((it.tolKm||200)/KM,.04)),1.3,5);
+
+/* diferencia horaria de una zona respecto de UTC, en minutos, en el instante d */
+function offMin(tz,d){
+  const f=new Intl.DateTimeFormat('en-US',{timeZone:tz,hourCycle:'h23',year:'numeric',month:'numeric',day:'numeric',hour:'numeric',minute:'numeric',second:'numeric'});
+  const p={};f.formatToParts(d).forEach(x=>{p[x.type]=x.value;});
+  const asUTC=Date.UTC(+p.year,+p.month-1,+p.day,+p.hour%24,+p.minute,+p.second);
+  return Math.round((asUTC-Math.floor(d.getTime()/1000)*1000)/60000);
+}
+function fmtClock(t){
+  const day=Math.floor(t/1440),m=((t%1440)+1440)%1440;
+  return pad2(Math.floor(m/60))+':'+pad2(m%60)+(day===1?' (día siguiente)':day===-1?' (día anterior)':'');
+}
+function fmtDiff(diff){
+  const a=Math.abs(diff),h=Math.floor(a/60),m=a%60;
+  return (diff>=0?'+':'−')+h+(m?':'+pad2(m):'')+' h';
+}
+const fmtVal=(metric,v)=>metric==='area'?'≈ '+fmtInt.format(Math.round(v*1000))+' km²':'≈ '+(v>=10?fmtInt.format(Math.round(v)):v.toFixed(1).replace('.',','))+' M hab.';
+
+function distPool(lv){
+  const maxd=LMAXD[lv]||3,cs=CITIES.filter(c=>c.d<=maxd),out=[],seen=new Set();
+  for(let n=0;n<500&&out.length<60;n++){
+    const a=pick(cs),b=pick(cs);if(a===b)continue;
+    const km=gkm(a.pt,b.pt);if(km<250)continue;
+    const k='d:'+[a.name,b.name].sort().join('-');if(seen.has(k))continue;seen.add(k);
+    out.push({k,a,b,km,m:Math.log(km)});
+  }
+  return out;
+}
+function tzPool(lv){
+  const now=new Date(),lima=CITIES[0],maxd=lv==='facil'?1:(lv==='medio'?2:3),cs=CITIES.filter(c=>c.d<=maxd);
+  const out=[],seen=new Set();
+  for(let n=0;n<500&&out.length<60;n++){
+    let a=lima,b=pick(cs);
+    if(lv==='dificil')a=pick(cs);
+    else if(Math.random()<.5){const t=a;a=b;b=t;}
+    if(a===b||a.tz===b.tz)continue;
+    const diff=offMin(b.tz,now)-offMin(a.tz,now);
+    if(diff===0)continue;
+    if(lv!=='dificil'&&diff%60!==0)continue;
+    if(lv==='dificil'&&diff%60===0&&Math.random()<.5)continue;
+    const k='t:'+a.name+'-'+b.name;if(seen.has(k))continue;seen.add(k);
+    out.push({k,a,b,diff,m:diff%60===0?0:1});
+  }
+  return out;
+}
+function rankPool(lv){
+  const cs=ELIG.slice(0,Math.min(LEVELS[lv]||ELIG.length,ELIG.length)).filter(exOf),out=[],R=RRATIO[lv]||1.4;
+  for(let n=0;n<40;n++){
+    const metric=Math.random()<.5?'area':'pop',pk=[];
+    for(const f of shuffle(cs)){
+      const v=exOf(f)[metric];
+      if(pk.every(p=>Math.max(p.v,v)/Math.min(p.v,v)>=R))pk.push({f,v});
+      if(pk.length===5)break;
+    }
+    if(pk.length<5)continue;
+    out.push({k:'r:'+n+':'+Math.random(),metric,pk,m:0});
+  }
+  return out;
+}
+function pool(kind,lv){
+  const cnt=Math.min(LEVELS[lv]||ELIG.length,ELIG.length),maxd=LMAXD[lv]||3,cs=ELIG.slice(0,cnt);
+  if(kind==='country'||kind==='who')return cs;
+  if(kind==='cap4')return cs.filter(capOf);
+  if(kind==='cur'||kind==='lang')return cs.filter(exOf);
+  if(kind==='falso')return cs.filter(f=>capOf(f)&&exOf(f));
+  if(kind==='cap')return CAPS.filter(c=>c.d<=maxd);
+  if(kind==='place')return PLACES.filter(p=>p.d<=maxd);
+  if(kind==='dist')return distPool(lv);
+  if(kind==='tz')return tzPool(lv);
+  return rankPool(lv);
+}
+function fitView(a,b){
+  const mid=d3.geo.interpolate(a,b)(.5),dd=d3.geo.distance(a,b);
+  return [mid[0],mid[1],clamp(.8/Math.sin(Math.min(dd/2,1.5)),.75,8)];
+}
+
+/* --- detecta el error: tres afirmaciones, una falsa --- */
+function wrongValue(x,k){
+  const ex=exOf(x),cap=capOf(x);
+  for(const o of shuffle(ELIG).slice(0,60)){
+    if(o===x)continue;
+    const e=exOf(o),c=capOf(o);
+    if(k==='cap'&&c&&cap&&c.name!==cap.name)return c.name;
+    if(k==='cur'&&e&&ex&&e.cur!==ex.cur)return e.cur;
+    if(k==='lang'&&e&&ex){const l=e.lang.find(v=>ex.lang.indexOf(v)<0);if(l)return l;}
+  }
+  return null;
+}
+function falseItem(x){
+  const ex=exOf(x),cap=capOf(x);
+  const F=[
+    {k:'cap',v:cap.name,txt:v=>'Su capital es '+v+'.'},
+    {k:'cur',v:ex.cur,txt:v=>'Su moneda es '+v+'.'},
+    {k:'lang',v:pick(ex.lang),txt:v=>'Se habla '+v+'.'}
+  ];
+  const lie=Math.floor(Math.random()*3);
+  const w=wrongValue(x,F[lie].k);
+  if(w)F[lie].v=w;
+  const opts=shuffle(F.map((f,i)=>({t:f.txt(f.v),ok:i===lie})));
+  const bad=opts.find(o=>o.ok).t;
+  return {kind:'falso',ui:'opts',country:x,ctr:x._ctr,hl:true,wide:true,label:bad,
+    info:'la afirmación falsa sobre '+x.es,
+    prompt:'¿Qué afirmación sobre '+x.es+' es falsa?',kicker:'Detecta el error',
+    opts,logName:x.es};
+}
+
+/* --- constructor único de turnos: un caso por tipo de pregunta --- */
+function mkItem(kind,x){
+  const lv=G.settings.level,tol=LTOL[lv]||260;
+  if(kind==='country')return {kind,ui:'globe',country:x,ctr:x._ctr,label:x.es,prompt:x.es,kicker:'Encuentra el país',tolKm:x._tol};
+  if(kind==='who')return {kind,ui:'opts',country:x,ctr:x._ctr,label:x.es,prompt:'¿Qué país es?',kicker:'Reconoce el país',hl:true};
+  if(kind==='cap4'){const c=capOf(x);
+    return {kind,ui:'opts',country:x,ctr:x._ctr,label:c.name,info:'capital de '+x.es,prompt:'¿Cuál es la capital de '+x.es+'?',
+      kicker:'Capital del país',hl:true,logName:c.name+' ('+x.es+')'};}
+  if(kind==='cur'){const d=exOf(x);
+    return {kind,ui:'opts',country:x,ctr:x._ctr,label:d.cur,info:'moneda de '+x.es,prompt:'¿Cuál es la moneda de '+x.es+'?',
+      kicker:'Moneda oficial',hl:true,logName:d.cur+' ('+x.es+')'};}
+  if(kind==='lang'){const d=exOf(x),neg=lv==='dificil'&&d.lang.length>=3;
+    return {kind,ui:'opts',country:x,ctr:x._ctr,neg,label:'',info:d.lang.length>1?'idiomas oficiales de '+x.es+': '+d.lang.join(', '):'idioma oficial de '+x.es,
+      prompt:neg?'¿Cuál NO es idioma oficial de '+x.es+'?':'¿Cuál es un idioma oficial de '+x.es+'?',kicker:'Idioma oficial',hl:true};}
+  if(kind==='falso')return falseItem(x);
+  if(kind==='cap')return {kind,ui:'globe',country:null,ctr:[x.lon,x.lat],mark:true,label:x.name,info:'capital de '+x.country,prompt:x.name,
+    kicker:'Encuentra la capital',tolKm:tol,logName:x.name};
+  if(kind==='place')return {kind,ui:'globe',country:null,ctr:[x.lon,x.lat],mark:true,label:x.name,prompt:x.name,
+    kicker:'Encuentra · '+x.type.toLowerCase(),tolKm:Math.max(tol,x.r),logName:x.name};
+  if(kind==='dist')return {kind,ui:'slider',ctr:null,fit:fitView(x.a.pt,x.b.pt),a:x.a,b:x.b,km:x.km,tol:DTOL[lv]||.12,
+    pts:[{pt:x.a.pt,label:x.a.name},{pt:x.b.pt,label:x.b.name}],label:kmText(x.km),
+    prompt:'¿Qué distancia hay entre '+x.a.name+' y '+x.b.name+'?',kicker:'Distancia',logName:x.a.name+' – '+x.b.name};
+  if(kind==='tz'){
+    const a=x.a,b=x.b,diff=x.diff,h=6+Math.floor(Math.random()*16),mn=lv==='dificil'&&Math.random()<.5?30:0;
+    const t0=h*60+mn,t1=t0+diff,ans=fmtClock(t1),wrong=[];
+    for(const c of [t0-diff,t1+60,t1-60,t1+30,t1-30,t1+120,t1-120].map(fmtClock)){
+      if(c!==ans&&!wrong.includes(c))wrong.push(c);
+      if(wrong.length===3)break;
+    }
+    return {kind,ui:'opts',ctr:null,fit:fitView(a.pt,b.pt),a,b,label:ans,
+      info:b.name+' está '+fmtDiff(diff)+' respecto de '+a.name,
+      pts:[{pt:a.pt,label:a.name},{pt:b.pt,label:b.name}],optsRaw:[{t:ans,ok:true}].concat(wrong.map(t=>({t,ok:false}))),
+      prompt:'Si en '+a.name+' son las '+pad2(h)+':'+pad2(mn)+', ¿qué hora es en '+b.name+'?',kicker:'Huso horario',logName:a.name+' → '+b.name};
+  }
+  const sorted=x.pk.slice().sort((p,q)=>q.v-p.v),word=x.metric==='area'?'superficie':'población';
+  return {kind:'rank',ui:'order',ctr:null,metric:x.metric,label:'',
+    truth:sorted.map(p=>({name:p.f.es,v:p.v})),shown:shuffle(sorted.map((p,i)=>({name:p.f.es,rank:i}))),
+    prompt:'Ordena de mayor a menor '+word,kicker:'Ordenar países',logName:'Orden por '+word};
+}
+
+function modeKinds(mode){
+  return mode==='mixto'?MIXED_KINDS:[mode];
+}
+function buildTurns(){
+  const lv=G.settings.level,kinds=modeKinds(G.settings.mode);
+  let rounds=G.settings.rounds;
+  if(kinds.length===1)rounds=Math.min(rounds,Math.floor(pool(kinds[0],lv).length/2));
+  rounds=Math.max(1,rounds);
+  const used=new Set(),first=G.startFirst;
+  const key=(k,x)=>x.k||(k==='cap'?'k:'+x.name:k==='place'?'p:'+x.name:'c:'+x.en);
+  const metric=(k,x)=>x.m!==undefined?x.m:((k==='cap'||k==='place')?x.d:x._area);
+  G.turns=[];
+  for(let r=0;r<rounds;r++){
+    const k=kinds[Math.floor(Math.random()*kinds.length)];
+    let pl=pool(k,lv).filter(x=>!used.has(key(k,x)));
+    if(pl.length<2)pl=pool(k,'dificil').filter(x=>!used.has(key(k,x)));
+    if(pl.length<2)continue;
+    const cand=shuffle(pl).slice(0,4).sort((a,b)=>metric(k,a)-metric(k,b));
+    let bi=0,bd=Infinity;
+    for(let i=0;i+1<cand.length;i++){const d=Math.abs(metric(k,cand[i])-metric(k,cand[i+1]));if(d<bd){bd=d;bi=i;}}
+    const pr=shuffle([cand[bi],cand[bi+1]]);
+    pr.forEach(x=>used.add(key(k,x)));
+    const ri=G.turns.length/2;
+    G.turns.push({round:ri,player:first,kind:k,src:pr[0],item:mkItem(k,pr[0])});
+    G.turns.push({round:ri,player:1-first,kind:k,src:pr[1],item:mkItem(k,pr[1])});
+  }
+  /* red de seguridad: nunca arrancar una partida sin turnos */
+  if(!G.turns.length){
+    const f=ELIG[0];
+    G.turns.push({round:0,player:first,kind:'country',src:f,item:mkItem('country',f)});
+    G.turns.push({round:0,player:1-first,kind:'country',src:ELIG[1]||f,item:mkItem('country',ELIG[1]||f)});
+  }
+  G.settings.rounds=G.turns.length/2;
+}
+function prepOpts(it){
+  const lv=G.settings.level,near=(list,pt,get)=>list.slice().sort((a,b)=>d3.geo.distance(get(a),pt)-d3.geo.distance(get(b),pt));
+  if(it.kind==='tz'){it.opts=shuffle(it.optsRaw);return;}
+  let right,wrong;
+  if(it.kind==='who'){
+    const base=near(pool('who',lv).filter(x=>x!==it.country),it.ctr,f=>f._ctr);
+    wrong=shuffle(lv==='facil'?base:base.slice(0,10)).slice(0,3).map(f=>f.es);right=it.country.es;
+  }else if(it.kind==='cap4'){
+    const base=near(CAPS.filter(c=>c.name!==it.label),it.ctr,c=>[c.lon,c.lat]);
+    wrong=shuffle(lv==='facil'?base:base.slice(0,10)).slice(0,3).map(c=>c.name);right=it.label;
+  }else if(it.kind==='cur'){
+    const mine=exOf(it.country).cur,seen=new Set([mine]),base=[];
+    near(pool('cur',lv).filter(x=>x!==it.country),it.ctr,f=>f._ctr).forEach(f=>{const c=exOf(f).cur;if(!seen.has(c)){seen.add(c);base.push(c);}});
+    wrong=shuffle(lv==='facil'?base:base.slice(0,8)).slice(0,3);right=mine;
+  }else{
+    const mine=exOf(it.country).lang,seen=new Set(mine),base=[];
+    near(pool('lang',lv).filter(x=>x!==it.country),it.ctr,f=>f._ctr).forEach(f=>exOf(f).lang.forEach(l=>{if(!seen.has(l)){seen.add(l);base.push(l);}}));
+    const far=shuffle(lv==='facil'?base:base.slice(0,10));
+    if(it.neg){right=far[0];wrong=shuffle(mine).slice(0,3);}
+    else{right=pick(mine);wrong=far.slice(0,3);}
+    it.label=right;it.logName=right+' ('+it.country.es+')';
+  }
+  it.opts=shuffle([{t:right,ok:true}].concat(wrong.map(t=>({t,ok:false}))));
+}
+
+/* ============================================================
+   10. Flujo de la partida
+   ============================================================ */
+function startGame(){
+  Snd.init();
+  G.players=[mkPlayer(G.players[0].name),mkPlayer(G.players[1].name)];
+  feats.forEach(f=>{f._own=undefined;});
+  G.marks=[];buildTurns();G.ti=-1;G.log=[];G.viewMap=false;G.say='';G.review=[];
+  $('#m-menu').hidden=true;$('#m-final').hidden=true;
+  G.phase='menu';arcadeMatch=crypto.randomUUID();nextTurn();
+}
+/* repaso: lo que fallaste vuelve a ti dos turnos después, y vale más */
+function maybeReview(t){
+  if(!G.review.length)return;
+  const i=G.review.findIndex(r=>r.player===t.player);
+  if(i<0||Math.random()>.55)return;
+  const r=G.review.splice(i,1)[0];
+  try{
+    t.item=mkItem(r.kind,r.src);
+    t.item.review=true;
+  }catch(e){}
+}
+function nextTurn(){
+  if(!['menu','result','final'].includes(G.phase))return;
+  G.ti++;G.say='';
+  if(G.ti>=G.turns.length){finish();return;}
+  G.cur=newCur();
+  maybeReview(G.turns[G.ti]);
+  flyTo(view.lon,16,1,REDUCE?0:650);
+  setPhase('ready');
+}
+function reveal(){
+  if(G.phase!=='ready')return;
+  Snd.init();Snd.go();
+  const t=G.turns[G.ti],it=t.item;
+  if(it.kind==='country'&&!it.country._dense)it.country._dense=densify(ringsOf(it.country.geometry));
+  if(it.ui==='opts'&&!it.opts)prepOpts(it);
+  if(it.fit)flyTo(it.fit[0],it.fit[1],it.fit[2],REDUCE?0:700);
+  else if(it.hl&&it.country)flyTo(it.ctr[0],it.ctr[1],zoomFor(it.country),REDUCE?0:600);
+  /* en los juegos de globo no movemos la cámara: ya estamos en una vista neutral */
+  G.cur.started=performance.now();
+  setPhase('playing');
+}
+function say(text,bad){G.say=text;G.sayBad=!!bad;}
+
+function onGlobeClick(x,y){
+  const stealing=G.phase==='steal';
+  if((G.phase!=='playing'&&!stealing)||isPanelKind())return;
+  setProj();
+  const idx=hitAt(x,y);if(idx===-2)return;
+  const pt=proj.invert([x,y]);if(!pt||isNaN(pt[0]))return;
+  const t=G.turns[G.ti],it=t.item,c=G.cur;
+  const who=stealing?c.steal.player:t.player;
+  let near,ok;
+  if(it.country){
+    const f=it.country;near=nearest(pt,f);
+    ok=(idx>=0&&feats[idx]===f)||near.km<=f._tol;
+  }else{
+    const km=d3.geo.distance(pt,it.ctr)*KM;near={km,pt:it.ctr};ok=km<=it.tolKm;
+  }
+  c.guesses.push({pt,near:near.pt,km:near.km,p:who,ok});
+  if(stealing){dirty=true;endSteal(ok);return;}
+  if(ok){endTurn(true);return;}
+  c.wrongs++;
+  const where=it.country?(idx>=0?'Eso es '+feats[idx].es+'.':'Ahí no hay ningún país.'):'Todavía no.';
+  const left=3-c.wrongs;
+  say(where+' Estás a '+kmText(near.km)+' al '+compass(bearing(pt,near.pt))+'. '+
+    (left>0?'Te quedan '+left+(left===1?' intento.':' intentos.'):''),true);
+  Snd.bad();
+  if(c.wrongs>=3){endTurn(false,'Se acabaron los intentos');return;}
+  dirty=true;ui();
+}
+function pickOpt(i){
+  const stealing=G.phase==='steal';
+  if(G.phase!=='playing'&&!stealing)return;
+  const it=G.turns[G.ti].item;if(it.ui!=='opts'||!it.opts)return;
+  const o=it.opts[i];if(!o||o.off)return;
+  if(stealing){endSteal(!!o.ok);return;}
+  if(o.ok)endTurn(true);
+  else{G.cur.wrongs++;endTurn(false,'Respuesta incorrecta');}
+}
+function submitSlider(){
+  if(G.phase!=='playing')return;
+  const it=G.turns[G.ti].item,c=G.cur;if(it.ui!=='slider')return;
+  const est=kmFromSv(c.sv),err=Math.abs(est-it.km),tol=Math.max(it.km*it.tol,150);
+  const detail='Distancia real: '+kmText(it.km)+'. Tu estimación: '+kmText(est)+' (error de '+Math.round(err/it.km*100)+' %).';
+  if(err<=tol)endTurn(true,'',1,detail);
+  else endTurn(false,'Fuera del margen',Math.max(0,1-(err/it.km)/.6),detail);
+}
+function pickRank(i){
+  if(G.phase!=='playing')return;
+  const it=G.turns[G.ti].item,c=G.cur;
+  if(it.ui!=='order'||c.order.includes(i)||c.order.length>=it.shown.length)return;
+  c.order.push(i);Snd.go();ui();
+}
+function undoRank(){
+  if(G.phase!=='playing'||!G.cur.order.length)return;
+  G.cur.order.pop();ui();
+}
+function submitRank(){
+  if(G.phase!=='playing')return;
+  const it=G.turns[G.ti].item,c=G.cur;
+  if(it.ui!=='order'||c.order.length<it.shown.length)return;
+  let good=0;c.order.forEach((si,pos)=>{if(it.shown[si].rank===pos)good++;});
+  const n=it.shown.length;
+  const detail='Orden correcto: '+it.truth.map((p,i)=>(i+1)+'. '+p.name+' ('+fmtVal(it.metric,p.v)+')').join(' · ')+'.';
+  if(good===n)endTurn(true,'',1,detail);
+  else endTurn(false,good+' de '+n+' en su lugar',good/n,detail);
+}
+function markResult(it,own){
+  if(it.country)it.country._own=own;
+  else if(it.mark)G.marks.push({pt:it.ctr,own});
+}
+const canSteal=it=>!!it&&(it.ui==='globe'||it.ui==='opts');
+
+function endTurn(ok,why,frac,detail){
+  if(G.phase!=='playing')return;
+  const t=G.turns[G.ti],c=G.cur,p=G.players[t.player],it=t.item;
+  const used=elapsed(),limit=G.settings.limit,left=Math.max(0,limit-used);
+  const base=60+Math.round(100*left/limit);
+  const bet=c.bet||1;
+  let pts=0,bonus=0,penalty=0;
+  if(ok){
+    const fac=[1,.6,.35][Math.min(2,c.wrongs)];
+    const hint=(c.hintL?15:0)+(c.hintZ?30:0);
+    bonus=Math.min(50,10*p.streak);
+    pts=(Math.max(10,Math.round(base*fac)-hint)+bonus)*bet;
+    if(it.review)pts=Math.round(pts*1.25);
+    p.score+=pts;p.streak++;p.found++;if(c.wrongs===0)p.first++;p.times.push(used);
+  }else{
+    p.streak=0;
+    if(frac>0){pts=Math.round(Math.max(5,Math.round(base*frac*.5))*bet);p.score+=pts;}
+    else if(bet>1){penalty=BETS[bet-1].cost;p.score=Math.max(0,p.score-penalty);}
+  }
+  c.result={ok,why:why||'',pts,bonus,penalty,used,left,detail:detail||'',bet};
+  if(ok)Snd.ok();else Snd.bad();
+
+  if(!ok&&!c.passed){
+    if(t.src&&G.review.length<6&&!G.review.some(r=>r.src===t.src)){
+      G.review.push({kind:t.kind,src:t.src,player:t.player});
+    }
+    if(!frac&&canSteal(it)){startSteal();return;}
+  }
+  finalizeTurn();
+}
+
+/* --- robo del turno: el rival hereda la pregunta con 6 s y un solo intento --- */
+function startSteal(){
+  const t=G.turns[G.ti],c=G.cur;
+  c.steal={player:1-t.player,started:performance.now(),pausedAt:0,limit:STEAL_LIMIT,lastTick:-1};
+  G.say='';
+  setPhase('steal');
+}
+function endSteal(ok){
+  if(G.phase!=='steal')return;
+  const c=G.cur,s=c.steal,left=stealLeft();
+  s.ok=!!ok;
+  s.pts=ok?40+Math.round(40*left/s.limit):0;
+  if(ok){G.players[s.player].score+=s.pts;G.players[s.player].steals++;Snd.ok();}
+  else Snd.bad();
+  finalizeTurn();
+}
+function declineSteal(){
+  if(G.phase!=='steal')return;
+  const s=G.cur.steal;
+  s.ok=false;s.pts=0;s.declined=true;
+  finalizeTurn();
+}
+function finalizeTurn(){
+  const t=G.turns[G.ti],c=G.cur,it=t.item,s=c.steal;
+  if(c.result.ok)markResult(it,t.player);
+  else if(s&&s.ok)markResult(it,s.player);
+  else markResult(it,-1);
+  G.log.push({round:t.round,player:t.player,name:it.logName||it.label,ok:c.result.ok,
+    pts:c.result.pts,penalty:c.result.penalty,used:c.result.used,wrongs:c.wrongs,steal:s||null,review:!!it.review});
+  G.say='';
+  if(it.fit)flyTo(it.fit[0],it.fit[1],it.fit[2],1000);
+  else if(it.country)flyTo(it.ctr[0],it.ctr[1],zoomFor(it.country),1000);
+  else if(it.ctr)flyTo(it.ctr[0],it.ctr[1],pz(it),1000);
+  else flyTo(view.lon,view.lat,1,800);
+  setPhase('result');
+}
+
+/* --- pistas: una sola tecla contextual, sin duplicar botones --- */
+function hintFor(it){
+  if(!it) return null;
+  if(it.ui==='opts'&&it.kind!=='falso') return {id:'fifty',label:'50/50',cost:15};
+  if(it.ui==='globe') return {id:'zone',label:'Zona',cost:30};
+  return null;
+}
+function useHint(){
+  if(G.phase!=='playing')return;
+  const it=curItem(),c=G.cur,h=hintFor(it);
+  if(!h)return;
+  if(h.id==='fifty'){
+    if(c.hintL)return;
+    const wr=it.opts.map((o,i)=>i).filter(i=>!it.opts[i].ok&&!it.opts[i].off);
+    shuffle(wr).slice(0,2).forEach(i=>{it.opts[i].off=true;});
+    c.hintL=true;Snd.go();say('Dos opciones descartadas.');ui();
+  }else{
+    if(c.hintZ)return;
+    const rc=it.country?it.country._mrad/RAD:it.tolKm/KM/RAD;
+    const ang=Math.min(75,rc+Math.max(7,rc*.9));
+    const off=Math.random()*(ang-rc)*.8,o=dest(it.ctr,Math.random()*TAU,off*RAD);
+    c.ring=d3.geo.circle().origin(o).angle(ang)();
+    c.hintZ=true;Snd.go();
+    flyTo(o[0],o[1],1,800);
+    say('El objetivo está dentro del círculo.');
+    ui();
+  }
+}
+function passTurn(){
+  if(G.phase==='steal'){declineSteal();return;}
+  if(G.phase!=='playing')return;
+  G.cur.passed=true;
+  endTurn(false,'Pasaste el turno');
+}
+function pause(){
+  if(G.phase!=='playing'&&G.phase!=='steal')return;
+  G.pausedFrom=G.phase;
+  if(G.phase==='playing')G.cur.pausedAt=performance.now();
+  else G.cur.steal.pausedAt=performance.now();
+  setPhase('paused');$('#m-pause').hidden=false;$('#bResume').focus({preventScroll:true});
+}
+function resume(){
+  if(G.phase!=='paused')return;
+  const now=performance.now();
+  if(G.pausedFrom==='steal')G.cur.steal.started+=now-G.cur.steal.pausedAt;
+  else G.cur.started+=now-G.cur.pausedAt;
+  const back=G.pausedFrom||'playing';G.pausedFrom=null;
+  $('#m-pause').hidden=true;setPhase(back);
+}
+function finish(){
+  G.cur=null;
+  flyTo(view.lon,15,1,REDUCE?0:900);
+  setPhase('final');Snd.win();
+  showFinal();
+  arcadeSend('complete',{matchId:arcadeMatch,scores:G.players.map(p=>p.score),rounds:G.settings.rounds,level:G.settings.level,mode:G.settings.mode,limit:G.settings.limit});
+}
+
+/* ============================================================
+   11. Interfaz
+   ============================================================ */
+const el={
+  kick:$('#kick'),cname:$('#cname'),timer:$('#timer'),tfill:$('#tfill'),tnum:$('#tnum'),
+  say:$('#say'),coords:$('#coords'),tc:$('#turncard'),opt:$('#optbox'),panel:$('#panel'),
+  dock:$('#dock'),bHint:$('#bHint'),bPass:$('#bPass'),bPause:$('#bPause'),
+  cards:[0,1].map(i=>({root:$('#card'+i),name:$('#pn'+i),tag:$('#pt'+i),score:$('#ps'+i),meta:$('#pm'+i)}))
+};
+let lastTimerText='';
+function timerView(left,limit){
+  const t=Math.max(0,left),txt=fmtSec(t);
+  el.tfill.style.transform='scaleX('+clamp(t/limit,0,1)+')';
+  if(txt!==lastTimerText){lastTimerText=txt;el.tnum.textContent=txt;}
+  el.timer.classList.toggle('low',t<=Math.min(5,limit*.4)&&(G.phase==='playing'||G.phase==='steal'));
+}
+/* en pantallas estrechas la tarjeta inferior tapa el globo: lo subimos un poco */
+function camOffsetFor(ph){
+  return 0;
+}
+function ui(){
+  const ph=G.phase,t=G.turns[G.ti],c=G.cur,rounds=G.settings.rounds,limit=G.settings.limit;
+  app.dataset.phase=ph;
+  const inTurn=!!t&&(ph==='ready'||ph==='playing'||ph==='steal'||ph==='result'||ph==='paused');
+  const ap=inTurn?(ph==='steal'&&c&&c.steal?c.steal.player:t.player):null;
+  app.dataset.active=ap===null?'':String(ap);
+
+  G.players.forEach((p,i)=>{
+    const e=el.cards[i];
+    e.name.textContent=p.name;e.score.textContent=p.score;
+    e.meta.textContent=p.found+'/'+rounds+(p.streak>1?' · ×'+p.streak:'');
+    e.root.classList.toggle('active',ap===i);e.tag.hidden=ap!==i;
+  });
+
+  let kick='Duelo de países',name='—';
+  const it=t&&t.item;
+  if(inTurn){
+    const rr='Ronda '+(t.round+1)+'/'+rounds;
+    if(ph==='ready'){kick=rr+' · Turno de '+G.players[t.player].name;name=it.kicker;}
+    else if(ph==='playing'){kick=rr+' · '+it.kicker;name=it.prompt;}
+    else if(ph==='steal'){kick='Robo · '+G.players[c.steal.player].name;name=it.prompt;}
+    else if(ph==='paused'){kick=rr+' · En pausa';name='• • •';}
+    else{kick=rr+' · Resultado';name=it.kind==='falso'?it.country.es:(it.kind==='rank'?'Orden correcto':it.label);}
+  }
+  if(ph==='final'){
+    const a=G.players[0],b=G.players[1];
+    kick='Partida terminada';name=a.score===b.score?'Empate':'Gana '+(a.score>b.score?a.name:b.name);
+  }
+  el.kick.textContent=kick;el.cname.textContent=name;
+  el.say.textContent=(ph==='playing'||ph==='steal')?G.say:'';
+  el.say.classList.toggle('bad',G.sayBad&&(ph==='playing'||ph==='steal'));
+
+  el.timer.hidden=!inTurn||ph==='result';
+  if(inTurn){
+    if(ph==='result'&&c&&c.result)timerView(c.result.left,limit);
+    else if(ph==='ready')timerView(limit,limit);
+    else if(ph==='steal'&&c&&c.steal)timerView(stealLeft(),c.steal.limit);
+  }
+  const mult=$('#mult');
+  if(mult){
+    const m=(ph==='ready'||ph==='playing')&&c?(c.bet||1):1;
+    mult.hidden=m===1;
+    mult.textContent='×'+m;
+    mult.dataset.high=m>2?'1':'';
+  }
+
+  /* muelle: sólo aparece cuando hay algo que hacer */
+  const playing=ph==='playing',stealing=ph==='steal';
+  el.dock.hidden=!(playing||stealing||ph==='paused');
+  const h=hintFor(it);
+  if(h&&playing){
+    el.bHint.hidden=false;
+    el.bHint.innerHTML=h.label+' <b>−'+h.cost+'</b>';
+    el.bHint.disabled=!c||(h.id==='fifty'?c.hintL:c.hintZ);
+  }else el.bHint.hidden=true;
+  el.bPass.textContent=stealing?'Dejar':'Pasar';
+  el.bPass.disabled=!(playing||stealing);
+  el.bPause.disabled=!(playing||stealing);
+
+  camTarget=camOffsetFor(ph);
+  renderTurnCard();renderOpts();renderPanel();
+}
+function betLine(m){
+  return m===1?'Sin riesgo: fallar no resta.'
+    :m===2?'El doble si aciertas. Si fallas, −30.'
+    :'El triple si aciertas. Si fallas, −60.';
+}
+function setBet(m){
+  if(G.phase!=='ready')return;
+  G.cur.bet=m;
+  el.tc.querySelectorAll('[data-bet]').forEach(b=>{
+    const on=+b.dataset.bet===m;
+    b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on));
+  });
+  const line=$('#betline');if(line)line.textContent=betLine(m);
+  const mult=$('#mult');
+  if(mult){mult.hidden=m===1;mult.textContent='×'+m;mult.dataset.high=m>2?'1':'';}
+}
+
+function renderPanel(){
+  const ph=G.phase,t=G.turns[G.ti],c=G.cur,box=el.panel,it=t&&t.item;
+  const show=ph==='playing'&&it&&(it.ui==='slider'||it.ui==='order')&&c;
+  const key=show?(it.ui==='slider'?G.ti+'|s':G.ti+'|o|'+c.order.join(',')):'';
+  if(box.dataset.key===key)return;
+  box.dataset.key=key;
+  if(!show){box.hidden=true;box.innerHTML='';return;}
+  box.hidden=false;
+  if(it.ui==='slider'){
+    box.innerHTML='<div class="est-head"><span class="tc-kicker">Tu estimación</span><span class="est" id="estv">'+kmText(kmFromSv(c.sv))+'</span></div>'+
+      '<input type="range" id="est" min="0" max="1000" step="1" value="'+c.sv+'" aria-label="Distancia estimada en kilómetros">'+
+      '<div class="est-foot"><span class="est-scale">0 – 20 000 km</span><button class="btn primary" type="button" data-act="est">Confirmar</button></div>';
+  }else{
+    const n=it.shown.length;
+    box.innerHTML='<p class="tc-kicker">De mayor a menor · '+c.order.length+'/'+n+'</p><div class="chips">'+
+      it.shown.map((s,i)=>{const pos=c.order.indexOf(i);
+        return '<button class="chip" type="button" data-i="'+i+'"'+(pos>=0?' disabled':'')+'>'+(pos>=0?'<b>'+(pos+1)+'</b>':'')+'<span>'+esc(s.name)+'</span></button>';}).join('')+
+      '</div><div class="tc-actions"><button class="btn" type="button" data-act="undo"'+(c.order.length?'':' disabled')+'>Deshacer</button>'+
+      '<button class="btn primary" type="button" data-act="rank"'+(c.order.length===n?'':' disabled')+'>Confirmar</button></div>';
+  }
+}
+function renderOpts(){
+  const ph=G.phase,t=G.turns[G.ti],box=el.opt;
+  const show=(ph==='playing'||ph==='steal')&&t&&t.item.opts;
+  const key=show?G.ti+'|'+t.item.opts.map(o=>o.t+(o.off?'x':'')).join('~'):'';
+  if(box.dataset.key===key)return;
+  box.dataset.key=key;
+  if(!show){box.hidden=true;box.innerHTML='';return;}
+  box.hidden=false;
+  box.classList.toggle('wide',!!t.item.wide);
+  box.innerHTML=t.item.opts.map((o,i)=>'<button class="opt" type="button" data-i="'+i+'"'+(o.off?' disabled':'')+
+    '><kbd>'+(i+1)+'</kbd><span>'+esc(o.t)+'</span></button>').join('');
+}
+function renderTurnCard(){
+  const tc=el.tc,ph=G.phase,t=G.turns[G.ti],c=G.cur;
+  tc.classList.toggle('res',ph==='result');
+  const key=ph+'|'+G.ti+'|'+G.viewMap;
+  if(tc.dataset.key===key)return;
+  tc.dataset.key=key;
+  if(ph==='ready'&&t){
+    const cur=(c&&c.bet)||1;
+    tc.hidden=false;
+    tc.innerHTML='<p class="tc-kicker">Riesgo'+(t.item.review?' · Repaso':'')+'</p>'+
+      '<p class="tc-title">¿Cuánto arriesgas?</p>'+
+      '<p class="tc-text">'+G.settings.limit+' s · '+(t.item.ui==='globe'?'3 intentos':'un solo intento')+'. El reloj arranca al mostrar la pregunta.</p>'+
+      '<div class="bets" role="group" aria-label="Riesgo de la ronda">'+
+        BETS.map(b=>'<button type="button" class="bet'+(b.m===cur?' on':'')+'" data-bet="'+b.m+'" aria-pressed="'+(b.m===cur)+'">'+
+          '<b>×'+b.m+'</b><span>'+b.name+'</span></button>').join('')+
+      '</div>'+
+      '<p class="tc-text betline" id="betline">'+betLine(cur)+'</p>'+
+      '<div class="tc-actions"><button class="btn primary" type="button" data-act="reveal">Mostrar pregunta</button></div>';
+    const b=tc.querySelector('[data-act=reveal]');if(b)b.focus({preventScroll:true});
+  }else if(ph==='result'&&t&&c&&c.result){
+    const r=c.result,s=c.steal,last=G.ti>=G.turns.length-1;
+    const isF=t.item.kind==='falso';
+    const ans=isF?'«'+esc(t.item.label)+'»':esc(t.item.label)+(t.item.info?', '+esc(t.item.info):'');
+    let kick,title,cls,detail;
+    if(s&&s.ok){
+      kick='Robo · '+esc(G.players[s.player].name);
+      title='+'+s.pts+' puntos';cls='ok';
+      detail='Era '+ans+'. '+esc(G.players[t.player].name)+' no la tenía; '+esc(G.players[s.player].name)+' la robó a tiempo.';
+    }else{
+      kick=(r.ok?'Correcto':(r.pts>0?'Parcial':'Sin puntos'))+' · '+esc(G.players[t.player].name);
+      title=(r.pts>0?'+'+r.pts+' puntos':'0 puntos');
+      cls=r.ok?'ok':(r.pts>0?'':'no');
+      detail=r.detail?(r.ok?'':esc(r.why)+'. ')+esc(r.detail)
+        :isF
+          ?(r.ok?'«'+esc(t.item.label)+'» era la falsa, en '+fmtSec(r.used)+'.':'La falsa era «'+esc(t.item.label)+'».')
+          :r.ok
+            ?ans+' en '+fmtSec(r.used)+' · '+(c.wrongs===0?'a la primera':c.wrongs+(c.wrongs===1?' fallo':' fallos'))+(r.bonus?' · racha +'+r.bonus:'')
+            :esc(r.why)+'. Era '+ans+'.';
+      if(r.penalty)detail+=' Apuesta ×'+r.bet+': −'+r.penalty+'.';
+      else if(r.bet>1&&r.ok)detail+=' Apuesta ×'+r.bet+'.';
+      if(s&&!s.ok)detail+=' El robo de '+esc(G.players[s.player].name)+(s.declined?' quedó sin intentar.':' falló.');
+    }
+    tc.hidden=false;
+    tc.innerHTML='<p class="tc-kicker">'+kick+'</p>'+
+      '<p class="tc-title '+cls+'">'+title+'</p>'+
+      '<p class="tc-text">'+detail+'</p>'+
+      '<div class="tc-actions"><button class="btn primary" type="button" data-act="next">'+(last?'Ver resultados':'Siguiente turno')+'</button></div>';
+    const b=tc.querySelector('button');if(b)b.focus({preventScroll:true});
+  }else if(ph==='final'&&G.viewMap){
+    tc.hidden=false;
+    tc.innerHTML='<p class="tc-kicker">Mapa final</p><p class="tc-text">Cada color muestra quién se quedó ese país. En gris, los que nadie encontró.</p>'+
+      '<div class="tc-actions"><button class="btn primary" type="button" data-act="summary">Volver al resumen</button></div>';
+  }else{tc.hidden=true;tc.innerHTML='';}
+}
+function showFinal(){
+  const a=G.players[0],b=G.players[1];
+  const w=a.score===b.score?-1:(a.score>b.score?0:1);
+  const head=w<0?'Empate':'Gana '+esc(G.players[w].name);
+  const sub=w<0?'Los dos terminaron con '+a.score+' puntos.':'Por '+Math.abs(a.score-b.score)+' puntos de diferencia.';
+  const stat=p=>{
+    const avg=p.times.length?fmtSec(p.times.reduce((s,x)=>s+x,0)/p.times.length):'—';
+    const best=p.times.length?fmtSec(Math.min.apply(null,p.times)):'—';
+    return '<ul><li>Encontrados: '+p.found+' de '+G.settings.rounds+'</li><li>A la primera: '+p.first+'</li>'+
+      (p.steals?'<li>Robos: '+p.steals+'</li>':'')+
+      '<li>Tiempo medio: '+avg+'</li><li>Mejor tiempo: '+best+'</li></ul>';
+  };
+  const box=(p,i)=>'<div class="sbox'+(i===1?' p1':'')+(w===i?' win':'')+'">'+
+    '<div class="n"><span class="mark '+(i?'m1':'m0')+'" aria-hidden="true"></span><span class="nm">'+esc(p.name)+'</span>'+(w===i?'<span class="ptag">Ganador</span>':'')+'</div>'+
+    '<div class="big">'+p.score+'</div>'+stat(p)+'</div>';
+  let rows='';
+  for(let r=0;r<G.settings.rounds;r++){
+    const cell=pi=>{
+      const e=G.log.find(x=>x.round===r&&x.player===pi);
+      if(!e)return '<td>—</td>';
+      return '<td class="'+(e.ok?'':'no')+'">'+esc(e.name)+' · '+(e.pts?'+'+e.pts:e.penalty?'−'+e.penalty:'0')+(e.steal&&e.steal.ok?' · robo':'')+'</td>';
+    };
+    rows+='<tr><td>'+(r+1)+'</td>'+cell(0)+cell(1)+'</tr>';
+  }
+  $('#final-sheet').innerHTML=
+    '<div class="brand">Geoduelo</div><h2>'+head+'</h2><p class="lead">'+sub+'</p>'+
+    '<div class="score2">'+box(a,0)+box(b,1)+'</div>'+
+    '<details class="log"><summary>Detalle ronda a ronda</summary><div class="tablewrap"><table><thead><tr><th>Ronda</th><th>'+esc(a.name)+'</th><th>'+esc(b.name)+'</th></tr></thead><tbody>'+rows+'</tbody></table></div></details>'+
+    '<div class="row"><button class="btn primary" type="button" data-act="rematch">Revancha</button>'+
+    '<button class="btn" type="button" data-act="map">Ver el mapa</button>'+
+    '<button class="btn ghost" type="button" data-act="menu">Nuevo duelo</button>'+
+    (arcadeSession?'<button class="btn ghost" type="button" data-act="exit">Volver a Arcade</button>':'')+'</div>';
+  $('#m-final').hidden=false;
+  const pb=$('#final-sheet').querySelector('.btn.primary');if(pb)pb.focus({preventScroll:true});
+}
+
+/* ============================================================
+   12. Bucle de animación
+   ============================================================ */
+let lastCoords='';
+function updCoords(){
+  const f=(v,p,n)=>Math.abs(v).toFixed(1).replace('.',',')+'° '+(v>=0?p:n);
+  const s=f(view.lat,'N','S')+'  ·  '+f(view.lon,'E','O')+'  ·  ×'+view.zoom.toFixed(1).replace('.',',');
+  if(s!==lastCoords){lastCoords=s;el.coords.textContent=s;}
+}
+let last=performance.now(),lastDraw=0,ready3d=false;
+const spinning=()=>G.phase==='loading'||G.phase==='menu'||G.phase==='final';
+
+function frame(now){
+  requestAnimationFrame(frame);
+  if(document.hidden)return;
+  const dt=Math.min(64,now-last);last=now;
+  if(now-lastDraw<32)return;
+  if(!ready3d)return;
+  if(anim){
+    const k=Math.min(1,(now-anim.t0)/anim.dur),e=k<.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2;
+    view.lon=norm180(anim.lon0+anim.dl*e);view.lat=anim.lat0+(anim.lat1-anim.lat0)*e;
+    view.zoom=anim.z0*Math.pow(anim.z1/anim.z0,e);
+    if(k>=1)anim=null;dirty=true;
+  }
+  if(inertia){
+    view.lon=norm180(view.lon+inertia.vx*dt);view.lat=clamp(view.lat+inertia.vy*dt,-88,88);
+    const f=Math.pow(.02,dt/1000);inertia.vx*=f;inertia.vy*=f;
+    if(Math.hypot(inertia.vx,inertia.vy)<.003)inertia=null;
+    dirty=true;
+  }
+  if(Math.abs(camTarget-camY)>.4){camY+=(camTarget-camY)*.18;dirty=true;}
+  else if(camY!==camTarget){camY=camTarget;dirty=true;}
+  if(spinning()&&!drag&&!anim&&!REDUCE){view.lon=norm180(view.lon+dt*.006);dirty=true;}
+  if(hoverDirty){
+    hoverDirty=false;
+    if((G.phase==='playing'||G.phase==='steal')&&hoverPos&&!drag&&!isPanelKind()){setProj();const i=hitAt(hoverPos.x,hoverPos.y);hoverIdx=i>=0?i:-1;}
+    else hoverIdx=-1;
+    dirty=true;
+  }
+  if(G.phase==='playing'){
+    const left=G.settings.limit-elapsed();
+    timerView(left,G.settings.limit);
+    if(left<=5&&left>0){const s=Math.ceil(left);if(s!==G.cur.lastTick){G.cur.lastTick=s;Snd.tick();}}
+    if(left<=0){endTurn(false,'Se acabó el tiempo');}
+  }else if(G.phase==='steal'&&G.cur&&G.cur.steal){
+    const left=stealLeft();
+    timerView(left,G.cur.steal.limit);
+    if(left<=3&&left>0){const s=Math.ceil(left);if(s!==G.cur.steal.lastTick){G.cur.steal.lastTick=s;Snd.tick();}}
+    if(left<=0){endSteal(false);}
+  }
+  /* el pulso del resultado no necesita 60 fps: 30 bastan y ahorran CPU */
+  if(dirty||(G.phase==='result'&&now-lastDraw>32)){dirty=false;lastDraw=now;draw(now);updCoords();}
+}
+
+/* ============================================================
+   13. Configuración: categoría → tipo → ajustes
+   ============================================================ */
+function renderCats(){
+  $('#cats').innerHTML=CATS.map(c=>'<button type="button" class="cat" data-cat="'+c.id+'" aria-pressed="'+(G.pick.cat===c.id)+'">'+
+    '<b>'+c.name+'</b><span>'+c.desc+'</span></button>').join('');
+}
+function renderModes(){
+  const box=$('#modes');
+  if(G.pick.cat==='mixto'){
+    G.pick.mode='mixto';
+    box.innerHTML='<p class="mnote">Un tipo distinto en cada turno: ubicar, elegir, calcular y ordenar. La forma más variada de jugar.</p>';
+  }else{
+    const list=Object.keys(KINDS).filter(k=>KINDS[k].cat===G.pick.cat);
+    if(list.indexOf(G.pick.mode)<0)G.pick.mode=list[0];
+    box.innerHTML=list.map(k=>'<button type="button" class="mode" data-mode="'+k+'" aria-pressed="'+(G.pick.mode===k)+'">'+
+      '<b>'+KINDS[k].name+'</b><span>'+KINDS[k].desc+'</span></button>').join('');
+  }
+  updateLevelHint();
+}
+function updateLevelHint(){
+  const out=$('#lvlhint');
+  if(!ELIG.length){out.textContent='El conjunto de preguntas se ajusta al mapa cargado.';return;}
+  const n=ELIG.length;
+  const lvEl=document.querySelector('input[name="level"]:checked');
+  const lv=lvEl?lvEl.value:'medio',md=G.pick.mode;
+  const country={facil:'Los '+Math.min(50,n)+' países más grandes.',
+    medio:'Los '+Math.min(110,n)+' países más grandes.',
+    dificil:'Todos los países ('+n+'), incluidos los pequeños. En los más chicos se acepta un margen de 70 a 150 km.'};
+  const point={facil:'Los más conocidos. Se acepta un margen de 450 km.',
+    medio:'Un conjunto más variado. Margen de 260 km.',
+    dificil:'Todos. Margen de 130 km; los mares y cordilleras tienen una zona propia más amplia.'};
+  const mixed={facil:'Los países más grandes y los lugares más conocidos, con márgenes amplios.',
+    medio:'Un conjunto variado de países y lugares, con márgenes medios.',
+    dificil:'Todo el mapa y todas las ciudades, con márgenes estrictos.'};
+  const special={
+    dist:{facil:'Ciudades conocidas. Aciertas con un error de hasta 20 %.',
+      medio:'Más ciudades, incluidas peruanas. Error máximo de 12 %.',dificil:'Todas las ciudades. Error máximo de 6 %.'},
+    tz:{facil:'Siempre desde o hacia Lima, con diferencias de horas exactas.',
+      medio:'Más ciudades, siempre con Lima, con horario de verano.',dificil:'Cualquier par de ciudades, con husos de media hora y de 45 minutos.'}};
+  let txt;
+  if(special[md])txt=special[md];
+  else if(md==='cap'||md==='place')txt=point;
+  else if(md==='mixto')txt=mixed;
+  else txt=country;
+  let s=txt[lv];
+  if(md==='lang'&&lv==='dificil')s+=' Incluye preguntas de «cuál NO es idioma oficial».';
+  if(md==='rank'||md==='mixto')s+=' Las cifras de población son aproximadas.';
+  out.textContent=s;
+}
+
+/* ============================================================
+   14. Arranque
+   ============================================================ */
+function initWorld(raw){
+  feats=prepare(raw);
+  ELIG=feats.filter(f=>f._ok).sort((a,b)=>b._area-a._area);
+  if(ELIG.length<10)throw new Error('pocos');
+  $('#m-load').hidden=true;
+  renderCats();renderModes();
+  G.phase='menu';ui();arcadeSend('ready');
+  $('#m-menu').hidden=false;
+  const n0=$('#n0');if(n0)n0.focus({preventScroll:true});
+  dirty=true;
+}
+function initRenderer(){
+  proj=d3.geo.orthographic().clipAngle(90).precision(.5);
+  path=d3.geo.path().projection(proj).context(ctx);
+  grat=d3.geo.graticule().step([15,15])();
+  readTheme();resize();initPointer();
+  new ResizeObserver(resize).observe(canvas);
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change',readTheme);
+  new MutationObserver(readTheme).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+  ready3d=true;
+}
+function loadFail(msg,canUpload){
+  $('#load-wait').hidden=true;$('#load-err').hidden=false;
+  $('#load-msg').textContent=msg;$('#load-file').hidden=!canUpload;
+}
+let booting=false;
+async function boot(){
+  if(booting)return;
+  booting=true;$('#bRetry').disabled=true;
+  try{
+  $('#load-wait').hidden=false;$('#load-err').hidden=true;
+  if(!(window.d3&&d3.geo&&d3.geo.orthographic)){
+    try{await loadScript(D3_URLS);}catch(e){}
+  }
+  if(!(window.d3&&d3.geo&&d3.geo.orthographic)){
+    loadFail('No se pudo cargar la librería del globo. Revisa tu conexión e inténtalo de nuevo.',false);return;
+  }
+  if(!ready3d)initRenderer();
+  const abort=new AbortController(),timeout=setTimeout(()=>abort.abort(),12000);
+  try{
+    const response=await fetch('./world.json',{signal:abort.signal});
+    if(!response.ok)throw new Error('map');
+    initWorld(anyToFeatures(await response.json()));
+  }catch(e){loadFail('No se pudo cargar el mapa. Comprueba tu conexión y pulsa Reintentar.',false);}
+  finally{clearTimeout(timeout);}
+  }finally{booting=false;$('#bRetry').disabled=false;}
+}
+
+function bind(){
+  /* --- configuración --- */
+  $('#cats').addEventListener('click',e=>{
+    const b=e.target.closest('[data-cat]');if(!b)return;
+    G.pick.cat=b.dataset.cat;renderCats();renderModes();
+  });
+  $('#modes').addEventListener('click',e=>{
+    const b=e.target.closest('[data-mode]');if(!b)return;
+    G.pick.mode=b.dataset.mode;renderModes();
+  });
+  document.querySelectorAll('input[name="level"]').forEach(i=>i.addEventListener('change',updateLevelHint));
+  $('#setup').addEventListener('submit',e=>{
+    e.preventDefault();
+    const v=n=>document.querySelector('input[name="'+n+'"]:checked').value;
+    G.players=[mkPlayer(($('#n0').value||'').trim()||'Jugador 1'),mkPlayer(($('#n1').value||'').trim()||'Jugador 2')];
+    G.settings.rounds=parseInt(v('rounds'),10);
+    G.settings.limit=parseInt(v('limit'),10);
+    G.settings.level=v('level');
+    G.settings.mode=G.pick.mode;
+    G.startFirst=0;startGame();
+  });
+
+  /* --- turno --- */
+  el.tc.addEventListener('click',e=>{
+    const betBtn=e.target.closest('[data-bet]');
+    if(betBtn){setBet(parseInt(betBtn.dataset.bet,10));return;}
+    const b=e.target.closest('[data-act]');if(!b)return;
+    const a=b.dataset.act;
+    if(a==='reveal')reveal();
+    else if(a==='next')nextTurn();
+    else if(a==='summary'){G.viewMap=false;$('#m-final').hidden=false;el.tc.dataset.key='';ui();}
+  });
+  el.panel.addEventListener('click',e=>{
+    const b=e.target.closest('.chip,[data-act]');if(!b)return;
+    if(b.classList.contains('chip'))pickRank(parseInt(b.dataset.i,10));
+    else if(b.dataset.act==='undo')undoRank();
+    else if(b.dataset.act==='rank')submitRank();
+    else if(b.dataset.act==='est')submitSlider();
+  });
+  el.panel.addEventListener('input',e=>{
+    if(e.target.id!=='est'||!G.cur)return;
+    G.cur.sv=parseInt(e.target.value,10);
+    const v=$('#estv');if(v)v.textContent=kmText(kmFromSv(G.cur.sv));
+  });
+  el.opt.addEventListener('click',e=>{const b=e.target.closest('.opt');if(b)pickOpt(parseInt(b.dataset.i,10));});
+
+  /* --- muelle --- */
+  el.bHint.addEventListener('click',useHint);
+  el.bPass.addEventListener('click',passTurn);
+  el.bPause.addEventListener('click',pause);
+  $('#bResume').addEventListener('click',resume);
+  $('#bSnd').addEventListener('click',e=>{
+    Snd.init();Snd.on=!Snd.on;
+    soundState(Snd.on);arcadeSend('sound',{sound:Snd.on});
+    if(Snd.on)Snd.go();
+  });
+
+  /* --- vista --- */
+  $('.zoomer').addEventListener('click',e=>{
+    const b=e.target.closest('[data-z]');if(!b)return;
+    const z=b.dataset.z;
+    if(z==='in')flyTo(view.lon,view.lat,view.zoom*1.5,REDUCE?0:250);
+    else if(z==='out')flyTo(view.lon,view.lat,view.zoom/1.5,REDUCE?0:250);
+    else flyTo(view.lon,clamp(view.lat,-25,25),1,REDUCE?0:500);
+  });
+
+  /* --- final --- */
+  $('#final-sheet').addEventListener('click',e=>{
+    const b=e.target.closest('[data-act]');if(!b)return;
+    const a=b.dataset.act;
+    if(a==='exit'){arcadeSend('exit');return;}
+    if(a==='rematch'){G.startFirst=1-G.startFirst;startGame();}
+    else if(a==='map'){G.viewMap=true;$('#m-final').hidden=true;el.tc.dataset.key='';ui();}
+    else if(a==='menu'){
+      $('#m-final').hidden=true;G.viewMap=false;
+      feats.forEach(f=>{f._own=undefined;});
+      G.marks=[];G.cur=null;G.ti=-1;G.turns=[];
+      G.players=[mkPlayer(G.players[0].name),mkPlayer(G.players[1].name)];
+      G.phase='menu';ui();$('#m-menu').hidden=false;dirty=true;
+    }
+  });
+
+  /* --- carga --- */
+  $('#bRetry').addEventListener('click',boot);
+  $('#mapfile').addEventListener('change',e=>{
+    const file=e.target.files&&e.target.files[0];if(!file)return;
+    const rd=new FileReader();
+    rd.onload=()=>{
+      try{initWorld(anyToFeatures(JSON.parse(rd.result)));}
+      catch(err){$('#load-msg').textContent='Ese archivo no tiene el formato esperado. Prueba con un TopoJSON o GeoJSON de países.';}
+    };
+    rd.readAsText(file);
+  });
+
+  /* --- teclado --- */
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Escape'){if(G.phase==='playing'||G.phase==='steal')pause();else if(G.phase==='paused')resume();}
+    else if(G.phase==='ready'&&/^[1-3]$/.test(e.key))setBet(parseInt(e.key,10));
+    else if((G.phase==='playing'||G.phase==='steal')&&/^[1-4]$/.test(e.key)&&isOptKind())pickOpt(parseInt(e.key,10)-1);
+  });
+  document.addEventListener('visibilitychange',()=>{if(document.hidden){pause();Snd.ctx?.suspend().catch(()=>{});}else{last=performance.now();dirty=true;}});
+}
+
+
+const arcadeSession=new URLSearchParams(location.hash.slice(1)).get('session');
+let arcadeMatch='';
+function arcadeSend(action,detail={}){
+  if(window.parent!==window&&arcadeSession)window.parent.postMessage({type:'esan:geoduelo',version:1,session:arcadeSession,action,...detail},location.origin);
+}
+function soundState(on){
+  Snd.on=!!on;
+  const b=$('#bSnd');b.setAttribute('aria-pressed',String(Snd.on));b.setAttribute('aria-label',Snd.on?'Silenciar sonidos':'Activar sonidos');
+  b.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m11 5-5 4H3v6h3l5 4z"/>'+(Snd.on?'<path d="M15 8a6 6 0 0 1 0 8M18 5a10 10 0 0 1 0 14"/>':'<path d="m16 9 5 6m0-6-5 6"/>')+'</svg>';
+  b.style.opacity=Snd.on?'':'0.45';
+  if(!Snd.on)Snd.ctx?.suspend().catch(()=>{});
+}
+window.addEventListener('message',e=>{
+  const m=e.data;
+  if(e.source!==window.parent||e.origin!==location.origin||!m||m.type!=='esan:geoduelo'||m.version!==1||m.session!==arcadeSession)return;
+  if(m.action==='init'){
+    soundState(m.sound);
+    if(G.phase==='menu'&&m.playerName)$('#n0').value=String(m.playerName).slice(0,14);
+    $('#account-note').textContent=m.account?'Jugador 1 registra sus puntos con tu cuenta. Jugador 2 juega como invitado.':'Duelo local para dos personas. Inicia sesión en la plataforma para guardar los puntos del Jugador 1.';
+  }else if(m.action==='sound')soundState(m.sound);
+  else if(m.action==='pause')pause();
+});
+window.addEventListener('pagehide',()=>{Snd.ctx?.close().catch(()=>{});});
+document.addEventListener('focusin',e=>{
+  const modal=[...document.querySelectorAll('.modal')].find(m=>!m.hidden);
+  if(modal&&!modal.contains(e.target)){
+    [...modal.querySelectorAll('button,input,summary')].find(b=>!b.disabled&&b.getClientRects().length)?.focus({preventScroll:true});
+  }
+});
+// Keep keyboard focus inside the active setup, pause or results dialog.
+document.addEventListener('keydown',e=>{
+  const modal=[...document.querySelectorAll('.modal')].find(m=>!m.hidden);
+  if(!modal)return;
+  if(e.key==='Tab'){
+    const all=[...modal.querySelectorAll('button,input,summary,[tabindex="0"]')].filter(b=>!b.disabled&&b.getClientRects().length);
+    const first=all[0],last=all.at(-1);
+    if(!first)return;
+    if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}
+    else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
+  }
+},true);
+
+bind();ui();
+requestAnimationFrame(frame);
+boot();
+})();
+</script>
+</body>
+</html>

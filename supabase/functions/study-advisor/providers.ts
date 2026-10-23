@@ -1,5 +1,5 @@
 export const DEFAULT_GEMINI_MODEL = "gemini-3.5-flash-lite";
-const DEFAULTS: Record<string, string> = {
+export const DEFAULTS: Record<string, string> = {
   gemini: DEFAULT_GEMINI_MODEL,
   groq: "openai/gpt-oss-20b",
   openrouter: "openrouter/free",
@@ -13,7 +13,7 @@ const refusalReasons = new Set([
   "SAFETY", "BLOCKLIST", "PROHIBITED_CONTENT", "SPII", "IMAGE_SAFETY",
   "content_filter", "safety", "refusal",
 ]);
-type Provider = { name: string; model: string; key: string };
+export type Provider = { name: string; model: string; key: string };
 type Gate = { allowed: boolean; retryAfterSeconds?: number };
 type Outcome = {
   answer?: string; source?: string; model?: string; error?: string;
@@ -48,25 +48,29 @@ function retryAfter(response: Response, body: any): number {
 }
 
 export async function generateAdvisorAnswer({
-  providers, system, context, history, fetch, reserve, report,
+  providers, system, context, history, fetch, reserve, report, validateAnswer = () => true, maxOutputTokens = 1800, maxAttempts = 4, deadlineMs = 42000,
 }: {
   providers: Provider[];
   system: string;
   context: string;
   history: { role: string; content: string }[];
   fetch: typeof globalThis.fetch;
+  validateAnswer?: (answer: string) => boolean;
+  maxOutputTokens?: number;
+  maxAttempts?: number;
+  deadlineMs?: number;
   reserve: (provider: string, model: string) => Promise<Gate | null>;
   report: (provider: string, model: string, status: string, wait: number, duration: number) => Promise<void>;
 }): Promise<Outcome> {
   if (!providers.length) return { error: "configuration_missing", attempts: 0 };
-  const deadline = Date.now() + 42000;
+  const deadline = Date.now() + Math.min(42000, Math.max(1,deadlineMs));
   let attempts = 0, lastError = "provider_unavailable";
   const waits: number[] = [];
   for (const provider of providers) {
     const models = provider.name === "gemini" && provider.model !== DEFAULT_GEMINI_MODEL
       ? [provider.model, DEFAULT_GEMINI_MODEL] : [provider.model];
     for (const model of models) {
-      if (attempts >= 4 || Date.now() >= deadline) break;
+      if (attempts >= Math.min(4,Math.max(1,maxAttempts)) || Date.now() >= deadline) break;
       let gate: Gate | null;
       try { gate = await reserve(provider.name, model); }
       catch { gate = null; }
@@ -87,7 +91,7 @@ export async function generateAdvisorAnswer({
             ...history.map((item) => ({ role: item.role === "assistant" ? "model" : "user", parts: [{ text: item.content }] })),
             { role: "user", parts: [{ text: context }] },
           ],
-          generationConfig: { temperature: 0.25, maxOutputTokens: 1800 },
+          generationConfig: { temperature: 0.25, maxOutputTokens: Math.min(6000, Math.max(256, maxOutputTokens)) },
           safetySettings: ["HARASSMENT", "HATE_SPEECH", "SEXUALLY_EXPLICIT", "DANGEROUS_CONTENT"].map((category) => ({
             category: `HARM_CATEGORY_${category}`, threshold: "BLOCK_MEDIUM_AND_ABOVE",
           })),
@@ -95,7 +99,7 @@ export async function generateAdvisorAnswer({
           model,
           messages: [{ role: "system", content: system }, ...history, { role: "user", content: context }],
           temperature: 0.25,
-          max_completion_tokens: 1800,
+          max_completion_tokens: Math.min(6000, Math.max(256, maxOutputTokens)),
           ...(provider.name === "groq" && model.startsWith("openai/gpt-oss") ? { reasoning_effort: "low", include_reasoning: false } : {}),
           // Sin reintentos internos que cambien de modelo tras un rechazo de seguridad.
           ...(provider.name === "openrouter" ? { provider: { allow_fallbacks: false }, plugins: [] } : {}),
@@ -117,15 +121,15 @@ export async function generateAdvisorAnswer({
         const code = Number(body?.error?.code) || response.status;
         const blocked = !!body?.promptFeedback?.blockReason ||
           refusalReasons.has(choice?.finishReason || choice?.finish_reason) ||
-          !!choice?.message?.refusal || code === 403;
+          !!choice?.message?.refusal;
         if (blocked) {
           status = "content_blocked"; pause = 0;
           return { error: status, attempts };
         }
         if (!response.ok || body?.error) {
           status = code === 429 ? "rate_limited" : code === 402 ? "credits_exhausted"
-            : [401, 404].includes(code) ? "provider_configuration" : "provider_unavailable";
-          pause = code === 429 ? retryAfter(response, body) : [401, 402].includes(code) ? 1800 : 30;
+            : [401, 403, 404, 410].includes(code) ? "provider_configuration" : "provider_unavailable";
+          pause = code === 429 ? retryAfter(response, body) : [401, 402, 403, 404, 410].includes(code) ? 1800 : 30;
           // Un modelo Gemini retirado puede sustituirse por el predeterminado.
           if (code === 404 && model !== DEFAULT_GEMINI_MODEL && gemini) {
             pause = 0;
@@ -144,6 +148,7 @@ export async function generateAdvisorAnswer({
         if (["MAX_TOKENS", "length"].includes(choice?.finishReason || choice?.finish_reason)) {
           status = "incomplete_response"; lastError = status; waits.push(pause); break;
         }
+        if (!validateAnswer(answer)) { status = "incomplete_response"; lastError = status; waits.push(pause); break; }
         status = "ok"; pause = 0;
         return { answer, source: provider.name, model: body?.model || model, attempts };
       } catch (error) {
@@ -161,4 +166,5 @@ export async function generateAdvisorAnswer({
   }
   return { error: lastError, retryAfterSeconds: Math.max(1, waits.length ? Math.min(...waits) : 60), attempts };
 }
+
 

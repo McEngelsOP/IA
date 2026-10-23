@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { createWebSessionGuard, WEB_IDLE_MS } from '../src/lib/webSession.js'
+import { createWebSessionGuard, WEB_IDLE_MS } from '../src/shared/lib/webSession.js'
 
 const session = id => ({ user: { id: 'student' }, access_token: `x.${btoa(JSON.stringify({ sub: 'student', session_id: id }))}.x` })
 function surface() {

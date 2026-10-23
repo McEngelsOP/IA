@@ -1,0 +1,95 @@
+/* Una misma curva coordina el panel y el espacio que deja al contenido. */
+#app{--side-duration:420ms;--side-ease:cubic-bezier(.22,1,.36,1)}
+
+@media(min-width:861px){
+  #app #side{
+    transition:width var(--side-duration) var(--side-ease),
+      padding var(--side-duration) var(--side-ease),
+      background-color .25s ease,border-color .25s ease;
+  }
+  #app #top{transition:left var(--side-duration) var(--side-ease)}
+  #app #page{transition:padding-left var(--side-duration) var(--side-ease),opacity .2s ease}
+  #app #bgfx{transition:left var(--side-duration) var(--side-ease),opacity .5s ease}
+
+  /* El icono permanece anclado: las etiquetas se retiran sin cambiar de fila. */
+  #app #nav .it,
+  #app[data-side=rail] #nav .it{
+    position:relative;justify-content:flex-start;padding:0 12px;overflow:hidden;
+  }
+  #app #nav .it .ic{margin:0;flex-shrink:0}
+  #app #nav .it .l,
+  #app[data-side=rail] #nav .it .l{
+    display:block;min-width:0;white-space:nowrap;overflow:hidden;
+  }
+  #app #nav .it:has(>svg) .l{padding-right:20px}
+  #app #nav .it>svg,
+  #app[data-side=rail] #nav .it>svg{
+    display:block;position:absolute;right:12px;
+  }
+  #app #nav .it .l,#app #nav .it>svg,#app #uni>div:last-child,#app #bRail{
+    opacity:1;visibility:visible;transform:translateX(0);
+    transition:opacity 180ms ease 80ms,transform 260ms var(--side-ease) 60ms,visibility 0s;
+  }
+  #app[data-side=rail] #nav .it .l,
+  #app[data-side=rail] #nav .it>svg,
+  #app[data-side=rail] #uni>div:last-child,
+  #app[data-side=rail] #bRail{
+    opacity:0;visibility:hidden;transform:translateX(-6px);pointer-events:none;
+    transition:opacity 100ms ease,transform 180ms var(--side-ease),visibility 0s 100ms;
+  }
+  #app #nav .sub{
+    transition:grid-template-rows var(--side-duration) var(--side-ease),opacity 160ms ease;
+  }
+  #app[data-side=rail] #nav .sub{display:grid;grid-template-rows:0fr;opacity:0}
+  #app[data-side=rail] #nav .sub>div{visibility:hidden}
+
+  #app #dh,
+  #app[data-side=rail] #dh{
+    position:relative;justify-content:flex-start;gap:8px;
+    min-height:34px;padding:2px 10px 10px;
+  }
+  #app #dh .lyra-brand-spacer{display:block}
+  #app #dh .brand,
+  #app[data-side=rail] #dh .brand{
+    position:relative;height:34px;
+    transition:width var(--side-duration) var(--side-ease);
+  }
+  #app #dh .brand svg,
+  #app[data-side=rail] #dh .brand svg{
+    display:block;position:absolute;top:50%;transform:translateY(-50%);
+    transition:opacity 180ms ease,visibility 0s;
+  }
+  #app #dh .lyra-logo-full{left:0;width:74px;height:32px;opacity:1;visibility:visible}
+  #app #dh .lyra-logo-symbol{left:5px;width:18px;height:21px;opacity:0;visibility:hidden}
+  #app[data-side=rail] #dh .lyra-logo-full{opacity:0;visibility:hidden}
+  #app[data-side=rail] #dh .lyra-logo-symbol{opacity:1;visibility:visible}
+  #app #bRail{display:grid;position:absolute;top:2px;right:10px}
+
+  #app #uni,
+  #app[data-side=rail] #uni{
+    justify-content:flex-start;flex-shrink:0;padding:14px 10px 4px;overflow:hidden;
+  }
+  #app #uni>div:last-child,
+  #app[data-side=rail] #uni>div:last-child{display:block;flex:0 0 192px}
+}
+
+/* En móvil, desplazamiento corto y desacelerado, sin comprimir el menú. */
+@media(max-width:860px){
+  #app[data-side=hidden] #side{
+    filter:none;transform:translate3d(-22px,0,0);
+    transition:transform 280ms var(--side-ease),opacity 180ms ease;
+  }
+  #app[data-side=hidden].dopen #side{
+    transform:translate3d(0,0,0);
+    transition:transform 380ms var(--side-ease),opacity 220ms ease;
+  }
+}
+
+/* Cambiar de tema no debe interrumpir el desplazamiento del panel. */
+@media(min-width:861px){
+  :root.tt #app #side{transition:width var(--side-duration) var(--side-ease),padding var(--side-duration) var(--side-ease),background-color .25s ease,border-color .25s ease!important}
+}
+@media(prefers-reduced-motion:reduce){
+  #app #side,#app #top,#app #page,#app #bgfx,
+  #app #side *, :root.tt #app #side{transition:none!important}
+}

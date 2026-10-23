@@ -25,7 +25,7 @@ El video pesa un 94,2 % menos. Se conserva el mismo paisaje en Full HD. MP4 H.26
 ## Validación
 
 - `node --test tests/accessBackground.test.mjs`: 8 pruebas aprobadas (inicio diferido, movimiento reducido, ahorro de datos, 2G, pestaña oculta, fallo del video y autoplay rechazado).
-- `node --check src/lib/accessController.js`, compilación Python de la prueba de viewport y `git diff --check`.
+- `node --check src/features/access/accessController.js`, compilación Python de la prueba de viewport y `git diff --check`.
 - `npm run build`: compilación de las tres entradas, con fuentes, imagen y video incluidos.
 - `tests/accessViewport.py` fue adaptada a la eliminación de replay y al panel estable. No se volvió a ejecutar la matriz completa de 80 estados: no había un Chromium local utilizable. No se atribuyen resultados nuevos a esa matriz histórica.
 
