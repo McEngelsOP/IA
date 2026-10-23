@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import assert from 'node:assert/strict'
-import { CARRERAS } from '../src/data/carreras.js'
+import { CARRERAS } from '../src/institutions/esan/carreras.js'
 const { PGlite } = await import(process.env.PGLITE_MODULE || '@electric-sql/pglite')
 const read = name => readFileSync(new URL(`../supabase/${name}`, import.meta.url), 'utf8')
 const db = new PGlite()
@@ -31,9 +31,16 @@ const historic='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
 await db.query('insert into auth.users values($1,$2,$3)',[historic,'historic@example.invalid',{student_code:'25123456',carrera:'ia'}])
 await db.query('update profiles set carrera=$1 where id=$2',['ia',historic])
 await db.query('insert into progress values($1,$2,$3)',[historic,['calc1'],['prog1']])
+// A retired account must survive without being converted to an ESAN career.
+const retired='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
+await db.query('insert into auth.users values($1,$2,$3)',[retired,'retired@example.invalid',{student_code:'20111111'}])
+await db.query('update profiles set carrera=$1 where id=$2',['pucp-mecatronica',retired])
+await db.query('insert into progress values($1,$2,$3)',[retired,['pucp-old-course'],[]])
 // The migration also works without the optional sections installed.
 await db.exec(read('careers_catalog.sql'));await db.exec(read('careers_catalog.sql'))
 assert.deepEqual((await db.query('select done,plan from progress where student_id=$1',[historic])).rows[0],{done:['calc1'],plan:['prog1']})
+assert.equal((await db.query('select carrera from profiles where id=$1',[retired])).rows[0].carrera,'pucp-mecatronica')
+assert.deepEqual((await db.query('select done from progress where student_id=$1',[retired])).rows[0].done,['pucp-old-course'])
 await db.exec(read('focus_sessions.sql'));await db.exec(read('logros.sql'))
 await db.exec(read('careers_catalog.sql'));await db.exec(read('careers_catalog.sql'))
 const as=async uid=>{await db.exec('reset role');await db.query("select set_config('request.jwt.claim.sub',$1,false)",[uid]);await db.exec('set role authenticated')}
@@ -42,9 +49,10 @@ for(const [key,career] of Object.entries(CARRERAS)){
   await db.exec('reset role');await db.query("select set_config('request.jwt.claim.sub','',false)")
   index++
   const uid=`00000000-0000-4000-8000-${String(index).padStart(12,'0')}`
-  const code=(key==='pucp-mecatronica'?'20':'25')+String(index).padStart(6,'0')
+  const code='25'+String(index).padStart(6,'0')
   await db.query('insert into auth.users values($1,$2,$3)',[uid,`career${index}@example.invalid`,{student_code:code,carrera:key}])
-  assert.equal((await db.query('select carrera from profiles where id=$1',[uid])).rows[0].carrera,key)
+  const profile=(await db.query('select carrera,institution_id,curriculum_version from profiles where id=$1',[uid])).rows[0]
+  assert.equal(profile.carrera,key);assert.equal(profile.institution_id,'esan');assert.equal(profile.curriculum_version,career.version)
   const course=career.cursos.find(c=>c.cr>0)
   await db.query('insert into course_status values($1,$2,$3,1)',[uid,course.id,'matriculado'])
   await db.query('insert into progress values($1,$2,$3)',[uid,career.cursos.slice(0,-1).map(c=>c.id),[]])
@@ -53,6 +61,7 @@ for(const [key,career] of Object.entries(CARRERAS)){
   assert.equal(session.career,key)
   let earned=(await db.query('select reclamar_logros() as achievement')).rows.map(r=>r.achievement)
   assert(!earned.includes('malla-completa'))
+  await assert.rejects(()=>db.query("update profiles set curriculum_version='other' where id=$1",[uid]),/CURRICULUM_ASSIGNMENT_LOCKED/)
   await assert.rejects(()=>db.query('update profiles set carrera=$1 where id=$2',[key==='ia'?'software':'ia',uid]),/La carrera no se puede cambiar/)
   await db.exec('reset role')
   await db.query('update progress set done=$1 where student_id=$2',[career.cursos.map(c=>c.id),uid])
@@ -61,10 +70,10 @@ for(const [key,career] of Object.entries(CARRERAS)){
   assert(earned.includes('malla-completa'),key)
 }
 await db.exec('reset role');await db.query("select set_config('request.jwt.claim.sub','',false)")
-for(const [career,code,expected] of [['unknown','25111111',/INVALID_CAREER/],[null,'25111111',/INVALID_CAREER/],['software','20111111',/invalid student code/],['pucp-mecatronica','25111111',/invalid student code/]]){
+for(const [career,code,expected] of [['unknown','25111111',/INVALID_CAREER/],[null,'25111111',/INVALID_CAREER/],['software','20111111',/invalid student code/],['pucp-mecatronica','20111111',/INVALID_CAREER/]]){
   await assert.rejects(()=>db.query('insert into auth.users values(gen_random_uuid(),$1,$2)',['bad@example.invalid',{student_code:code,carrera:career}]),expected)
 }
 await db.exec('set role anon')
 await assert.rejects(()=>db.exec("select start_focus_session(gen_random_uuid(),null,300,'custom','digital','cat')"),/permission denied/)
 await db.close()
-console.log('PASS: 19 registration triggers, Focus enrollment and full-curriculum achievements; legacy progress preserved; repeated migration with/without optional sections; invalid career/university rejected; career lock and anonymous permissions preserved')
+console.log('PASS: 18 ESAN registration triggers, Focus enrollment and full-curriculum achievements; legacy progress preserved; repeated migration with/without optional sections; invalid career/university rejected; career lock and anonymous permissions preserved')

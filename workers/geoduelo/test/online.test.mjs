@@ -75,7 +75,7 @@ test('real Worker + Durable Objects: public matchmaking, private rooms, identity
 })
 
 test('all modes and levels: generated solutions score on server, no answer data before reveal', async () => {
-  const {MODES}=await import('../../../src/lib/geoduelo-modes.js')
+  const {MODES}=await import('../../../src/features/arcade/geoduelo-modes.js')
   for(const mode of MODES)for(const level of ['facil','medio','dificil']){
     const qs=questions({mode:mode.id,level})
     for(let round=0;round<qs.length;round++){
@@ -93,7 +93,7 @@ test('all modes and levels: generated solutions score on server, no answer data 
 })
 
 test('runtime modes: host permission, readiness revisions, private owner, public host and all answer types', {timeout:60000},async()=>{
-  const {MODES}=await import('../../../src/lib/geoduelo-modes.js'),r=await runtime()
+  const {MODES}=await import('../../../src/features/arcade/geoduelo-modes.js'),r=await runtime()
   try{
     const legacy=await r.mf.dispatchFetch('https://game.test/session',{method:'POST',headers:{origin},body:'{"action":"create"}'})
     assert.equal(legacy.status,426)

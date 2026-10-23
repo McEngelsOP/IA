@@ -1,10 +1,11 @@
-import { readFileSync, writeFileSync } from 'node:fs'
+import { createHash } from 'node:crypto'
+import { ESAN } from '../src/institutions/esan/config.js'
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { curriculumSources } from './curriculumSources.mjs'
-import { CURSOS } from '../src/data/cursos.js'
-import { CURSOS_INDUSTRIAL } from '../src/data/cursosIndustrial.js'
-import { CURSOS_MARKETING } from '../src/data/cursosMarketing.js'
-import { CURSOS_PUCP, TOTAL_CRED_PUCP } from '../src/data/cursosPucp.js'
+import { CURSOS } from '../src/institutions/esan/cursos.js'
+import { CURSOS_INDUSTRIAL } from '../src/institutions/esan/cursosIndustrial.js'
+import { CURSOS_MARKETING } from '../src/institutions/esan/cursosMarketing.js'
 
 const root = new URL('../', import.meta.url)
 const legacy = { ia: CURSOS, industrial: CURSOS_INDUSTRIAL, marketing: CURSOS_MARKETING }
@@ -100,29 +101,71 @@ export function parseCurriculum(markdown, key) {
 }
 
 export function generateCurricula({ check = false } = {}) {
-  const plans = {}, metadata = {}, issues = []
+  const plans = {}, metadata = {}, snapshots = {}, issues = []
   for (const [key, source, existing] of curriculumSources) {
-    const plan = parseCurriculum(readFileSync(new URL(`Mallas curriculares/${source}`, root), 'utf8'), key)
-    metadata[key] = { key, uni: 'Universidad ESAN', nombre: plan.nombre, total: plan.total, source }
+    const raw = readFileSync(new URL(`data/catalogs/esan/sources/${source}`, root), 'utf8')
+    const plan = parseCurriculum(raw, key)
+    const sourceHash = createHash('sha256').update(raw).digest('hex')
+    const courses = (legacy[key] || plan.cursos).map(course => /^Electivo/i.test(course.n) ? { ...course, requirementNote: course.requirementNote || 'Según electivo. Requisitos pendientes de verificar.' } : course)
+    const version = 'source-' + createHash('sha256').update(JSON.stringify({ sourceHash, courses, ciclos: plan.ciclos })).digest('hex').slice(0, 12)
+    metadata[key] = { key, institutionId: ESAN.id, uni: ESAN.name, nombre: plan.nombre, total: plan.total, source, sourceHash, version }
+    snapshots[key] = { ...metadata[key], cursos: courses, ciclos: plan.ciclos, ciclosLabel: '10 ciclos + pre-formación', hint: courses.filter(course => course.c === 1).slice(0, 2).map(course => course.n), foot: 'PLAN DE ESTUDIOS · UNIVERSIDAD ESAN · ELECTIVOS SUJETOS A VERIFICACIÓN' }
     if (!existing) {
       issues.push(...plan.issues)
       const { nombre, total, cursos, ciclos } = plan
       plans[key] = { key, uni: 'Universidad ESAN', nombre, total, cursos, ciclos, ciclosLabel: '10 ciclos + pre-formación', hint: cursos.filter(course => course.c === 1).slice(0, 2).map(course => course.n), foot: 'PLAN DE ESTUDIOS · UNIVERSIDAD ESAN · PRE-FORMACIÓN CONVALIDABLE POR EXAMEN' }
     }
   }
-  metadata['pucp-mecatronica'] = { key: 'pucp-mecatronica', uni: 'PUCP', nombre: 'Ingeniería Mecatrónica', total: TOTAL_CRED_PUCP }
   if (issues.length) throw new Error(JSON.stringify(issues, null, 2))
   const values = Object.keys(metadata).map(key => `'${key}'`).join(', ')
-  const counts = Object.entries({ ...plans, ...Object.fromEntries(Object.entries(legacy).map(([key, cursos]) => [key, { cursos }])), 'pucp-mecatronica': { cursos: CURSOS_PUCP } }).map(([key, plan]) => `    when '${key}' then ${plan.cursos.length}`).join('\n')
+  const counts = Object.entries({ ...plans, ...Object.fromEntries(Object.entries(legacy).map(([key, cursos]) => [key, { cursos }])) }).map(([key, plan]) => `    when '${key}' then ${plan.cursos.length}`).join('\n')
   const focusSource = readFileSync(new URL('supabase/focus_sessions.sql', root), 'utf8').replace(/career_name not in \([^)]*\)/, `career_name not in (${values})`)
   const logrosSource = readFileSync(new URL('supabase/logros.sql', root), 'utf8').replace(/total_malla := case car[\s\S]*?\n  end;/, `total_malla := case car\n${counts}\n    else null\n  end;`)
   const focusFunction = focusSource.match(/create or replace function public\.start_focus_session\([\s\S]*?end;\$\$;/)?.[0]
   const logrosFunction = logrosSource.match(/create or replace function public\.reclamar_logros\([\s\S]*?\n\$\$;/)?.[0]
   if (!focusFunction || !logrosFunction) throw new Error('No se encontraron las funciones existentes de Focus/Logros')
+  const versionRows = Object.entries(metadata).map(([key,c]) => `('esan', '${key}', '${c.version}', '${c.sourceHash}', '${c.source.replaceAll("'", "''")}')`).join(',\n')
+  const versionCase = 'case new.carrera ' + Object.entries(metadata).map(([key,c]) => `when '${key}' then '${c.version}'`).join(' ') + ' end'
   const migration = `-- Generado por scripts/generateCurricula.mjs. Ejecutar una vez en SQL Editor.
 -- Es repetible: conserva perfiles, avances, notas, RLS y el candado de carrera.
 -- Focus y Logros se actualizan solo si ya están instalados.
 begin;
+create table if not exists public.curriculum_versions (
+  institution_id text not null, career_key text not null, version text not null,
+  source_hash text not null, source_document text not null,
+  primary key (institution_id, career_key, version)
+);
+alter table public.curriculum_versions enable row level security;
+revoke all on public.curriculum_versions from public, anon, authenticated;
+grant select on public.curriculum_versions to authenticated;
+drop policy if exists curriculum_versions_read on public.curriculum_versions;
+create policy curriculum_versions_read on public.curriculum_versions for select to authenticated using (true);
+insert into public.curriculum_versions values
+${versionRows}
+on conflict do nothing;
+alter table public.profiles add column if not exists institution_id text;
+alter table public.profiles add column if not exists curriculum_version text;
+update public.profiles p set institution_id='esan', curriculum_version=v.version
+from public.curriculum_versions v
+where p.carrera=v.career_key and v.institution_id='esan'
+  and (p.institution_id is null and p.curriculum_version is null)
+  and v.version=case p.carrera ${Object.entries(metadata).map(([key,c])=>`when '${key}' then '${c.version}'`).join(' ')} end;
+create or replace function public.protect_curriculum_assignment()
+returns trigger language plpgsql security invoker set search_path=public,pg_temp as $$
+begin
+  if new.carrera is distinct from old.carrera and new.carrera is not null and new.carrera not in (${values}) then
+    raise exception 'INVALID_CAREER';
+  end if;
+  if old.carrera is null and new.carrera in (${values}) then
+    new.institution_id := 'esan'; new.curriculum_version := ${versionCase};
+  elsif auth.uid() is not null and (new.institution_id is distinct from old.institution_id or new.curriculum_version is distinct from old.curriculum_version) then
+    raise exception 'CURRICULUM_ASSIGNMENT_LOCKED';
+  end if;
+  return new;
+end; $$;
+revoke all on function public.protect_curriculum_assignment() from public,anon,authenticated;
+drop trigger if exists protect_curriculum_assignment on public.profiles;
+create trigger protect_curriculum_assignment before update on public.profiles for each row execute function public.protect_curriculum_assignment();
 do $constraints$
 declare item record;
 begin
@@ -136,7 +179,7 @@ begin
 end;
 $constraints$;
 alter table public.profiles add constraint profiles_carrera_check
-  check (carrera in (${values}));
+  check (carrera in (${values}, 'pucp-mecatronica')); -- Solo se conserva para la cuenta histórica; no admite registros nuevos.
 
 create or replace function public.handle_new_user()
 returns trigger language plpgsql security definer set search_path = public as $$
@@ -145,13 +188,10 @@ declare
   career text := new.raw_user_meta_data->>'carrera';
 begin
   if career is null or career not in (${values}) then raise exception 'INVALID_CAREER'; end if;
-  if career = 'pucp-mecatronica' then
-    if code !~ '^20[0-9]{6}$' then raise exception 'invalid student code'; end if;
-  else
-    if code !~ '^[0-9]{8}$' then raise exception 'invalid student code'; end if;
-    if left(code, 2)::int < 25 or left(code, 2)::int > extract(year from now() at time zone 'America/Lima')::int % 100 then raise exception 'invalid student code'; end if;
-  end if;
-  insert into public.profiles(id, student_code, email, carrera) values(new.id, code, new.email, career);
+  if code !~ '^[0-9]{8}$' then raise exception 'invalid student code'; end if;
+  if left(code, 2)::int < 25 or left(code, 2)::int > extract(year from now() at time zone 'America/Lima')::int % 100 then raise exception 'invalid student code'; end if;
+  insert into public.profiles(id, student_code, email, carrera, institution_id, curriculum_version)
+    select new.id, code, new.email, career, 'esan', ${'case career '+Object.entries(metadata).map(([key,c])=>`when '${key}' then '${c.version}'`).join(' ')+' end'};
   return new;
 end;
 $$;
@@ -175,16 +215,23 @@ commit;
 notify pgrst, 'reload schema';
 `
   const files = [
-    ['src/data/careerOptions.js', `// Generado por scripts/generateCurricula.mjs. El acceso no carga los grafos.\nexport const CAREER_OPTIONS = ${JSON.stringify(metadata, null, 2)}\nexport const CAREER_KEYS = Object.keys(CAREER_OPTIONS).sort((a, b) => Number(CAREER_OPTIONS[a].uni === 'PUCP') - Number(CAREER_OPTIONS[b].uni === 'PUCP') || CAREER_OPTIONS[a].nombre.localeCompare(CAREER_OPTIONS[b].nombre, 'es'))\nexport const careerLabel = key => CAREER_OPTIONS[key] ? CAREER_OPTIONS[key].nombre + ' (' + (CAREER_OPTIONS[key].uni === 'PUCP' ? 'PUCP' : 'ESAN') + ')' : 'Sin elegir'\n`],
-    ['src/data/curriculaEsan.js', `// Generado desde Mallas curriculares; no se procesa Markdown en el navegador.\nexport const CURRICULA_ESAN = {\n${Object.entries(plans).map(([key, plan]) => `  "${key}": {\n${Object.entries(plan).map(([field, value]) => `    "${field}": ${field === 'cursos' ? `[\n${value.map(course => '      ' + JSON.stringify(course)).join(',\n')}\n    ]` : JSON.stringify(value)}`).join(',\n')}\n  }`).join(',\n')}\n}\n`],
+    ['src/institutions/esan/careerOptions.js', `// Generado por scripts/generateCurricula.mjs. El acceso no carga los grafos.\nexport const CAREER_OPTIONS = ${JSON.stringify(metadata, null, 2)}\nexport const CAREER_KEYS = Object.keys(CAREER_OPTIONS).sort((a, b) => CAREER_OPTIONS[a].nombre.localeCompare(CAREER_OPTIONS[b].nombre, 'es'))\nexport const careerLabel = key => CAREER_OPTIONS[key] ? CAREER_OPTIONS[key].nombre + ' (' + 'ESAN' + ')' : 'Sin elegir'\n`],
+    ['src/institutions/esan/curriculaEsan.js', `// Generado desde Mallas curriculares; no se procesa Markdown en el navegador.\nexport const CURRICULA_ESAN = {\n${Object.entries(plans).map(([key, plan]) => `  "${key}": {\n${Object.entries(plan).map(([field, value]) => `    "${field}": ${field === 'cursos' ? `[\n${value.map(course => '      ' + JSON.stringify(course)).join(',\n')}\n    ]` : JSON.stringify(value)}`).join(',\n')}\n  }`).join(',\n')}\n}\n`],
     ['supabase/focus_sessions.sql', focusSource],
     ['supabase/logros.sql', logrosSource],
-    ['supabase/careers_catalog.sql', migration]
+    ['supabase/maintenance/logros.sql', readFileSync(new URL('supabase/maintenance/logros.sql', root), 'utf8').replace(/create or replace function public\.reclamar_logros\([\s\S]*?(?:\$\$|\$function\$);/i, logrosFunction)],
+    ['supabase/careers_catalog.sql', migration],
+    ['supabase/functions/study-advisor/catalog.json', JSON.stringify(Object.fromEntries(Object.entries(snapshots).map(([key,career]) => [key, {
+      id: key, name: career.nombre, institutionId: career.institutionId, version: career.version,
+      courses: Object.fromEntries(career.cursos.map(c => [c.id, { id: c.id, name: c.n, credits: c.cr, prerequisites: c.r, requiredCompletedCredits: c.rc || 0, prerequisitesKnown: !c.requirementNote, requirementNote: c.requirementNote || '' }]))
+    }])), null, 2) + '\n'],
+    ...Object.values(snapshots).map(career => [`data/catalogs/esan/releases/${career.key}/${career.version}.json`, JSON.stringify(career, null, 2) + '\n'])
   ]
   for (const [path, content] of files) {
     const url = new URL(path, root)
+    if (path.includes('/releases/') && existsSync(url) && readFileSync(url, 'utf8') !== content) throw new Error(`La revisión publicada es inmutable: ${path}`)
     if (check) { if (readFileSync(url, 'utf8') !== content) throw new Error(`Regenerar ${path}`) }
-    else writeFileSync(url, content)
+    else { mkdirSync(new URL('./', url), { recursive: true }); writeFileSync(url, content) }
   }
   return { careers: Object.keys(metadata).length, added: Object.keys(plans).length }
 }

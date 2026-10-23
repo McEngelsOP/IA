@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { existsSync, readFileSync } from 'node:fs'
-import { resourceIconSources } from '../src/lib/resourceModel.js'
+import { resourceIconSources } from '../src/features/resources/resourceModel.js'
 
 test('all nine existing resources have a real packaged PNG', () => {
   for (const host of ['grok.com','claude.ai','gemini.google.com','theastudy.com','auth.tidbcloud.com','gamma.app','canva.com','supabase.com','notebooklm.google']) {

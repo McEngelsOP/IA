@@ -1,17 +1,17 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { CARRERAS, CARRERA_KEYS } from '../src/data/carreras.js'
-import { CAREER_OPTIONS, CAREER_KEYS } from '../src/data/careerOptions.js'
-import { AREAS } from '../src/data/areas.js'
-import { buildMalla, canTake, completedCredits } from '../src/lib/curriculumGraph.js'
-import { enrolledFocusCourses } from '../src/lib/focusModel.js'
+import { CARRERAS, CARRERA_KEYS } from '../src/institutions/esan/carreras.js'
+import { CAREER_OPTIONS, CAREER_KEYS } from '../src/institutions/esan/careerOptions.js'
+import { AREAS } from '../src/shared/data/areas.js'
+import { buildMalla, canTake, completedCredits } from '../src/core/academic/curriculumGraph.js'
+import { enrolledFocusCourses } from '../src/features/focus/focusModel.js'
 import { generateCurricula } from '../scripts/generateCurricula.mjs'
 
-test('generated catalog is current, with all 18 distinct ESAN careers and existing PUCP', () => {
-  assert.deepEqual(generateCurricula({ check: true }), { careers: 19, added: 15 })
+test('generated catalog is current, with all 18 distinct ESAN careers and no external careers', () => {
+  assert.deepEqual(generateCurricula({ check: true }), { careers: 18, added: 15 })
   assert.deepEqual(CARRERA_KEYS, CAREER_KEYS)
   assert.equal(Object.values(CAREER_OPTIONS).filter(c => c.uni === 'Universidad ESAN').length, 18)
-  assert.equal(new Set(Object.values(CAREER_OPTIONS).map(c => c.nombre)).size, 19)
+  assert.equal(new Set(Object.values(CAREER_OPTIONS).map(c => c.nombre)).size, 18)
 })
 for (const key of CAREER_KEYS) test(`${key}: credits, graph, availability and enrolled courses`, () => {
   const career = CARRERAS[key], graph = buildMalla(career)
@@ -32,6 +32,8 @@ for (const key of CAREER_KEYS) test(`${key}: credits, graph, availability and en
     assert(Number.isFinite(graph.byId[course.id].x)); assert(Number.isFinite(graph.byId[course.id].y))
     if (course.r.length || course.rc) assert.equal(canTake(course, new Set(), 0), false)
   }
+  assert.equal(career.institutionId, 'esan')
+  assert.match(career.version, /^source-[0-9a-f]{12}$/)
   assert(career.cursos.some(c => canTake(c, new Set(), 0)))
   assert.equal(completedCredits(graph, new Set(career.cursos.map(c => c.id))), career.total)
   const sample = career.cursos.filter(c => c.cr > 0).slice(0, 3)

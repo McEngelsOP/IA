@@ -1,4 +1,4 @@
-import { DEFAULT_SETTINGS } from '../../../src/lib/geoduelo-modes.js'
+import { DEFAULT_SETTINGS } from '../../../src/features/arcade/geoduelo-modes.js'
 import { answer, appendQuestion, view, validSettings, QUESTION_MS, REVEAL_MS, ROUNDS } from './engine.js'
 const json = (body, status = 200) => Response.json(body, { status })
 const fail = (message, status = 400) => { throw Object.assign(new Error(message), { status }) }

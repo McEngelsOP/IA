@@ -1,31 +1,23 @@
-# Configuración inicial web
+# Configuración inicial de Lyra
 
-La creación de una cuenta continúa usando el registro existente de `login.html`. Después de autenticar y cargar su carrera, `pagina.html` abre el asistente para cuentas que todavía no hayan completado la configuración. Se activa solo en escritorio (más de 860 px); `ios-android.html` no cambia.
+El registro usa `login.html`. Tras autenticar y cargar la carrera, el portal ofrece configuración a cuentas que no la han completado, también desde móvil.
 
 ## Recorrido
 
-1. Elegir semestre. Se sugieren como llevados los ciclos anteriores; pre-formación se revisa manualmente.
-2. Revisar el catálogo ciclo por ciclo, desde el 1 hasta el actual. Se puede avanzar sin pendientes y retroceder sin perder selecciones. El ciclo actual se muestra sin marcarlo como llevado.
-3. Ajustar la matrícula del ciclo y agregar cursos de la malla, incluidos adelantados.
-4. Elegir carga habitual. Brújula IA incorpora esa carga como opción inicial de proyección.
-5. Importar horario o posponerlo. Se aceptan CSV y XLSX de hasta 2 MB, una fila por clase, primera hoja, máximo 200 clases. Las columnas pueden reasignarse; días, horas y duplicados se revisan antes de continuar. Se requiere revisar las fechas del ciclo. Los nombres reconocidos deben estar seleccionados en la matrícula; otros se guardan como clases sin vínculo a la malla. Solo las clases se guardan, nunca el archivo.
-6. Elegir compañero, método, reloj y tema de Mod Focus, o continuar con los valores predeterminados.
-7. Revisar el resumen y confirmar.
+1. Indicar semestre actual. Se sugieren cursos anteriores como llevados, con revisión posterior; pre-formación se revisa manualmente.
+2. Revisar pendientes ciclo por ciclo, conservando selecciones al retroceder.
+3. Elegir matrícula real, con cursos de distintos ciclos.
+4. Indicar carga habitual para Planificar.
+5. Consultar cómo preparar el horario desde Mi semestre. No hay un segundo importador ni entrada CSV.
+6. Elegir compañero, método, reloj y tema de Focus.
+7. Revisar y confirmar.
 
-## Persistencia
+Los borradores anteriores que ya contenían clases se conservan y validan. Una configuración nueva importa el Excel después, desde Mi semestre, con revisión de propuesta y fechas antes de guardar.
 
-`supabase/initial_setup.sql` se aplica una sola vez antes del frontend. La migración exime a los perfiles ya existentes, sin modificar su avance académico.
+## Persistencia y recuperación
 
-La tabla privada `student_setup` guarda borrador, preferencias y fecha de finalización. Las RPC usan `SECURITY INVOKER`, verifican identidad/carrera y respetan RLS. La confirmación actualiza `progress`, `course_status`, clases semanales y preferencias en una sola transacción; una fila inválida revierte todos los cambios. El token del borrador hace idempotente un reintento de confirmación.
+`student_setup` guarda borrador, preferencias y finalización. La confirmación usa las RPC existentes y aplica cambios académicos de forma atómica. El token evita duplicar una confirmación reintentada. Un fallo conserva el borrador y no aplica cambios parciales.
 
-«Continuar después» guarda el borrador y permite entrar a Inicio. Puede retomarse desde Inicio o desde el perfil. Después de completar, el perfil abre «Preferencias de estudio». Los cursos se ajustan desde la malla y las clases desde Calendario. El avance que se haya registrado después de posponer el asistente se conserva al confirmar; no se generan notas ni logros artificialmente.
+Continuar después conserva el borrador y permite entrar a Inicio. Puede retomarse desde Inicio o el perfil. Una configuración completada no vuelve a abrirse como una cuenta nueva. Los cursos se ajustan en Mi carrera y las clases en Mi semestre.
 
-## Verificación realizada
-
-- `npm run build`: compilación correcta, incluidos los puntos de entrada existentes.
-- `node --test tests/setupModel.test.mjs tests/calendarModel.test.mjs tests/focusModel.test.mjs`: 17 pruebas aprobadas.
-- `tests/initialSetup.browser.mjs`: flujo de escritorio con API simulada, fallo/reintento de borrador y confirmación, navegación por ciclos, recuperación tras recarga, importación CSV/XLSX, tema, preferencias y cursos de Mod Focus. Sin errores JavaScript.
-- Supabase real, con datos temporales dentro de transacciones revertidas: confirmación, clases recurrentes, aislamiento entre cuentas, reversión por horario inválido y reintento sin duplicados.
-- Capturas de escritorio: temas claro/oscuro, selección de semestre, pendientes, importación, personalización y resumen. Sin cambios a la versión móvil.
-
-Para ejecutar la prueba de navegador se necesita Playwright y Chromium. Variables opcionales: `SETUP_BASE_URL`, `SETUP_BROWSER` y `SETUP_XLSX_FIXTURE`. El servidor de prueba debe usar `VITE_SUPABASE_URL=https://setup-fixture.supabase.co` y `VITE_SUPABASE_ANON_KEY=fixture-public-key`; la prueba intercepta esa API y no crea cuentas reales.
+Los scripts históricos de creación de tablas no deben volver a ejecutarse sobre una base instalada. Las pruebas actuales están en `tests/setupModel.test.mjs` y `tests/initialSetup.browser.mjs`; el último utiliza servicios simulados y se ejecuta mediante `npm run test:browser -- initialSetup`.

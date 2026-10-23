@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { mergeMessages, validRoom, cleanInvite, studyError } from '../src/lib/studyGroups.js'
+import { mergeMessages, validRoom, cleanInvite, studyError } from '../src/features/groups/studyGroups.js'
 
 test('messages merge overlapping pages and refreshes without losing older history', () => {
   const older = { id: 'a', created_at: '2026-10-08T10:00:00Z', body: 'Anterior' }

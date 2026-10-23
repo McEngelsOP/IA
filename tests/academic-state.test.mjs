@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { buildMalla, previewCompleted, validPlan, canTake, canPlan } from '../src/lib/curriculumGraph.js'
+import { buildMalla, previewCompleted, validPlan, canTake, canPlan } from '../src/core/academic/curriculumGraph.js'
 const courses=[{id:'a',n:'A',r:[],cr:4,c:1},{id:'b',n:'B',r:['a'],cr:4,c:2},{id:'c',n:'C',r:['b'],cr:4,c:3}]
 const m=buildMalla({cursos:courses})
 test('unmarking an approval preserves other recorded approvals',()=>{
@@ -23,7 +23,7 @@ test('future eligibility updates after removing an approval or enrollment',()=>{
  assert.deepEqual([...validPlan(m,new Set(['b']),new Set(),{a:{status:'desaprobado'}})],[])
 })
 
-import { projectSemesters } from '../src/lib/semesterProjection.js'
+import { projectSemesters } from '../src/core/academic/semesterProjection.js'
 test('projection excludes courses in progress and starts with their successors',()=>{
  const result=projectSemesters(courses,[],8,['a'])
  assert.deepEqual(result.semesters.map(t=>t.courses.map(c=>c.id)),[['b'],['c']])

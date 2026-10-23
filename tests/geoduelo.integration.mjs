@@ -36,7 +36,7 @@ const server = await createServer({ root, configFile: root + 'vite.config.js', s
     server.middlewares.use('/__geo-test', async (req, res) => {
       res.setHeader('Content-Type', 'text/html')
       res.end(await server.transformIndexHtml('/__geo-test', `<html><head></head><body><div id="game" style="height:700px"></div><script type="module">
-        import {mountOfficialArcadeGame} from '/src/components/OfficialArcadeGame.jsx';
+        import {mountOfficialArcadeGame} from '/src/features/arcade/OfficialArcadeGame.jsx';
         const client={auth:{getUser:async()=>({data:{user:{id:'${uid}'}}})},rpc:async(name,args)=>fetch('/__geo-rpc',{method:'POST',body:JSON.stringify({name,args})}).then(r=>r.json())};
         window.destroyGame=mountOfficialArcadeGame(document.querySelector('#game'),{game:'geoduelo',client,user:{id:'${uid}'},playerName:'Cuenta de prueba',soundEnabled:false});
         addEventListener('message',e=>{if(e.data?.action==='complete')window.lastComplete=e.data;});

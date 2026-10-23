@@ -45,7 +45,7 @@ async function shot(page, name) {
 try {
   const { context, page, reads } = await fixture()
   assert.equal(await page.locator('#home-hero-title').innerText(), 'Tu avance, Engels.')
-  assert(reads.some(url => url.searchParams.get('select').split(',').includes('alias')))
+  assert(reads.some(url => url.searchParams.get('select')==='*'||url.searchParams.get('select').split(',').includes('alias')))
   assert.equal(await page.locator('.pal-companion').count(), 1)
   assert.equal(await page.locator('.pal-companion button').count(), 0)
   assert.equal(await page.locator('#bHide').isVisible(), false)

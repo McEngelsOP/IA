@@ -8,13 +8,13 @@ import base64, json, os, subprocess, time
 
 ROOT = Path(__file__).resolve().parents[1]
 BASE = os.environ.get('ACCESS_BASE_URL', 'http://127.0.0.1:5181')
-CAREERS = json.loads(subprocess.check_output(['node', '--input-type=module', '-e', "import {CARRERAS} from './src/data/carreras.js';console.log(JSON.stringify(CARRERAS))"], cwd=ROOT))
+CAREERS = json.loads(subprocess.check_output(['node', '--input-type=module', '-e', "import {CARRERAS} from './src/institutions/esan/carreras.js';console.log(JSON.stringify(CARRERAS))"], cwd=ROOT))
 errors = []
 encode = lambda value: base64.urlsafe_b64encode(json.dumps(value).encode()).rstrip(b'=').decode()
 
 def fixture(browser, key, legacy=False):
     career = CAREERS[key]
-    code = '20101823' if key == 'pucp-mecatronica' else '25101823'
+    code = '25101823'
     user = {'id':'11111111-1111-4111-8111-111111111111', 'email':'test@example.invalid', 'identities':[{'id':'fixture'}], 'app_metadata':{'provider':'email'}, 'user_metadata':{'student_code':code, 'carrera':key}}
     token = encode({'alg':'HS256','typ':'JWT'}) + '.' + encode({'sub':user['id'],'exp':int(time.time())+3600,'aud':'authenticated'}) + '.fixture'
     session = {'access_token':token,'refresh_token':'fixture-refresh','expires_in':3600,'expires_at':int(time.time())+3600,'token_type':'bearer','user':user}
@@ -78,10 +78,10 @@ with sync_playwright() as p:
         expect(page).to_have_url(BASE+'/pagina.html',timeout=15000)
         expect(page.locator('.h-head')).to_contain_text(career['nombre'],timeout=15000)
         assert flags['signup'] and page.locator('#complete').count() == 0
-        page.locator('#nav [data-n="Malla Curricular"]').click()
+        page.locator('#nav [data-n="Mi carrera"]').click()
         expect(page.locator('.oc-name')).to_have_count(len(career['cursos']),timeout=15000)
         assert set(page.locator('[data-course]').evaluate_all('nodes=>nodes.map(n=>n.dataset.course)')) == {c['id'] for c in career['cursos']}
-        page.locator('#nav [data-n="Calendario/Horarios"]').click()
+        page.locator('#nav [data-n="Mi semestre"]').click()
         page.get_by_role('button',name='Crear evento',exact=True).click()
         options(page,'select[aria-label="Curso (opcional)"]',career['cursos'])
         page.get_by_role('button',name='Cancelar',exact=True).click()
@@ -91,9 +91,8 @@ with sync_playwright() as p:
         page.locator('#nav [data-n="Mod Focus"]').click()
         enrolled = [c for c in career['cursos'] if c['cr'] > 0][:3]
         options(page,'#kcs',enrolled)
-        page.locator('#nav [data-n="Herramientas"]').click()
-        page.locator('#nav [data-k="Brújula IA"]').click()
-        expect(page.locator('#roadmap-title')).to_be_visible()
+        page.locator('#nav [data-n="Planificar"]').click()
+        expect(page.locator('.official-roadmap')).to_be_visible()
         context.close(); print('PASS',key,'registro → Inicio; malla, calendario, grupos, Focus y Brújula',flush=True)
     context,page,flags,_ = fixture(browser,'software',legacy=True)
     page.goto(BASE+'/pagina.html')

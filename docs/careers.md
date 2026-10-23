@@ -1,17 +1,8 @@
-# Carreras y planes curriculares
+# Carreras ESAN y revisiones curriculares
 
-El registro, la selección de cuentas anteriores y Administración comparten `src/data/careerOptions.js`: 18 carreras ESAN y Mecatrónica PUCP. Las opciones se ordenan alfabéticamente dentro de cada universidad. La carrera elegida se envía en `auth.signUp` y se guarda en `profiles.carrera` mediante el trigger de Supabase.
+El registro y las cuentas sin carrera comparten `src/institutions/esan/careerOptions.js`. Están disponibles las 18 carreras ESAN del catálogo, ordenadas alfabéticamente. Mecatrónica PUCP se retiró de las opciones y del asesor; sus registros históricos se conservan.
 
-Inicio, la malla, el planificador, las fichas, Calendario/Horarios, Grupos de estudio, Mod Focus y Herramientas usan el catálogo de esa carrera. No se matricula automáticamente al estudiante: Focus sigue mostrando exclusivamente cursos marcados como Matriculado. Las cuentas sin carrera pueden elegirla una vez desde Inicio; las cuentas que ya la tienen conservan el candado existente.
-
-## Fuentes
-
-Los 18 Markdown de `Mallas curriculares/` corresponden a las 18 carreras ESAN seleccionadas en `scripts/curriculumSources.mjs`. Se eliminó la copia idéntica de IA con sufijo `(1)` y los dos planes alternativos de Industrial y Sistemas se archivaron y después se eliminaron el 19 de octubre de 2026, al no estar seleccionados por el generador; no se mezclan planes ni se muestran carreras duplicadas. Se conservan en el [historial anterior a la limpieza](https://github.com/McEngelsOP/IA/tree/6fdfdf6ef0d5e87bfa41148ef6f08c3aeaa23645/Revisar%20para%20limpiar/Mallas%20curriculares).
-
-- IA, Industrial y Comunicación/Marketing conservan sus catálogos e identificadores existentes, incluidos avances, profesores y notas. Sus nombres y totales coinciden con las fuentes.
-- Para Sistemas se utiliza el archivo identificado como plan 2024 (`INGITIS_2024`), con 78 cursos y 213 créditos. El archivo alternativo sin año no se fusionó con ese plan; se retiró durante la limpieza y puede recuperarse del historial indicado arriba.
-- Las cinco nuevas mallas de la serie 2026 y las otras diez carreras nuevas usan los archivos indicados en `scripts/curriculumSources.mjs`.
-- Los Markdown son datos curriculares, no instrucciones de implementación.
+## Catálogo activo
 
 | Carrera ESAN | Clave | Cursos | Créditos |
 |---|---|---:|---:|
@@ -34,37 +25,31 @@ Los 18 Markdown de `Mallas curriculares/` corresponden a las 18 carreras ESAN se
 | Ingeniería Industrial y Comercial | industrial | 77 | 215 |
 | Psicología | psicologia | 82 | 225 |
 
-PUCP conserva 64 cursos y 208,75 créditos, con sus identificadores separados.
+## Fuentes y generación
 
-## Generación y optimización
+Los 18 Markdown activos están en `data/catalogs/esan/sources/`, seleccionados por `scripts/curriculumSources.mjs`. No fusionar documentos de planes diferentes. El generador comprueba créditos, referencias y requisitos; las erratas normalizadas no crean requisitos nuevos.
 
 ```bash
 node scripts/generateCurricula.mjs
 node scripts/generateCurricula.mjs --check
 ```
 
-El generador produce el índice ligero de opciones, los 15 catálogos adicionales y `supabase/careers_catalog.sql`; también sincroniza las listas y totales de los scripts consolidados de Focus/Logros. El navegador no descarga ni analiza los Markdown. El acceso carga solo los nombres de las carreras; la malla calcula y conserva el grafo de la carrera que se abre, sin construir los 19 al iniciar.
+Las salidas incluyen índices del navegador, catálogo del asesor, SQL y snapshots inmutables. No editar a mano ni renombrar los IDs de cursos existentes. La revisión combina la fuente y los datos curriculares normalizados. Su identificador no equivale a un nombre o año oficial del plan.
 
-Se resuelven explícitamente erratas de escritura (`Comuncaciones`, `Managemnet`, `Entreprenurship`, singular/plural de Tecnología, Matemática y Optimización, variantes de Marketing y Recursos Naturales). Se conservan los títulos originales. La lectura de requisitos reconoce nombres completos con comas, separadores coma/punto y coma, requisitos consecutivos y umbrales de créditos. Un requisito desconocido o un total incoherente detiene la generación; no se omiten silenciosamente.
+Los electivos sin requisitos definidos mantienen una nota de verificación. No se habilitan ni programan automáticamente como cursos sin requisitos. La oferta real de secciones de cada semestre se revisa por separado.
 
-Los cursos nuevos con nombre y créditos equivalentes reutilizan identificadores conocidos de ESAN, incluidos los talleres abreviados. Los cursos nuevos restantes usan identificadores derivados de nombre/créditos; las plazas de electivos incluyen la carrera. No se renombran los cursos anteriores. Los electivos conservan el aviso «Según electivo»: no se inventa un catálogo de especialidades que los Markdown no contienen.
+## Asignación persistente
 
-Supabase comparte una sola instancia de cliente entre `pagina.html` y Herramientas, evitando conexiones de autenticación duplicadas.
+`supabase/careers_catalog.sql` registra versiones y añade institución/revisión al perfil. Asigna la revisión actual únicamente a perfiles que aún no tienen una; no reasigna alumnos al regenerar. Una nueva revisión exige conservar sus snapshots anteriores. La carrera y versión no pueden cambiarse desde el cliente una vez asignadas.
 
-## Activación en Supabase
+La cuenta histórica externa a ESAN no se elimina ni convierte. La interfaz ofrece exportar su registro académico. La migración impide nuevos registros y asignaciones de esa carrera, conservando el valor histórico en la restricción del perfil.
 
-En el proyecto `esuyrftsopevmbhvhwov`, ejecutar **solo `supabase/careers_catalog.sql`** en SQL Editor, antes de publicar el frontend nuevo en `l-esan`. No volver a ejecutar `setup.sql`, `carrera.sql`, `carrera_pucp.sql` ni todos los scripts históricos.
+## Activación
 
-La migración es transaccional y repetible. Sustituye el CHECK de carrera y el trigger de registro, valida carrera/universidad y conserva perfiles existentes, avances, notas, RLS y candados. Actualiza las funciones de Focus y Logros si ya están instaladas, manteniendo sus permisos. No elimina tablas ni registros ni cambia las carreras de cuentas existentes.
+Activada en Lyra el 20 de octubre de 2026 mediante `20261020011415_esan_curriculum_versions_activation`; `study-advisor` está en v14 con verificación JWT. Ver [registro de activación](backend-activation.md).
 
-La base activa no se modificó desde este entorno. La ejecución manual de esta migración es necesaria para que los registros de las carreras nuevas funcionen en producción.
+Para instalar esta versión en otro entorno con el esquema previo, ejecutar solo `supabase/careers_catalog.sql` y desplegar la función `study-advisor` de la misma revisión. No volver a ejecutar todos los scripts históricos. La interfaz admite el esquema anterior, usando el catálogo activo para perfiles sin asignación. Un preview que apunte a producción no aísla los servicios remotos.
 
-## Verificación
+## Comprobaciones
 
-- `node --test tests/careerCatalog.test.mjs`: 21 comprobaciones; totales, fuentes reproducibles, requisitos completos sin ciclos, geometría del grafo, disponibilidad, filtros de matrícula y erratas/nombres compuestos.
-- `PGLITE_MODULE=/ruta/a/pglite/dist/index.js node tests/careerCatalog.sql.test.mjs`: PostgreSQL local; trigger de registro para 19 carreras, matrícula en Focus, logro de malla completa con el total correcto, migración repetida con/sin secciones opcionales, conservación de avance y candado de carrera, rechazo de carrera/código inválidos y acceso anónimo.
-- `python tests/careerRegistration.py`: Chromium + Supabase simulado; registro de las 19 carreras hasta Inicio, datos de cada malla, selectores de calendario y grupos, matrícula de Focus, Brújula y selección de una cuenta sin carrera.
-- `python tests/accessViewport.py`: matriz de 80 combinaciones de vistas con/sin error en ocho tamaños, navegación directa, replay y alturas extremas.
-- `npm run build`.
-
-Las pruebas de registro no crean cuentas reales ni equivalen a validar la migración en producción.
+`npm run check` valida catálogo, snapshots, requisitos, reglas, migración repetible, conservación de registros, candados, Focus y Logros. `npm run test:browser` comprueba las 18 mallas, navegación, semestre, planificación, errores y exportación con servicios simulados.

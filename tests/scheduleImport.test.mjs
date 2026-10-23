@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { compactSheet, parseSchedule, classEvent, validateSemester, eventSignature, conflictingClasses } from '../src/lib/scheduleImport.mjs'
-import { occurs } from '../src/lib/calendarModel.js'
+import { compactSheet, parseSchedule, classEvent, validateSemester, eventSignature, conflictingClasses } from '../src/core/calendar/scheduleImport.mjs'
+import { occurs } from '../src/core/calendar/calendarModel.js'
 test('Una serie semanal respeta inicio y fin sin generar filas por semana', () => {
   const r = { title: 'Cálculo', weekday: 2, start_time: '08:00', end_time: '10:00', location: 'Aula 3' }
   const e = classEvent(r, '2026-08-17', '2026-12-12')

@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { parseTaskSuggestions } from '../src/lib/taskExtraction.mjs'
+import { parseTaskSuggestions } from '../src/core/calendar/taskExtraction.mjs'
 import { readFile } from 'node:fs/promises'
 import { transform } from 'esbuild'
 const runtime = await transform(await readFile(new URL('../supabase/functions/study-advisor/providers.ts', import.meta.url), 'utf8'), { loader: 'ts', format: 'esm' })

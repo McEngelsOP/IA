@@ -65,7 +65,7 @@ try {
   await page.waitForTimeout(500)
   assert.equal(await page.locator('#side').evaluate(el=>el.getBoundingClientRect().width),280)
   assert.equal(await page.locator('#nav>.it').first().evaluate(el=>getComputedStyle(el.querySelector('.l')).visibility),'visible')
-  const group=page.locator('#nav>.it[aria-expanded]').first()
+  const group=page.locator('#nav .it[aria-expanded]').first()
   await group.click()
   await page.waitForTimeout(500)
   await page.locator('#bRail').click()

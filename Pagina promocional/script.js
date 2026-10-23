@@ -61,7 +61,7 @@
       ['Siguiente paso', 'Ajusta tu selección en la malla y consulta al asesor con tu plan actualizado.']
     ] },
     ruta: { question: '¿Cómo planifico los próximos ciclos?', parts: [
-      ['Recomendación', 'Parte de tus cursos llevados y de los que estás cursando. Explora las rutas de Brújula antes de elegir.'],
+      ['Recomendación', 'Parte de tus cursos llevados y de los que estás cursando. Explora las rutas de Planificar antes de elegir.'],
       ['Motivos', 'La proyección compara ritmos de carga y respeta las relaciones de prerrequisitos registradas en la malla.'],
       ['Siguiente paso', 'Revisa una ruta ligera, equilibrada o intensiva y valida su primer ciclo antes de añadirlo a tu plan.']
     ] }

@@ -7,7 +7,7 @@ Revisión de la base activa del 13 de octubre de 2026 UTC. Las 40 consultas hist
 | Módulo | Archivo | Contenido |
 | --- | --- | --- |
 | Recursos | `maintenance/recursos.sql` | 12 rutinas: publicación, URL canónica, descripción, corazones, listado y comentarios; mantiene las entradas públicas y la implementación privada. |
-| Logros | `maintenance/logros.sql` | Una definición vigente de `reclamar_logros()`, con las 25 insignias y las 19 carreras; sustituye las tres versiones guardadas para mantenimiento de esa función. |
+| Logros | `maintenance/logros.sql` | Una definición vigente de `reclamar_logros()`, con las 25 insignias y el catálogo ESAN generado; sustituye las tres versiones guardadas para mantenimiento de esa función. |
 | Arcade | `maintenance/arcade.sql` | Temporada actual, envío y consulta del mejor puntaje; solo Dino, Galaxia y Memoria reciben puntajes nuevos. |
 
 Estas instantáneas son transaccionales y repetibles en Lyra. Comprueban que las tablas requeridas existen y conservan las definiciones y permisos obtenidos de la base. No crean tablas, no reconstruyen índices o políticas RLS y no insertan ni borran registros. No son un instalador para un proyecto vacío ni deben sustituir futuras migraciones: revisar su vigencia antes de volver a ejecutarlas.
@@ -34,3 +34,6 @@ Antes del retiro: sin dependencias ni triggers para las dos funciones y sin refe
 Después del retiro: ambas firmas deben devolver `NULL` con `to_regprocedure`; `handle_new_user`, `lock_carrera`, `sync_profile_alias`, `publish_resource`, `reclamar_logros` y las funciones de Arcade deben seguir presentes. Las pruebas de sesión ausente deben rechazar las RPC que requieren un usuario. No se usan registros ficticios persistentes para verificar esta entrega.
 
 Esta revisión no retira tablas, datos ni otras funciones y no afirma resolver todos los avisos históricos del Security Advisor.
+
+
+La reestructuración ESAN de `aea` usa `careers_catalog.sql` para catálogo y asignaciones de revisión. El generador sincroniza también la definición de Logros de mantenimiento. No ejecutar `history/carrera_pucp.sql`: es una referencia de restauración retirada de la oferta activa.

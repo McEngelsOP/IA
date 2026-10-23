@@ -1,5 +1,5 @@
 ---
-name: ASEGEM — Página promocional
+name: Lyra — Página promocional
 description: Cristal cálido y paisaje de estudio para explicar un espacio académico conectado.
 colors:
   bg: "#18231f"
@@ -125,7 +125,7 @@ components:
     padding: "24px 20px"
 ---
 
-# Design System: ASEGEM — Página promocional
+# Design System: Lyra — Página promocional
 
 ## Overview
 
