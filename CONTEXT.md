@@ -53,6 +53,8 @@ Planificar reúne diagnóstico, comparación, proyección y plan guardado. Se el
 
 La exportación comprueba identidad antes y después de leer, filtra por propietario y pagina. Incluye perfil, progreso, notas, estados, configuración, eventos y tareas. No incluye contenido comunitario completo ni claves personales de IA. Si falla una tabla, no se descarga un archivo parcial como completo.
 
+El botón «Exportar registro académico» descarga un informe HTML autónomo y legible sin conexión: datos del estudiante, resumen, cursos con nombres y códigos, notas, estados, planificación, detalles personales, agenda, tareas y preferencias académicas. Permite imprimir/guardar como PDF y descargar el respaldo JSON completo desde el propio informe. Los nombres y créditos se resuelven con la carrera y versión guardadas; si el catálogo falta, se conservan los identificadores sin inventar equivalencias. Las fechas se presentan en hora de Lima y las notas ausentes se distinguen de cero. El contenido personal se escapa antes de incorporarlo al HTML.
+
 Conservar RLS, candado de carrera y verificación de usuario antes de escrituras. Nunca publicar `service_role`, claves de IA o secretos del Worker en `VITE_`.
 
 Focus usa matrícula real, reloj del servidor e idempotencia. Los grupos exigen membresía para mensajes privados. Recursos conserva atribución y edición por autor. Arcade y Geoduelo siguen como complementos; el buzón usa `/api/mailbox`.

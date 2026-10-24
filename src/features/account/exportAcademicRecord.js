@@ -1,3 +1,5 @@
+import { renderAcademicRecord } from './academicRecordReport.js'
+
 const TABLES = [
   ['profiles', 'id'], ['progress', 'student_id'], ['grades', 'student_id'],
   ['course_status', 'student_id'], ['student_setup', 'student_id'],
@@ -21,10 +23,11 @@ export async function readAcademicRecord(client, userId) {
   return { product: 'Lyra', formatVersion: 1, exportedAt: new Date().toISOString(), ...Object.fromEntries(entries) }
 }
 
-export function downloadAcademicRecord(record) {
-  const url = URL.createObjectURL(new Blob([JSON.stringify(record, null, 2)], { type: 'application/json' }))
+export function downloadAcademicRecord(record, catalog = null) {
+  const url = URL.createObjectURL(new Blob([renderAcademicRecord(record, catalog)], { type: 'text/html;charset=utf-8' }))
   const link = document.createElement('a')
-  link.href = url; link.download = `lyra-registro-academico-${record.exportedAt.slice(0, 10)}.json`
-  link.click()
+  const exportedDate = new Date(record.exportedAt).toLocaleDateString('sv-SE', { timeZone: 'America/Lima' })
+  link.href = url; link.download = `lyra-registro-academico-${exportedDate}.html`
+  document.body.appendChild(link); link.click(); link.remove()
   setTimeout(() => URL.revokeObjectURL(url), 1000)
 }

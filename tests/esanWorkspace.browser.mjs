@@ -39,6 +39,19 @@ async function screenshot(page,name){if(screenshots){await page.evaluate(()=>doc
 try{
  const f=await fixture(),{page}=f
  assert.deepEqual(await page.locator('#nav>.it .l').allTextContents(),['Inicio','Mi carrera','Mi semestre','Planificar','Asistente'])
+ await page.getByRole('button',{name:'Abrir perfil',exact:true}).click()
+ const activeDownload=page.waitForEvent('download');await page.getByRole('menuitem',{name:'Exportar registro académico',exact:true}).click();const activeReport=await activeDownload
+ assert.match(activeReport.suggestedFilename(),/^lyra-registro-academico-\d{4}-\d{2}-\d{2}\.html$/)
+ const documentPage=await f.context.newPage();await documentPage.setContent(await readFile(await activeReport.path(),'utf8'))
+ assert((await documentPage.locator('main').innerText()).includes('Cálculo I'));assert(!(await documentPage.locator('main').innerText()).includes('No está disponible el catálogo'))
+ for(const width of [1440,390,320]){
+  await documentPage.setViewportSize({width,height:1000});await screenshot(documentPage,`registro-${width}`)
+  assert(await documentPage.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`Report overflow at ${width}px`)
+ }
+ await documentPage.evaluate(()=>{window.print=()=>{window.printCalled=true}});await documentPage.getByRole('button',{name:'Imprimir / Guardar como PDF',exact:true}).click();assert(await documentPage.evaluate(()=>window.printCalled))
+ await documentPage.emulateMedia({media:'print'});assert.equal(await documentPage.locator('.actions').isVisible(),false)
+ if(screenshots)await documentPage.pdf({path:`${screenshots}/registro.pdf`,format:'A4',preferCSSPageSize:true})
+ await documentPage.close()
  await screenshot(page,'inicio-desktop')
  await navigate(page,'Mi carrera');await page.locator('.oc-source').waitFor();await page.locator('.oc-source summary').click()
  assert((await page.locator('.oc-source').innerText()).includes(CARRERAS.ia.version))
@@ -74,7 +87,13 @@ try{
  }
  for(const key of CARRERA_KEYS){const c=await fixture(key);await navigate(c.page,'Mi carrera');await c.page.locator('.oc-source').waitFor();assert.equal(await c.page.locator('[data-course]').count()>0,true,key);await c.context.close()}
  const retired=await fixture('pucp-mecatronica');assert.equal(await retired.page.locator('#h-career').count(),0)
- const downloading=retired.page.waitForEvent('download');await retired.page.getByRole('button',{name:'Exportar registro académico',exact:true}).click();const download=await downloading;const exported=JSON.parse(await readFile(await download.path(),'utf8'));assert.equal(exported.profiles[0].carrera,'pucp-mecatronica');assert.deepEqual(exported.progress[0].done,['mat0','com0','calc1','prog1','fia']);await retired.context.close()
+ const downloading=retired.page.waitForEvent('download');await retired.page.getByRole('button',{name:'Exportar registro académico',exact:true}).click();const download=await downloading
+ assert.match(download.suggestedFilename(),/\.html$/)
+ const report=await retired.context.newPage();await report.setContent(await readFile(await download.path(),'utf8'))
+ const exported=await report.locator('#academic-record-data').evaluate(el=>JSON.parse(el.textContent));assert.equal(exported.profiles[0].carrera,'pucp-mecatronica');assert.deepEqual(exported.progress[0].done,['mat0','com0','calc1','prog1','fia'])
+ await report.getByRole('heading',{name:'Registro académico',exact:true}).waitFor();assert((await report.locator('main').innerText()).includes('No está disponible el catálogo'))
+ const backupDownload=report.waitForEvent('download');await report.getByRole('button',{name:'Descargar respaldo de datos (JSON)',exact:true}).click();const backup=await backupDownload
+ assert.deepEqual(JSON.parse(await readFile(await backup.path(),'utf8')),exported);await retired.context.close()
  const registration=await browser.newPage();registration.on('pageerror',e=>errors.push(e.message));await registration.route('https://setup-fixture.supabase.co/**',r=>r.fulfill({status:200,contentType:'application/json',body:'[]'}));await registration.goto(`${base}/login.html`);assert.equal(await registration.locator('#registerCareer option[value="pucp-mecatronica"]').count(),0);assert.equal(await registration.locator('#registerCareer option').count(),19);await registration.close()
  assert.deepEqual(errors,[])
  console.log('PASS: 18 ESAN catalogs, five destinations, semester grades, keyboard tabs, conditional planning, persistence/error recovery, assistant context, back navigation, 320/390px layouts, retired-account export, ESAN-only registration.')
