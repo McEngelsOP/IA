@@ -247,8 +247,10 @@ async function exportAcademicRecord(){
  try{
   const {readAcademicRecord,downloadAcademicRecord}=await import('../features/account/exportAcademicRecord.js');
   const record=await readAcademicRecord(homeClient,userId);
+  const profile=record.profiles?.[0];let catalog=null;
+  if(profile&&CARRERAS[profile.carrera]){try{catalog=await loadCurriculum(profile.carrera,profile.curriculum_version)}catch{/* El informe conserva los ids si la versión de la malla no está disponible. */}}
   if(revision!==HOME.revision||HOME.user?.id!==userId)return;
-  downloadAcademicRecord(record);if(status)status.textContent='Registro descargado.';toast('Registro académico descargado');
+  downloadAcademicRecord(record,catalog);if(status)status.textContent='Informe académico descargado en PDF.';toast('Informe académico PDF descargado');
  }catch{if(revision===HOME.revision){if(status)status.textContent='No se pudo preparar el archivo. Reintenta; tus datos se conservan.';toast('No se pudo exportar. Reintenta.')}}
  finally{if(revision===HOME.revision)HOME.saving.delete('export')}
 }
