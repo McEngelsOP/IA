@@ -6,7 +6,7 @@ const root = fileURLToPath(new URL('../', import.meta.url))
 process.env.VITE_SUPABASE_URL = 'https://setup-fixture.supabase.co'
 process.env.VITE_SUPABASE_ANON_KEY = 'fixture'
 const selected = process.argv.slice(2)
-const checks = selected.length ? selected : ['assistantLocal', 'esanWorkspace', 'homeCompanion', 'initialSetup', 'webSession', 'sidebarMotion']
+const checks = selected.length ? selected : ['assistantLocal', 'esanWorkspace', 'courseCommunity', 'homeCompanion', 'initialSetup', 'webSession', 'sidebarMotion']
 if (checks.some(name => !/^[a-zA-Z][\w-]*$/.test(name))) throw new Error('Nombre de prueba inválido')
 const server = await createServer({ root, server: { host: '127.0.0.1', port: 5181, strictPort: true } })
 await server.listen()

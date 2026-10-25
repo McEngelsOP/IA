@@ -179,3 +179,13 @@
 .oc button.oc-node:disabled{cursor:not-allowed;opacity:1}
 .oc[aria-busy=true] button:disabled{cursor:wait}
 .oc-legend label:has(input:disabled){cursor:default;color:var(--oc-muted)}
+
+/* The course sheet remains directly accessible on desktop and mobile. */
+.oc-course-picker{display:grid;gap:8px;padding:0 22px 16px;font-size:14px;min-width:0}
+.oc-course-picker select{width:100%;min-width:0;box-sizing:border-box}
+@media(max-width:860px){.oc-workspace-controls .oc-modes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.oc-course-picker{padding-inline:16px}.oc-course-picker select{font-size:16px}}
+
+.oc-professor-votes{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
+.oc-professor-votes button{display:flex;gap:10px;align-items:center;min-height:44px}
+.oc-professor-votes span{font-variant-numeric:tabular-nums}
+.oc-professor-votes button[aria-pressed=true]{background:var(--on);color:var(--on-t);font-weight:600}

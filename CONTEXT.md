@@ -66,3 +66,7 @@ Base y Edge Functions son compartidas por los despliegues con las mismas variabl
 `npm run check` comprueba catálogo, Node/PostgreSQL local, Worker y build. `npm run test:browser` inicia Vite con datos fixture y servicios simulados. Las pruebas no crean cuentas reales ni prueban un despliegue de servidor no aplicado.
 
 No crear otra carpeta de descartes: usar Git para recuperar código retirado. Antes de borrar, revisar imports, entradas, rutas públicas, scripts, SQL y pruebas. Registrar decisiones materiales en `docs/cleanup.md`.
+
+## Corrección de fichas y Recursos · 25 de octubre de 2026
+
+La rama de trabajo actual es `main`. La ficha del curso tiene un botón directo y selector de curso; conserva dificultad, profesores, recomendaciones positivas/negativas y etiquetas. Los comentarios históricos de herramientas vuelven a consultarse desde Recursos, separados de `tools.description`, mediante `ResourceComments` con carga al abrir, paginación y columnas públicas explícitas. No se modificaron tablas, permisos ni registros remotos. `courseCommunity.browser.mjs` cubre estos flujos, fallos independientes y vistas de 320/390/1440 px.

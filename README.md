@@ -2,14 +2,14 @@
 
 Lyra ayuda a estudiantes de Universidad ESAN a entender su avance, planificar sus cursos y organizar el semestre. El catálogo activo incluye las 18 carreras ESAN presentes en las fuentes del proyecto. Es una herramienta independiente de apoyo; no confirma matrícula ni sustituye información institucional.
 
-La rama de trabajo es **`aea`**. Esta reorganización incorpora la limpieza de `main`; los cambios nuevos se mantienen en `aea`.
+La rama de trabajo actual es **`main`**. Las correcciones de la ficha del curso y los comentarios de Recursos se mantienen en esta rama.
 
 ## Recorrido del estudiante
 
 | Sección | Funciones |
 | --- | --- |
 | Inicio | Actividades, pendientes, avance, calificaciones y logros privados. |
-| Mi carrera | Malla, requisitos, progreso, matrícula, fichas y fuente del catálogo. |
+| Mi carrera | Malla, requisitos, progreso, matrícula, ficha del curso con dificultad y profesores de la comunidad, y fuente del catálogo. |
 | Mi semestre | Calendario y tareas, horario Excel, notas y objetivos, cursos actuales. |
 | Planificar | Diagnóstico, comparación de cargas, proyección y plan guardado. |
 | Asistente | Consultas con el plan, requisitos, créditos aprobados y matrícula actual. |
@@ -84,3 +84,9 @@ Vite genera `dist/`. Las entradas y rutas de publicación permanecen en `vite.co
 ## Asistente personal
 
 El historial del asistente se conserva únicamente en el navegador y dispositivo, separado por cuenta. Consulta datos académicos autorizados cuando son necesarios y ofrece borradores editables de tareas/eventos con guardado validado. Arquitectura, límites y activación: [docs/assistant-local.md](docs/assistant-local.md).
+
+## Fichas y comentarios de la comunidad
+
+En Mi carrera, el botón **Ficha del curso** y su selector abren directamente los datos del curso: requisitos, registro académico, dificultad, profesores, recomendaciones y etiquetas. Los fallos de carga de dificultad y profesores se muestran por separado.
+
+Recursos conserva la descripción editable por su autor y recupera los comentarios anteriores en **Comentarios de la comunidad**. Se consultan al desplegarlos, con paginación de 20 y solo las columnas públicas; no se leen identificadores de autores. Esta corrección reutiliza las tablas y permisos existentes, sin cambios de SQL.
