@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import OfficialIcon from '../../shared/components/OfficialIcon.jsx'
 import '../../shared/styles/OfficialSurfaces.css'
 import { MAILBOX_TYPES } from '../../shared/data/mailboxTypes.js'
+import { getSupabaseClient } from '../../shared/lib/getSupabaseClient.js'
 
 let draftOwner = null, mailboxDrafts = {}
 function OfficialMailbox({ category = 'Aplicativo', career = 'ia', courses = [], onCategory, draftKey = 'guest' }) {
@@ -23,19 +24,25 @@ function OfficialMailbox({ category = 'Aplicativo', career = 'ia', courses = [],
     sending.current = true; setBusy(true); setStatus('Enviando…')
     const owner = draftKey
     try {
+      const client = getSupabaseClient()
+      const session = await client?.auth.getSession()
+      const token = session?.data?.session?.access_token
+      if (!token) { setStatus('Inicia sesión para enviar tu mensaje. Conservamos tu borrador.'); return }
       const response = await fetch('/api/mailbox', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ categoria: category, tipo: config.tipos[draft.type][0],
           carrera: career, mensaje: draft.text.trim(),
           detalles: Object.fromEntries(fields.filter(([key]) => draft.fields[key]).map(([key, label]) => [label, draft.fields[key]])),
           gravedad: isError ? draft.severity : '' })
       })
+      if (response.status === 401) { setStatus('Tu sesión venció. Vuelve a ingresar; conservamos tu borrador.'); return }
+      if (response.status === 429) { setStatus('Has enviado varios mensajes. Espera antes de reintentar; conservamos tu borrador.'); return }
       const result = await response.json()
       if (!response.ok || !result.ok) throw new Error('unconfirmed')
       if (draftOwner === owner) changeDrafts(all => ({ ...all, [category]: undefined }))
       setStatus('Mensaje registrado en el buzón del aplicativo. Gracias por escribirnos.')
     } catch {
-      setStatus('No pudimos confirmar la recepción. Conservamos tu borrador. Antes de reintentar, verifica si el mensaje ya llegó a la hoja.')
+      setStatus('No pudimos confirmar la recepción. Conservamos tu borrador para que puedas reintentar más tarde.')
     } finally { sending.current = false; setBusy(false) }
   }
   return <div className="z-wrap official-mailbox">

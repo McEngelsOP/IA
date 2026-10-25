@@ -11,7 +11,8 @@
     "test:catalog": "node scripts/generateCurricula.mjs --check",
     "test:browser": "node scripts/checkBrowser.mjs",
     "test:worker": "node --test workers/geoduelo/test/*.test.mjs",
-    "check": "npm run test:catalog && npm test && npm run test:worker && npm run build"
+    "test:repository": "node scripts/checkRepositorySafety.mjs",
+    "check": "npm run test:repository && npm run test:catalog && npm test && npm run test:worker && npm run build"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.38.0",

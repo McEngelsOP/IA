@@ -8,7 +8,7 @@ Trabajo en `aea`, 19 de octubre de 2026. Se incorpora la limpieza revisada de `m
 | Carpetas antiguas `src/components`, `lib`, `styles`, `data`, `assets` | Reubicar por responsabilidad y actualizar consumidores, sin copias. |
 | `Mallas curriculares/` | Mover las 18 fuentes activas a `data/catalogs/esan/sources/`. |
 | Catálogo PUCP | Retirar de oferta, grafos y asesor; conservar registros y exportación de la cuenta histórica. |
-| `supabase/carrera_pucp.sql` | Conservar solo en `supabase/history/` para referencia/restauración. |
+| `supabase/carrera_pucp.sql` | Retirado del árbol activo; respaldo operativo externo. |
 | Modal `SemesterRoadmap` y CSS | Eliminar la superficie sin consumidores; usar una planificación única. |
 | Maqueta `ios-android.html` | Sustituir por una redirección al portal responsive. |
 | Importador del onboarding y ejemplo CSV | Retirar la entrada duplicada; validar borradores anteriores; importar Excel en Mi semestre. |
@@ -17,4 +17,6 @@ Trabajo en `aea`, 19 de octubre de 2026. Se incorpora la limpieza revisada de `m
 | Lockfile aislado del Worker | Consolidar en el lockfile del workspace raíz; dependencias de pruebas declaradas explícitamente. |
 | JSON auxiliar de generación de imagen de landing | Retirar metadatos sin uso; conservar el WebP. |
 
-Se mantienen licencias de terceros, pruebas útiles, recursos activos, Worker y SQL de restauración. Una revisión curricular publicada no es descartable: puede estar asignada a un estudiante.
+Se mantienen licencias de terceros, pruebas útiles, recursos activos, Worker y SQL vigente. Una revisión curricular publicada no es descartable: puede estar asignada a un estudiante.
+
+La limpieza de seguridad retira `ADMIN.md`, los informes de activación, los SQL históricos de restauración y los metadatos locales de diseño. Sus respaldos administrativos se conservan fuera de GitHub. La retirada se aplica por separado en main, Oficial y aea, conservando las diferencias funcionales. El historial previo permanece hasta tratarlo de forma coordinada.
