@@ -1,6 +1,6 @@
 # Contexto técnico de Lyra Campus
 
-Actualizado el 20 de octubre de 2026 para la reestructuración en `aea`. El código y las pruebas son la referencia de implementación. El catálogo ESAN y `study-advisor` v15 están activados en Lyra; el alcance comprobado se registra en `docs/backend-activation.md`.
+Actualizado el 20 de octubre de 2026 para la reestructuración en `aea`. El código y las pruebas son la referencia de implementación. El catálogo ESAN y `study-advisor` v15 están activados en Lyra; los informes operativos se conservan fuera del repositorio.
 
 ## Alcance y entradas
 

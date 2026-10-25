@@ -47,7 +47,7 @@ npm run test:browser
 | `src/shared/` | Componentes, cliente Supabase, sesión y recursos compartidos. |
 | `data/catalogs/esan/` | Markdown de origen y revisiones inmutables de las mallas. |
 | `scripts/` | Generación, comprobaciones de navegador y datos de Geoduelo. |
-| `supabase/` | SQL y Edge Functions; restauración en `history/`. |
+| `supabase/` | Migraciones, SQL vigente y Edge Functions. |
 | `workers/geoduelo/` | Servidor de partidas en Cloudflare. |
 | `Pagina promocional/` | Landing independiente con demostraciones ilustrativas. |
 | `tests/` | Pruebas de reglas, SQL y navegador. |
@@ -63,7 +63,7 @@ node scripts/generateCurricula.mjs --check
 
 El generador sincroniza opciones, catálogos, revisiones, catálogo del asesor y SQL. No editar salidas generadas ni renombrar IDs de cursos: están ligados a avances, notas y comunidad.
 
-El backend de Lyra quedó activado el 20 de octubre de 2026: catálogo de 18 carreras, asignación persistente de revisión y `study-advisor` v14. La migración conserva los datos existentes y bloquea registros externos a ESAN. Ver [activación y comprobaciones](docs/backend-activation.md).
+El backend de Lyra quedó activado el 20 de octubre de 2026: catálogo de 18 carreras, asignación persistente de revisión y `study-advisor` v14. La migración conserva los datos existentes y bloquea registros externos a ESAN.
 
 Para otro entorno con el esquema previo, ejecutar **`supabase/careers_catalog.sql`** y desplegar **`study-advisor`** de la misma revisión. No ejecutar todos los SQL históricos. Cambiar de rama no despliega automáticamente SQL o Edge Functions; un preview que comparte variables de producción utiliza los mismos servicios remotos.
 
@@ -84,3 +84,7 @@ Vite genera `dist/`. Las entradas y rutas de publicación permanecen en `vite.co
 ## Asistente personal
 
 El historial del asistente se conserva únicamente en el navegador y dispositivo, separado por cuenta. Consulta datos académicos autorizados cuando son necesarios y ofrece borradores editables de tareas/eventos con guardado validado. Arquitectura, límites y activación: [docs/assistant-local.md](docs/assistant-local.md).
+
+## Acceso al código
+
+El repositorio de desarrollo debe mantenerse privado y compartirse solo con colaboradores. Para probar Lyra, compartir la web publicada. Ver [seguridad](SECURITY.md) y [uso del código](NOTICE.md). Las guías administrativas y los informes de producción se conservan fuera de GitHub.

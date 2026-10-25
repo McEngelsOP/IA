@@ -10,6 +10,24 @@ pnpm-debug.log*
 .env
 .env.local
 .env.*.local
+.env.*
+!.env.example
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+.vercel/
+.supabase/
+.impeccable/
+*.pem
+*.key
+*.dump
+*.backup
+*.bak
+/private/
+/backups/
+/ADMIN.md
+/docs/backend-activation.md
+/supabase/history/
 
 # Build
 /dist/
@@ -28,3 +46,5 @@ Thumbs.db
 
 # Vite
 .vite/
+
+/supabase/.temp/

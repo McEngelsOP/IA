@@ -23,7 +23,7 @@ Los archivos de instalación `arcade.sql`, `logros.sql`, `professor_tags.sql`, `
 
 El retiro comprueba la definición revisada, las dependencias catalogadas, los triggers, referencias en cuerpos de rutinas y los permisos de ejecución. Cualquier cambio desconocido aborta la transacción. Usa `RESTRICT`, nunca `CASCADE`.
 
-La recuperación administrativa está en `history/unused_functions_restore.sql`: contiene las definiciones y permisos anteriores, sin reinstalar el trigger del alias ni publicar el correo a alumnos. No se modifica la Edge Function de autenticación.
+Las definiciones históricas de restauración se conservan en el respaldo operativo externo; no reinstalar rutinas retiradas sin revisar sus permisos.
 
 Se conservan `my_tool_comment_count()` y `my_course_comment_count()` porque intervienen en políticas RLS. También se conservan las sobrecargas del chat y las rutinas de `app_private`: las primeras mantienen compatibilidad y las segundas separan las entradas públicas de las operaciones privilegiadas.
 
@@ -36,4 +36,4 @@ Después del retiro: ambas firmas deben devolver `NULL` con `to_regprocedure`; `
 Esta revisión no retira tablas, datos ni otras funciones y no afirma resolver todos los avisos históricos del Security Advisor.
 
 
-La reestructuración ESAN de `aea` usa `careers_catalog.sql` para catálogo y asignaciones de revisión. El generador sincroniza también la definición de Logros de mantenimiento. No ejecutar `history/carrera_pucp.sql`: es una referencia de restauración retirada de la oferta activa.
+El catálogo activo utiliza `careers_catalog.sql`. La definición histórica de PUCP se conserva fuera del árbol activo y no debe ejecutarse en la oferta ESAN.
