@@ -16,12 +16,13 @@ alter table public.profiles
 create or replace function public.is_app_admin()
 returns boolean
 language sql
-security definer set search_path = public
+security definer set search_path = ''
 stable
 as '
-  select coalesce(is_admin, false)
-  from public.profiles
-  where id = auth.uid();
+  select exists (
+    select 1 from public.profiles
+    where id = (select auth.uid()) and is_admin is true
+  );
 ';
 
 grant execute on function public.is_app_admin() to authenticated;
@@ -60,7 +61,7 @@ language plpgsql
 security definer set search_path = public
 as '
 begin
-  if not public.is_app_admin() then
+  if public.is_app_admin() is not true then
     raise exception ''Acceso denegado: Se requieren permisos de administrador'';
   end if;
 
@@ -80,7 +81,7 @@ language plpgsql
 security definer set search_path = public
 as '
 begin
-  if not public.is_app_admin() then
+  if public.is_app_admin() is not true then
     raise exception ''Acceso denegado'';
   end if;
 
@@ -101,7 +102,7 @@ language plpgsql
 security definer set search_path = public
 as '
 begin
-  if not public.is_app_admin() then
+  if public.is_app_admin() is not true then
     raise exception ''Acceso denegado'';
   end if;
 
@@ -124,7 +125,7 @@ as '
 declare
   result json;
 begin
-  if not public.is_app_admin() then
+  if public.is_app_admin() is not true then
     raise exception ''Acceso denegado'';
   end if;
 
@@ -165,7 +166,7 @@ language plpgsql
 security definer set search_path = public
 as '
 begin
-  if not public.is_app_admin() then
+  if public.is_app_admin() is not true then
     raise exception ''Acceso denegado'';
   end if;
 
@@ -192,7 +193,7 @@ as '
 declare
   stats json;
 begin
-  if not public.is_app_admin() then
+  if public.is_app_admin() is not true then
     raise exception ''Acceso denegado'';
   end if;
 
@@ -215,3 +216,9 @@ end;
 ';
 
 grant execute on function public.admin_get_stats() to authenticated;
+
+-- No heredar el permiso EXECUTE predeterminado de PUBLIC.
+revoke execute on function public.is_app_admin(), public.admin_get_users(),
+  public.admin_update_user_carrera(uuid,text), public.admin_clear_user_alias(uuid),
+  public.admin_get_all_comments(), public.admin_delete_comment(uuid,text),
+  public.admin_get_stats() from public, anon;

@@ -228,9 +228,6 @@ $('registerForm').addEventListener('submit', async event => {
   if ($('registerPassword').value !== $('registerConfirm').value) { invalid('registerConfirm', 'Las contraseñas no coinciden.'); return }
   setBusy(true, 'Creando cuenta…'); feedback('')
   try {
-    const lookup = await authByCode('exists', { code })
-    if (!lookup.ok) throw new Error('lookup_failed')
-    if (lookup.exists) { feedback('Este código universitario ya tiene una cuenta. Inicia sesión o recupera tu contraseña.', 'error'); return }
     const result = await client.auth.signUp({ email, password: $('registerPassword').value, options: { data: { student_code: code, carrera: career }, emailRedirectTo: callback } })
     if (result.error) throw result.error
     if (!result.data.user || result.data.user.identities?.length === 0) { feedback('Ese correo ya tiene una cuenta. Usa otro correo o inicia sesión.', 'error'); return }
