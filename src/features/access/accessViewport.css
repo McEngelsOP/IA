@@ -42,7 +42,7 @@ body[data-state] .panel {
   pointer-events: auto;
 }
 body[data-state="registerScreen"] .panel { height: min(760px, calc(var(--access-height) - 2 * var(--frame-gap))); }
-.stage { flex: 1 1 auto; min-height: 0; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-gutter: stable; }
+.stage { flex: 1 1 auto; min-height: 0; margin: -8px; padding: 8px; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-gutter: stable; }
 .brand, .panel-foot { flex-shrink: 0; }
 body[data-state] .brand {
   height: var(--logo-height, clamp(52px, 4.1vw, 68px));
