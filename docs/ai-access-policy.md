@@ -34,7 +34,7 @@ Los modos Breve, Paso a paso y Modo estudio controlan las instrucciones y la lon
 
 Aplicar `supabase/ai_access_policy.sql` después de los esquemas existentes de asesor y `personal_ai_keys.sql`. Es independiente de `system_complete.sql`. Después desplegar conjuntamente `study-advisor`, `text-to-tasks`, `excel-schedule` y `personal-ai`, conservando `verify_jwt=true`. Publicar el frontend de Oficial para habilitar los controles visuales. Sin el esquema de política, las nuevas funciones rechazan las consultas; no vuelven a la política anterior.
 
-El SQL y las funciones se verifican localmente antes de su activación. El registro de despliegue se indica en la entrega; la existencia del archivo no implica que esté aplicado en un entorno.
+Estado de esta entrega: código subido a Oficial; SQL de esta política y actualización de los cuatro servicios pendientes de aprobación explícita para producción. La base de datos de Lyra no contiene todavía las tablas ni la RPC nuevas. No se han verificado automáticamente cuentas ESAN ni modificado la disponibilidad del servicio actual. La publicación del frontend también debe coordinarse con esa activación.
 
 ## Pruebas
 
