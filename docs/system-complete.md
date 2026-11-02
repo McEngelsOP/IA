@@ -40,7 +40,7 @@ El panel presenta solicitudes de IA por proveedor en 24 horas, límite diario, �
 
 ## Activación y comprobaciones
 
-El código y SQL se entregan como propuesta revisable. **La activación remota de esta ampliación no se ha aplicado**: la revisión automática exige aprobación explícita del alcance de producción. La migración propuesta es `supabase/system_complete.sql`; `node scripts/systemCatalogSeed.mjs` genera la carga de los 18 catálogos existentes. Deben aplicarse juntos y desplegar después `study-advisor` de la misma revisión. El frontend se integra en la rama `Oficial`, por autorización del usuario. Esta subida no aplica SQL ni despliega funciones de Supabase.
+El código y todos los SQL se entregan en la rama **Oficial**. **La ejecución de SQL queda a cargo del usuario**, por su indicación expresa; no se aplica SQL remoto desde las herramientas del asistente. Para esta ampliación, ejecutar una vez `supabase/system_complete.sql` y después `supabase/system_catalog_seed.sql`, que contiene la carga de los 18 catálogos existentes lista para pegar en SQL Editor. El segundo archivo se reproduce con `node scripts/systemCatalogSeed.mjs --write` y se comprueba con `npm run test:catalog`. Desplegar después `study-advisor` de la misma revisión. La subida al repositorio no despliega funciones de Supabase.
 
 El alcance de activación comprende preferencias, reglas de calificaciones, catálogos/validación, equivalencias/historial, roles de moderación, reportes y telemetría. Cambia la validación de notas y permite actualizar la revisión de malla exclusivamente mediante la RPC autorizada. No elimina alumnos, notas, avances ni conversaciones y no asigna permisos de moderador a cuentas concretas automáticamente.
 

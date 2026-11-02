@@ -24,7 +24,8 @@ export async function setupDatabase() {
  insert into progress values('${student}',array['calc1'],array['calc2'],now());`)
  for(const c of Object.values(CARRERAS)) await db.query('insert into curriculum_versions values($1,$2,$3,$4,$5)',[c.institutionId,c.key,c.version,c.sourceHash,c.source])
  await db.exec(readFileSync('supabase/system_complete.sql','utf8'))
- for(const c of Object.values(CARRERAS)) await db.query('update curriculum_versions set catalog=$1,published_at=now() where career_key=$2 and version=$3',[c,c.key,c.version])
+ await db.exec(readFileSync('supabase/system_catalog_seed.sql','utf8'))
+ await db.exec(readFileSync('supabase/system_catalog_seed.sql','utf8'))
  const as=async(id,role='authenticated')=>{await db.exec('reset role');await db.query("select set_config('request.jwt.claim.sub',$1,false)",[id]);await db.exec('set role '+role)}
  return {db,as}
 }
