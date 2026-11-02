@@ -97,4 +97,6 @@ El repositorio de desarrollo debe mantenerse privado y compartirse solo con cola
 
 ## Ampliación del sistema en revisión
 
-La ampliación integrada en `Oficial` añade sincronización de preferencias, escalas institucionales, actualización de mallas, prevención de calendario, consulta sin conexión y administración de reportes/servicios. [Funcionamiento y límites](docs/system-complete.md). El SQL y la actualización de `study-advisor` siguen pendientes de autorización explícita de activación; estas funciones no se presentan como activadas en producción. Tras `npm run build`, `npm run test:offline` comprueba la PWA con un corte real de conexión.
+La ampliación integrada en `Oficial` añade sincronización de preferencias, escalas institucionales, actualización de mallas, prevención de calendario, consulta sin conexión y administración de reportes/servicios. [Funcionamiento y límites](docs/system-complete.md). El SQL general y la resolución de nuevas versiones de malla en `study-advisor` siguen pendientes de activación; estas funciones no se presentan como activadas en producción. Tras `npm run build`, `npm run test:offline` comprueba la PWA con un corte real de conexión.
+
+La política independiente del asistente exige claves propias a cuentas externas o sin afiliación ESAN verificada, unifica las cuotas y añade modos de respuesta y contexto consultado. [Acceso de IA, instalación y pruebas](docs/ai-access-policy.md).

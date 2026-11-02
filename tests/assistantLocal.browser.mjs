@@ -8,7 +8,17 @@ try{
  page.on('pageerror',e=>errors.push(e.message))
  await page.goto(base+'/tests/fixtures/assistant.html')
  const send=async()=>{await page.getByLabel('Pregunta para el asesor académico').fill('Crea una tarea para el informe');await page.getByRole('button',{name:'Enviar pregunta',exact:true}).click();await page.getByLabel('Revisar borrador').waitFor()}
- await send();assert.equal(await page.evaluate(()=>window.injected),undefined)
+ await page.getByLabel('Respuesta',{exact:true}).selectOption('study')
+ await page.evaluate(()=>window.aiDenied=true)
+ await page.getByLabel('Pregunta para el asesor académico').fill('Conservar esta pregunta')
+ await page.getByRole('button',{name:'Enviar pregunta',exact:true}).click()
+ await page.getByText('Esta cuenta necesita una clave propia. Abre Mi IA para configurarla.',{exact:true}).waitFor()
+ assert.equal(await page.getByLabel('Pregunta para el asesor académico').inputValue(),'Conservar esta pregunta')
+ await page.evaluate(()=>window.aiDenied=false)
+ await send();assert.equal(await page.evaluate(()=>window.calls.at(-1).responseStyle),'study')
+ await page.getByText('Contexto consultado',{exact:true}).click()
+ await page.getByText('Tareas · Agenda',{exact:true}).waitFor()
+ assert.equal(await page.evaluate(()=>window.injected),undefined)
  assert.equal(await page.locator('.a-rep img').count(),0)
  // Draft editing survives reload; server only sees a bounded role/content history.
  await page.getByLabel('Título',{exact:true}).fill('Informe corregido')

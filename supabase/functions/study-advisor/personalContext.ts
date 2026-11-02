@@ -31,7 +31,7 @@ export async function loadPersonalContext(client: any, userId: string, question:
   const today = limaDate();
   const end = new Date(today+'T12:00:00Z'); end.setUTCDate(end.getUTCDate()+30);
   const until = end.toISOString().slice(0,10);
-  const result: any = { today, timezone:'America/Lima', profile:{ alias:text(profile.alias,60), careerId:profile.carrera, institutionId:profile.institution_id||'esan', curriculumVersion:profile.curriculum_version }, consulted:[], limits:{calendarWindow:{from:today,to:until}}, unavailable:[] };
+  const result: any = { today, timezone:'America/Lima', profile:{ alias:text(profile.alias,60), careerId:profile.carrera, institutionId:profile.institution_id, curriculumVersion:profile.curriculum_version }, consulted:[], limits:{calendarWindow:{from:today,to:until}}, unavailable:[] };
   // Three bounded tools at most, plus profile. Independent reads share one request deadline.
   if (academic) {
     const [progress,statuses,setup] = await Promise.all([

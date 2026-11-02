@@ -50,3 +50,5 @@ El alcance de activación comprende preferencias, reglas de calificaciones, cat�
 - Las pruebas SQL locales cubren permisos, aislamiento, mallas inválidas, conservación del registro y equivalencias.
 
 Las pruebas locales y con fixtures no sustituyen la prueba del recorrido con cuentas reales de desarrollo. Esta última depende de la activación del backend y no se afirma como completada.
+
+La resolución de revisiones de malla en el asesor permanece deshabilitada por defecto (`ADVISOR_VERSIONED_CURRICULA`). Habilitarla con valor `true` únicamente después de aplicar y comprobar el esquema de mallas. La política independiente de IA no activa esta ampliación.

@@ -8,16 +8,18 @@ const out = process.env.REVIEW_OUTPUT || '/tmp/ia-deberes-review'; await mkdir(o
 const user = { id: '11111111-1111-4111-8111-111111111111', aud: 'authenticated', role: 'authenticated', email: 'fixture@example.invalid', app_metadata: { provider: 'email' }, user_metadata: { carrera: 'ia' }, created_at: '2026-01-01T00:00:00Z' }
 const encode = v => Buffer.from(JSON.stringify(v)).toString('base64url')
 const session = { access_token: encode({ alg: 'HS256', typ: 'JWT' }) + '.' + encode({ sub: user.id, exp: Math.floor(Date.now() / 1000) + 3600, role: 'authenticated' }) + '.fixture', refresh_token: 'fixture', expires_at: Math.floor(Date.now() / 1000) + 3600, expires_in: 3600, token_type: 'bearer', user }
+let affiliationWrites=[]
 let statuses = [{ course_id: 'calc1', status: 'matriculado' }, { course_id: 'com1', status: 'matriculado' }], rating = null, teachers = []
 let resources = [{ id: '22222222-2222-4222-8222-222222222222', name: 'Notion', url: 'https://notion.so/', description: 'Organiza apuntes y tareas.', is_owner: false, hearts: 2, liked: false }]
-let failPublish = false, failAI = false, failTasks = false, tasks = [], config={mode:'system',keys:[]},failKey=false
+let failPublish = false, failAI = false, failTasks = false, tasks = [], config={mode:'system',keys:[],access:{sharedEligible:true,isAdmin:true},usage:{source:'system',remaining:5,limit:5,dailyRemaining:20,dailyLimit:20}},failKey=false
 const browser = await chromium.launch({ headless: true, executablePath: process.env.REVIEW_BROWSER || undefined, args: ['--no-sandbox', '--disable-dev-shm-usage', '--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] })
 const context = await browser.newContext({ viewport: { width: 1366, height: 768 }, reducedMotion: 'reduce' })
 await context.addInitScript(session => { localStorage.setItem('sb-setup-fixture-auth-token', JSON.stringify(session)); localStorage.setItem('sb-setup-fixture-auth-token:web-activity:v1:' + session.user.id, JSON.stringify({ at: Date.now() })) }, session)
 await context.route('https://setup-fixture.supabase.co/**', async route => {
   const req = route.request(), url = new URL(req.url()), path = url.pathname, payload = req.method() === 'POST' || req.method() === 'PATCH' ? req.postDataJSON() : null
   let data = [], status = 200
-  if (path.endsWith('/functions/v1/personal-ai')) { if(failKey&&payload.action==='save'){status=503;data={message:'No se pudo guardar. Reintenta.'}} else {if(payload.action==='save'){config.mode='personal';config.keys=[{provider:payload.provider,hint:'••••'+payload.key.slice(-4),enabled:true,lastStatus:null}]} if(payload.action==='mode')config.mode=payload.mode;if(payload.action==='toggle')config.keys[0].enabled=payload.enabled;if(payload.action==='delete')config.keys=[];data=payload.action==='test'?{status:'ok',message:'Tu clave respondió correctamente.'}:config} }
+  if (path.endsWith('/functions/v1/personal-ai')) { if(failKey&&payload.action==='save'){status=503;data={message:'No se pudo guardar. Reintenta.'}} else {if(payload.action==='save'){config.mode='personal';config.keys=[{provider:payload.provider,hint:'••••'+payload.key.slice(-4),enabled:true,lastStatus:null}]} if(payload.action==='mode')config.mode=payload.mode;if(payload.action==='toggle')config.keys[0].enabled=payload.enabled;if(payload.action==='delete')config.keys=[];config.usage={source:config.mode,remaining:config.mode==='system'?5:10,limit:config.mode==='system'?5:10,dailyRemaining:config.mode==='system'?20:200,dailyLimit:config.mode==='system'?20:200};data=payload.action==='test'?{status:'ok',message:'Tu clave respondió correctamente.'}:config} }
+  else if(path.endsWith('/rpc/admin_set_ai_affiliation')){affiliationWrites.push(payload);data=null}
   else if (path.endsWith('/functions/v1/text-to-tasks')) { if(failAI) { status=503; data={message:'IA no disponible. Reintenta.'} } else data={tasks:[{title:'Entregar informe',due_date:null,course_id:'calc1'},{title:'Preparar exposición',due_date:'2026-10-19',course_id:''}]} }
   else if(path.endsWith('/rpc/set_semester_courses')) { statuses=payload.p_courses.map(course_id=>({course_id,status:'matriculado'})); data=statuses }
   else if(path.endsWith('/calendar_tasks')) { if(payload) { if(failTasks) {status=500;data={message:'fixture failure'}} else { tasks=payload;data=tasks } } else data=tasks }
@@ -50,6 +52,12 @@ await page.locator('.h-enrollment-list').waitFor()
 await page.getByRole('button',{name:'Abrir perfil',exact:true}).click()
 await page.getByRole('menuitem',{name:'Mi IA · claves personales',exact:true}).click()
 await page.getByRole('heading',{name:'Tu conexión de IA',exact:true}).waitFor()
+await page.getByLabel('UUID de la cuenta',{exact:true}).fill(user.id)
+assert.equal(await page.getByRole('button',{name:'Verificar por 180 días'}).isEnabled(),false)
+await page.getByLabel('Revisé una prueba de afiliación ESAN vigente.').check()
+await page.getByRole('button',{name:'Verificar por 180 días'}).click()
+await page.getByText('Afiliación verificada durante 180 días.',{exact:false}).waitFor()
+assert.equal(affiliationWrites[0].p_user_id,user.id)
 await page.getByLabel('Proveedor',{exact:true}).selectOption('groq')
 await page.getByLabel('Clave de API de Groq',{exact:true}).fill('fixture-personal-not-real-key-5678')
 assert.equal(await page.locator('#ai-key').getAttribute('type'),'password')
@@ -73,7 +81,8 @@ await page.getByRole('button',{name:'Activar',exact:true}).click()
 await page.getByText('Clave activada.',{exact:true}).waitFor()
 await page.getByRole('radio',{name:'Servicio de la app',exact:true}).click()
 await page.getByText('Servicio de la app activado.',{exact:true}).waitFor()
-assert.equal(await page.getByRole('button',{name:'Probar Groq',exact:true}).isEnabled(),false)
+assert.equal(await page.getByRole('button',{name:'Probar Groq',exact:true}).isEnabled(),true)
+config.access={sharedEligible:false,personalRequired:true,verificationStatus:'external'};config.mode='personal';config.usage={source:'personal',remaining:10,limit:10,dailyRemaining:200,dailyLimit:200}
 await page.getByRole('button',{name:'Volver a Inicio',exact:true}).click()
 await page.locator('.h-enrollment-list').waitFor()
 for(const width of [390,320]) {
@@ -81,6 +90,8 @@ for(const width of [390,320]) {
  await page.getByRole('button',{name:'Abrir perfil',exact:true}).click()
  await page.getByRole('menuitem',{name:'Mi IA · claves personales',exact:true}).click()
  await page.getByRole('heading',{name:'Tu conexión de IA',exact:true}).waitFor()
+ assert.equal(await page.getByRole('radio',{name:'Servicio de la app',exact:true}).isEnabled(),false)
+ assert.equal(await page.getByRole('heading',{name:'Verificar afiliación ESAN',exact:true}).count(),0)
  await capture({path:out+'/personal-mobile-'+width+'.png'})
  await page.locator('.pai-add').scrollIntoViewIfNeeded();await page.screenshot({path:out+'/personal-key-mobile-'+width+'.png'})
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false)

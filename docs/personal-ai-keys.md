@@ -2,13 +2,13 @@
 
 ## Uso
 
-**Mi IA** se abre desde el perfil en escritorio o desde «+» en móvil. Requiere sesión y permite guardar o reemplazar, activar, desactivar, probar y eliminar claves de Gemini, Groq y OpenRouter. El servicio de la app es el modo predeterminado; guardar una clave activa **Mis claves**. El usuario puede volver al servicio de la app en cualquier momento.
+**Mi IA** se abre desde el perfil en escritorio o desde «+» en móvil. Requiere sesión y permite guardar o reemplazar, activar, desactivar, probar y eliminar claves de Gemini, Groq y OpenRouter. Guardar una clave activa **Mis claves**. El servicio de la app solo está disponible con afiliación ESAN verificada y vigente; las demás cuentas requieren una clave propia. Consulta [la política y las cuotas actuales](ai-access-policy.md).
 
 El campo se oculta inicialmente y se vacía tras guardar. Las claves guardadas solo muestran sus últimos cuatro caracteres y estado; no se pueden recuperar desde la interfaz ni se guardan en `localStorage`. Eliminar una clave la borra de la app, pero no la revoca en el proveedor.
 
 El Asesor IA y Texto → tareas usan el modo elegido. **Mis claves** utiliza únicamente los proveedores propios activos: si no hay claves disponibles o fallan, no recurre automáticamente a las credenciales compartidas. Brújula usa cálculos locales y no llama a proveedores. OpenRouter personal usa `openrouter/free`, sin selector de modelos de pago.
 
-El modo personal admite 10 solicitudes cada 15 minutos y 200 al día; las pruebas también consumen cuota. Los límites del servicio compartido se conservan. Las consultas personales consumen la cuota de la cuenta del proveedor.
+El modo personal admite 10 solicitudes cada 15 minutos y 200 al día; las pruebas también consumen cuota. La política unifica los contadores de las herramientas y conserva además los límites globales del servicio compartido. Las consultas personales consumen la cuota de la cuenta del proveedor.
 
 ## Arquitectura e instalación
 
@@ -16,17 +16,18 @@ La interfaz está en `src/features/assistant/PersonalAISettings.jsx`, `src/featu
 
 `supabase/personal_ai_keys.sql` almacena configuración, referencias a claves y uso en tablas privadas. Supabase Vault guarda los secretos cifrados. Las RPC de gestión, lectura y cuota solo admiten `service_role`; las funciones privadas con privilegios elevados acotan el acceso a Vault. La respuesta de gestión devuelve metadata enmascarada, nunca la clave completa. Un trigger elimina el secreto de Vault cuando se elimina su registro.
 
-`supabase/functions/study-advisor/aiRouting.ts` centraliza la selección de credenciales y cuotas para `study-advisor` y `text-to-tasks`. El modo personal tiene sus propias reservas y pausas por usuario/proveedor; el modo compartido mantiene las RPC existentes del asesor.
+`supabase/functions/study-advisor/aiRouting.ts` centraliza la selección de credenciales y cuotas para `study-advisor`, `text-to-tasks`, `excel-schedule` y `personal-ai`. El modo personal tiene sus propias reservas y pausas por usuario/proveedor; el modo compartido mantiene las reservas existentes por proveedor del asesor. `ai_access_policy.sql` añade la afiliación verificada, cuotas por cuenta y reservas simultáneas.
 
-Para otro entorno, aplicar `supabase/personal_ai_keys.sql` sobre el esquema existente con Vault disponible y desplegar las funciones conservando los secretos del servicio compartido:
+Para otro entorno, aplicar `supabase/personal_ai_keys.sql` y después `supabase/ai_access_policy.sql` sobre el esquema existente con Vault disponible y desplegar las funciones conservando los secretos del servicio compartido:
 
 ```sh
 supabase functions deploy personal-ai
 supabase functions deploy text-to-tasks
+supabase functions deploy excel-schedule
 supabase functions deploy study-advisor
 ```
 
-En el entorno revisado están desplegadas `personal-ai` v1, `text-to-tasks` v3 y `study-advisor` v12. La publicación del frontend de esta extensión aún no está confirmada.
+En una revisión anterior estaban desplegadas `personal-ai` v1, `text-to-tasks` v3 y `study-advisor` v12. Las versiones anteriores no acreditan la activación de la política nueva; ver el registro de entrega.
 
 ## Verificación
 
