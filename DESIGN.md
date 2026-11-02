@@ -11,3 +11,5 @@ Mostrar carga, errores, datos vacíos y estados no soportados. Los guardados com
 La paloma acompaña Inicio sin controles obligatorios. Las simulaciones declaran condiciones y los requisitos por verificar tienen una indicación textual independiente del color.
 
 Inicio mantiene el banner fijo y usa bloques de tamaño pequeño, mediano o completo. Los resúmenes se encajan, con orden accesible y movimiento reducido. El acceso conserva su material transparente en ambos viewports y temas.
+
+El foco de campos y selectores recolorea su borde existente sin cambiar grosor ni dimensiones. `src/shared/styles/FormFocus.css` comparte la regla entre acceso y portal; los buscadores indican foco en su contenedor, sin un segundo aro. Se conservan los indicadores de teclado de botones y enlaces.

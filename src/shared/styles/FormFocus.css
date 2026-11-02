@@ -1,0 +1,19 @@
+/* One focus contour on the existing field; never change border width or geometry. */
+#lyra-access{--field-focus:#d8e9b9}
+:root[data-theme=light] #lyra-access{--field-focus:#89482e}
+#app{--field-focus:var(--ic)}
+:is(#lyra-access,#app) :is(input:not([type=checkbox],[type=radio],[type=range],[type=color],[type=button],[type=submit],[type=reset]),select,textarea):is(:focus,:focus-visible){
+ outline:none;
+ box-shadow:none;
+}
+:is(#lyra-access,#app) :is(input:not([type=checkbox],[type=radio],[type=range],[type=color],[type=button],[type=submit],[type=reset]),select,textarea):focus:not([aria-invalid=true]){
+ border-color:var(--field-focus);
+}
+/* Search fields share their container's contour instead of drawing two indicators. */
+#app :is(.sg-search,.s-srch):focus-within{outline:none;border-color:var(--field-focus)}
+#app .oc-search:focus-within{outline:none;box-shadow:inset 0 0 0 1px var(--field-focus)}
+#app :is(.sg-search,.s-srch,.oc-search) input:focus{outline:none;box-shadow:none}
+@media(forced-colors:active){
+ :is(#lyra-access,#app) :is(input,select,textarea):focus:not([aria-invalid=true]),#app :is(.sg-search,.s-srch):focus-within{border-color:Highlight}
+ #app .oc-search:focus-within{box-shadow:none;outline:1px solid Highlight;outline-offset:-1px}
+}
