@@ -142,10 +142,16 @@ export function createAdvisorHandler({
     let personal;
     try { personal = await loadPersonalContext(client,user.id,question,history); }
     catch { return json({error:'personal_context_unavailable'},503); }
-    const career = catalog[personal.profile.careerId];
+    let career = catalog[personal.profile.careerId];
     if (!career) return json({error:'career_required'},400);
     const assignedVersion = personal.profile.curriculumVersion;
-    if ((assignedVersion && assignedVersion !== career.version) || (body.careerVersion && body.careerVersion !== career.version)) return json({error:'curriculum_version_mismatch'},409);
+    if(assignedVersion && assignedVersion!==career.version){
+      const result=await client.from('curriculum_versions').select('catalog').eq('institution_id',personal.profile.institutionId).eq('career_key',personal.profile.careerId).eq('version',assignedVersion).maybeSingle();
+      const revision=result.data?.catalog;
+      if(result.error||!revision||revision.version!==assignedVersion||revision.key!==personal.profile.careerId||revision.institutionId!==personal.profile.institutionId)return json({error:'curriculum_version_unavailable'},503);
+      career={id:revision.key,name:revision.nombre,institutionId:revision.institutionId,version:revision.version,courses:Object.fromEntries(revision.cursos.map((c:any)=>[c.id,{id:c.id,name:c.n,credits:c.cr,prerequisites:c.r,requiredCompletedCredits:c.rc||0,prerequisitesKnown:c.prerequisitesKnown!==false&&!c.requirementNote,requirementNote:c.requirementNote||''}]))};
+    }
+    if(body.careerVersion && body.careerVersion!==career.version)return json({error:'curriculum_version_mismatch'},409);
     const academic = personal.academic || {done:[],plan:[],enrolled:[],semester:null};
     // Academic facts are fetched with the student's JWT, never accepted from chat history.
     body.courses = academic.plan.filter((id:string)=>!academic.done.includes(id)&&!academic.enrolled.includes(id)).map((id:string)=>({id,prerequisites:(career.courses[id]?.prerequisites||[]).map((rid:string)=>({id:rid,completed:academic.done.includes(rid)}))}));

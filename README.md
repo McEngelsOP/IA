@@ -2,14 +2,14 @@
 
 Lyra ayuda a estudiantes de Universidad ESAN a entender su avance, planificar sus cursos y organizar el semestre. El catálogo activo incluye las 18 carreras ESAN presentes en las fuentes del proyecto. Es una herramienta independiente de apoyo; no confirma matrícula ni sustituye información institucional.
 
-La rama de trabajo es **`aea`**. Esta reorganización incorpora la limpieza de `main`; los cambios nuevos se mantienen en `aea`.
+La rama de trabajo de esta entrega es **`Oficial`**. Incluye las correcciones de la ficha del curso y los comentarios de Recursos, junto a la ampliación del sistema.
 
 ## Recorrido del estudiante
 
 | Sección | Funciones |
 | --- | --- |
 | Inicio | Actividades, pendientes, avance, calificaciones y logros privados. |
-| Mi carrera | Malla, requisitos, progreso, matrícula, fichas y fuente del catálogo. |
+| Mi carrera | Malla, requisitos, progreso, matrícula, ficha del curso con dificultad y profesores de la comunidad, y fuente del catálogo. |
 | Mi semestre | Calendario y tareas, horario Excel, notas y objetivos, cursos actuales. |
 | Planificar | Diagnóstico, comparación de cargas, proyección y plan guardado. |
 | Asistente | Consultas con el plan, requisitos, créditos aprobados y matrícula actual. |
@@ -85,6 +85,16 @@ Vite genera `dist/`. Las entradas y rutas de publicación permanecen en `vite.co
 
 El historial del asistente se conserva únicamente en el navegador y dispositivo, separado por cuenta. Consulta datos académicos autorizados cuando son necesarios y ofrece borradores editables de tareas/eventos con guardado validado. Arquitectura, límites y activación: [docs/assistant-local.md](docs/assistant-local.md).
 
+## Fichas y comentarios de la comunidad
+
+En Mi carrera, el botón **Ficha del curso** y su selector abren directamente los datos del curso: requisitos, registro académico, dificultad, profesores, recomendaciones y etiquetas. Los fallos de carga de dificultad y profesores se muestran por separado.
+
+Recursos conserva la descripción editable por su autor y recupera los comentarios anteriores en **Comentarios de la comunidad**. Se consultan al desplegarlos, con paginación de 20 y solo las columnas públicas; no se leen identificadores de autores. Esta corrección reutiliza las tablas y permisos existentes, sin cambios de SQL.
+
 ## Acceso al código
 
 El repositorio de desarrollo debe mantenerse privado y compartirse solo con colaboradores. Para probar Lyra, compartir la web publicada. Ver [seguridad](SECURITY.md) y [uso del código](NOTICE.md). Las guías administrativas y los informes de producción se conservan fuera de GitHub.
+
+## Ampliación del sistema en revisión
+
+La ampliación integrada en `Oficial` añade sincronización de preferencias, escalas institucionales, actualización de mallas, prevención de calendario, consulta sin conexión y administración de reportes/servicios. [Funcionamiento y límites](docs/system-complete.md). El SQL y la actualización de `study-advisor` siguen pendientes de autorización explícita de activación; estas funciones no se presentan como activadas en producción. Tras `npm run build`, `npm run test:offline` comprueba la PWA con un corte real de conexión.

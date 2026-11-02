@@ -1,45 +1,36 @@
-// Service worker mínimo para que la app sea instalable (PWA).
-// Estrategia conservadora para no servir versiones viejas tras un deploy:
-// - Navegaciones (HTML): SIEMPRE red primero; el caché solo es respaldo offline.
-// - /assets/ de Vite (nombres con hash, inmutables): caché primero.
-// Al cambiar CACHE se limpia todo el caché anterior.
-const CACHE = 'malla-v1'
-
-self.addEventListener('install', () => self.skipWaiting())
-
-self.addEventListener('activate', e => {
-  e.waitUntil(
-    caches.keys()
-      .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
-      .then(() => self.clients.claim())
-  )
+// Replaced at build time with a content-derived version and the offline module graph.
+const CACHE = '__LYRA_CACHE__'
+const PRELOAD = __LYRA_PRELOAD__
+self.addEventListener('install', event => {
+ event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(PRELOAD)).then(() => self.skipWaiting()))
 })
-
-self.addEventListener('fetch', e => {
-  const req = e.request
-  if (req.method !== 'GET') return
-  const url = new URL(req.url)
-  if (url.origin !== location.origin) return // Supabase y fuentes: siempre red
-
-  if (url.pathname.startsWith('/assets/')) {
-    // inmutables: caché primero
-    e.respondWith(
-      caches.open(CACHE).then(c =>
-        c.match(req).then(hit => hit || fetch(req).then(res => {
-          if (res.ok) c.put(req, res.clone())
-          return res
-        }))
-      )
-    )
-  } else {
-    // HTML e íconos: red primero, caché como respaldo offline
-    e.respondWith(
-      fetch(req).then(res => {
-        if (res.ok) caches.open(CACHE).then(c => c.put(req, res.clone()))
-        return res
-      }).catch(() =>
-        caches.match(req).then(hit => hit || caches.match('/'))
-      )
-    )
-  }
+self.addEventListener('activate', event => {
+ event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k.startsWith('lyra-') && k !== CACHE || k === 'malla-v1').map(k => caches.delete(k)))).then(() => self.clients.claim()))
+})
+self.addEventListener('fetch', event => {
+ const req = event.request, url = new URL(req.url)
+ // Never cache authenticated responses, RPCs, API handlers, tokens, or external content.
+ if (req.method !== 'GET' || url.origin !== self.location.origin || url.pathname.startsWith('/api/')) return
+ if (req.mode === 'navigate') {
+  event.respondWith(fetch(req).catch(async () => {
+   const cache = await caches.open(CACHE)
+   return await cache.match('/offline.html') || new Response('Abre Lyra con conexión para preparar la consulta offline.', { status: 503, headers: { 'Content-Type': 'text/plain;charset=utf-8' } })
+  }))
+ } else if (url.pathname.startsWith('/assets/') || ['/offline.html','/icon-192.png','/manifest.webmanifest'].includes(url.pathname)) {
+  event.respondWith(caches.open(CACHE).then(async cache => {
+   // Immutable same-origin files do not vary by the module request Origin header.
+   const hit = await cache.match(req, { ignoreVary: true })
+   if (hit) return hit
+   const response = await fetch(req)
+   if (response.ok) await cache.put(req, response.clone())
+   return response
+  }))
+ }
+})
+self.addEventListener('notificationclick', event => {
+ event.notification.close()
+ event.waitUntil(self.clients.matchAll({ type: 'window' }).then(list => {
+  const client = list.find(c => new URL(c.url).origin === self.location.origin)
+  return client ? client.focus() : self.clients.openWindow('/pagina.html')
+ }))
 })

@@ -39,6 +39,11 @@ async function screenshot(page,name){if(screenshots){await page.evaluate(()=>doc
 try{
  const f=await fixture(),{page}=f
  assert.deepEqual(await page.locator('#nav>.it .l').allTextContents(),['Inicio','Mi carrera','Mi semestre','Planificar','Asistente'])
+ await page.getByRole('button',{name:'Abrir perfil',exact:true}).click()
+ const activeDownload=page.waitForEvent('download');await page.getByRole('menuitem',{name:'Exportar registro académico',exact:true}).click();const activeReport=await activeDownload
+ assert.match(activeReport.suggestedFilename(),/^lyra-registro-academico-\d{4}-\d{2}-\d{2}\.pdf$/)
+ assert.equal((await readFile(await activeReport.path())).subarray(0,5).toString(),'%PDF-')
+ if(screenshots)await activeReport.saveAs(`${screenshots}/registro.pdf`)
  await screenshot(page,'inicio-desktop')
  await navigate(page,'Mi carrera');await page.locator('.oc-source').waitFor();await page.locator('.oc-source summary').click()
  assert((await page.locator('.oc-source').innerText()).includes(CARRERAS.ia.version))
@@ -67,14 +72,18 @@ try{
  await f.context.close()
  const failed=await fixture('ia',1440,{failSave:true});await navigate(failed.page,'Planificar');await failed.page.locator('.bj-st').filter({hasText:'Planificar'}).click();await failed.page.getByRole('button',{name:'Sumar próximo semestre a mi plan'}).click();await failed.page.getByRole('button',{name:'Confirmar y guardar'}).click();await failed.page.getByText('No se pudo guardar. Tu plan anterior se conserva; reintenta.',{exact:true}).waitFor();assert.deepEqual(failed.plan,['calc2']);await failed.context.close()
  for(const width of [390,320]){
-  const m=await fixture('ia',width);await navigate(m.page,'Mi semestre',width);await m.page.getByRole('tab',{name:'Notas y objetivos',exact:true}).click();await screenshot(m.page,`semestre-${width}`)
+  const m=await fixture('ia',width);await m.page.evaluate(()=>{window.print=()=>{throw Error('Unexpected print dialog')}});await m.page.getByRole('button',{name:'Abrir perfil',exact:true}).click();const mobileDownloading=m.page.waitForEvent('download');await m.page.getByRole('menuitem',{name:'Exportar registro académico',exact:true}).click();const mobilePdf=await mobileDownloading;assert.match(mobilePdf.suggestedFilename(),/\.pdf$/);assert.equal((await readFile(await mobilePdf.path())).subarray(0,5).toString(),'%PDF-');await navigate(m.page,'Mi semestre',width);await m.page.getByRole('tab',{name:'Notas y objetivos',exact:true}).click();await screenshot(m.page,`semestre-${width}`)
   assert(await m.page.locator('#page').evaluate(el=>el.scrollWidth<=el.clientWidth+1))
   await navigate(m.page,'Planificar',width);await m.page.locator('.bj-st').first().waitFor();await screenshot(m.page,`planificar-${width}`)
   assert(await m.page.locator('#page').evaluate(el=>el.scrollWidth<=el.clientWidth+1));await m.context.close()
  }
  for(const key of CARRERA_KEYS){const c=await fixture(key);await navigate(c.page,'Mi carrera');await c.page.locator('.oc-source').waitFor();assert.equal(await c.page.locator('[data-course]').count()>0,true,key);await c.context.close()}
  const retired=await fixture('pucp-mecatronica');assert.equal(await retired.page.locator('#h-career').count(),0)
- const downloading=retired.page.waitForEvent('download');await retired.page.getByRole('button',{name:'Exportar registro académico',exact:true}).click();const download=await downloading;const exported=JSON.parse(await readFile(await download.path(),'utf8'));assert.equal(exported.profiles[0].carrera,'pucp-mecatronica');assert.deepEqual(exported.progress[0].done,['mat0','com0','calc1','prog1','fia']);await retired.context.close()
+ const downloading=retired.page.waitForEvent('download');await retired.page.getByRole('button',{name:'Exportar registro académico',exact:true}).click();const download=await downloading
+ assert.match(download.suggestedFilename(),/\.pdf$/)
+ assert.equal((await readFile(await download.path())).subarray(0,5).toString(),'%PDF-')
+ if(screenshots)await download.saveAs(`${screenshots}/registro-historico.pdf`)
+ await retired.context.close()
  const registration=await browser.newPage();registration.on('pageerror',e=>errors.push(e.message));await registration.route('https://setup-fixture.supabase.co/**',r=>r.fulfill({status:200,contentType:'application/json',body:'[]'}));await registration.goto(`${base}/login.html`);assert.equal(await registration.locator('#registerCareer option[value="pucp-mecatronica"]').count(),0);assert.equal(await registration.locator('#registerCareer option').count(),19);await registration.close()
  assert.deepEqual(errors,[])
  console.log('PASS: 18 ESAN catalogs, five destinations, semester grades, keyboard tabs, conditional planning, persistence/error recovery, assistant context, back navigation, 320/390px layouts, retired-account export, ESAN-only registration.')

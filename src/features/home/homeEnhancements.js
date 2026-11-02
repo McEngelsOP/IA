@@ -1,3 +1,4 @@
+import { GRADE_SCALES, parseGrade, formatGrade, evaluationResult } from '../../core/academic/grading.js';
 import './HomeEnhancements.css';
 let renderSemesterGrades;
 export function mountSemesterGrades(container){
@@ -12,7 +13,7 @@ export function mountHomeEnhancements(api){
 var K="esan-brillo-v1",R=document.documentElement,st={on:true,lv:100},mobileGlow=matchMedia("(max-width:860px), (hover:none), (pointer:coarse)");
 try{var q=JSON.parse(localStorage.getItem(K));if(q){st.on=q.on!==false;var n=Math.round(+q.lv);if(n>=10&&n<=100)st.lv=n}}catch(e){}
 function apply(){var on=st.on&&!mobileGlow.matches;R.dataset.glow=on?"on":"off";R.style.setProperty("--glow-o",on?(st.lv/100).toFixed(2):"0");R.style.setProperty("--glow-bm",on?st.lv+"%":"0%")}
-function save(){try{localStorage.setItem(K,JSON.stringify(st))}catch(e){}}
+function save(remote){try{localStorage.setItem(K,JSON.stringify(st));if(!remote)api.prefs?.set("glow",{...st})}catch(e){}}
 apply();
 if(mobileGlow.addEventListener)mobileGlow.addEventListener("change",apply);else if(mobileGlow.addListener)mobileGlow.addListener(apply);
 var raf=0,ex=0,ey=0,hasPointer=false,glowSelector=".page .blk,.page .h-hero,.page .oc-node";
@@ -56,10 +57,11 @@ sync();return d}
 function ensure(){var m=document.getElementById("menu");if(!m||m.querySelector(".gl"))return;var c=ctl(),tg=m.querySelector(".tg");if(tg)tg.insertAdjacentElement("afterend",c);else m.insertBefore(c,m.firstChild)}
 function boot(){var m=document.getElementById("menu");if(!m)return;ensure();new MutationObserver(ensure).observe(m,{childList:true})}
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot);else boot();
-window.__esanBrillo={get:function(){return{on:st.on,lv:st.lv}},set:function(o){if(o&&"on"in o)st.on=!!o.on;if(o&&+o.lv>=10&&+o.lv<=100)st.lv=Math.round(+o.lv);apply();save();var g=document.querySelector("#menu .gl");if(g){g.remove();ensure()}}}
+window.__esanBrillo={get:function(){return{on:st.on,lv:st.lv}},set:function(o,remote){if(o&&"on"in o)st.on=!!o.on;if(o&&+o.lv>=10&&+o.lv<=100)st.lv=Math.round(+o.lv);apply();save(remote);var g=document.querySelector("#menu .gl");if(g){g.remove();ensure()}}}
 })();
  (function(){
-var OK="esan-inicio-orden-v1",BLK=["hero","hoy","stats","notas","racha","semestre","panel"],DK="esan-diagnostico-v1",MIN=10.5,nv="notas",DEF=[["Evaluación continua",30],["Examen parcial",30],["Examen final",40]],MES=["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"],intro=true,pal,sel=0,list=[],prev;
+var OK="esan-inicio-orden-v1",BLK=["hero","hoy","stats","notas","racha","semestre","panel"],DK="esan-diagnostico-v1",nv="notas",DEF=[["Evaluación continua",30],["Examen parcial",30],["Examen final",40]],MES=["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"],intro=true,pal,sel=0,list=[],prev;
+var scale=function(){return api.scale||GRADE_SCALES.twenty},pass=function(){return scale().passing},gf=function(n){return formatGrade(n,scale())};
 var E=function(){return api},$=function(s,r){return(r||document).querySelector(s)},scoped=function(k){var a=E();return k+":"+(a&&a.x&&a.x.user&&a.x.user.id||"guest")};
 var esc=function(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})};
 var norm=function(s){return String(s).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase()};
@@ -74,8 +76,8 @@ var S=function(){var e=E();return(e&&e.st)||{}};
 var RM=function(){return matchMedia("(prefers-reduced-motion:reduce)").matches};
 var live$;function say(t){if(!live$||!live$.isConnected){live$=document.createElement("div");live$.className="hw-live";live$.setAttribute("role","status");live$.setAttribute("aria-live","polite");document.body.appendChild(live$)}live$.textContent="";setTimeout(function(){live$.textContent=t},30)}
 function pos(w){var a=[].filter.call(w.parentNode.children,function(c){return c.classList.contains("hw")});return"Bloque «"+(w.dataset.n||w.dataset.w)+"» en posición "+(a.indexOf(w)+1)+" de "+a.length}
-function stored(){var a=[];try{a=JSON.parse(localStorage.getItem(scoped(OK)))}catch(x){}return Array.isArray(a)?a.filter(function(i,k){return BLK.indexOf(i)>=0&&a.indexOf(i)===k}):[]}
-function resetOrder(inPlace){try{localStorage.removeItem(scoped(OK))}catch(x){}var h=$(".h-home");if(h&&h.dataset.hw){var foot=$(":scope>.h-foot",h);BLK.forEach(function(i){var w=$(':scope>.hw[data-w="'+i+'"]',h);if(w)h.insertBefore(w,foot||null)});say("Orden de Inicio restablecido");return true}if(!inPlace){var e=E();e&&e.nav("Inicio")}return false}
+function stored(){var a=[];try{a=api.prefs?.get("homeOrder")||JSON.parse(localStorage.getItem(scoped(OK)))}catch(x){}return Array.isArray(a)?a.filter(function(i,k){return BLK.indexOf(i)>=0&&a.indexOf(i)===k}):[]}
+function resetOrder(inPlace){try{localStorage.removeItem(scoped(OK));api.prefs?.set("homeOrder",[])}catch(x){}var h=$(".h-home");if(h&&h.dataset.hw){var foot=$(":scope>.h-foot",h);BLK.forEach(function(i){var w=$(':scope>.hw[data-w="'+i+'"]',h);if(w)h.insertBefore(w,foot||null)});say("Orden de Inicio restablecido");return true}if(!inPlace){var e=E();e&&e.nav("Inicio")}return false}
 window.__esanInicio={reset:resetOrder};
 function mins(){var m={};(S().focus||[]).forEach(function(f){if(f.ended_at&&f.studied_seconds>0){var k=lima(f.ended_at);m[k]=(m[k]||0)+f.studied_seconds/60}});return m}
 function face(m){var p=m==="h"?"M8 14c1 1.6 2.4 2.4 4 2.4s3-.8 4-2.4":m==="w"?"M8 16.5c1-1.5 2.4-2 4-2s3 .5 4 2":"M8.5 15.5h7";return'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="'+p+'"/><circle cx="9" cy="10" r=".6"/><circle cx="15" cy="10" r=".6"/></svg>'}
@@ -114,7 +116,7 @@ var flame='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="c
 return'<div class="rh"><h3 class="bt">'+flame+'Constancia <small>últimos 6 meses</small></h3><div class="rch"><span>Racha <b>'+sk+(sk===1?" día":" días")+'</b></span><span>Esta semana <b>'+fm(wk)+'</b></span><span>Mejor día <b>'+fm(best)+'</b></span></div></div><div class="hm"><div class="hmm">'+labs+'</div><div class="hmg">'+cells+'</div></div><div class="hml"><span>'+note+'</span><span class="lg">Menos<i></i><i class="l1"></i><i class="l2"></i><i class="l3"></i><i class="l4"></i>Más</span></div>'}
 
 function save(h){try{var cur=[].map.call(h.querySelectorAll(":scope>.hw"),function(w){return w.dataset.w}),old=stored(),all=old.concat(BLK.filter(function(i){return old.indexOf(i)<0})),slots=[];
-all.forEach(function(i,k){if(cur.indexOf(i)>=0)slots.push(k)});cur.forEach(function(id,n){all[slots[n]]=id});localStorage.setItem(scoped(OK),JSON.stringify(all))}catch(e){}}
+all.forEach(function(i,k){if(cur.indexOf(i)>=0)slots.push(k)});cur.forEach(function(id,n){all[slots[n]]=id});localStorage.setItem(scoped(OK),JSON.stringify(all));api.prefs?.set("homeOrder",all)}catch(e){}}
 function shift(w,fn){var sb=[].filter.call(w.parentNode.children,function(c){return c!==w&&c.classList.contains("hw")}),b=sb.map(function(s){return s.getBoundingClientRect().top}),wt=w.getBoundingClientRect().top;fn();var dr=w.getBoundingClientRect().top-wt;sb.forEach(function(s,i){var d=b[i]-s.getBoundingClientRect().top;if(d&&!RM())s.animate&&s.animate([{transform:"translateY("+d+"px)"},{transform:"none"}],{duration:320,easing:"cubic-bezier(.34,1.4,.64,1)"})});return dr}
 function enhance(){
 var h=$(".h-home");if(!h||h.dataset.hw)return;h.dataset.hw=1;var e=E(),f=document.activeElement,live=e&&e.x&&e.x.mode==="live",foot=$(":scope>.h-foot",h),it={},q=function(s){return $(s,h)};
@@ -175,23 +177,23 @@ addEventListener("keydown",function(e){if(e.key==="Escape"&&pal){e.preventDefaul
 var top=$("#top"),pf=top&&$(".pf",top);if(top){var b=document.createElement("button");b.className="cmdk-btn";b.type="button";b.setAttribute("aria-label","Abrir buscador de comandos");b.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><span>Buscar</span><kbd>'+(/Mac|iPhone|iPad/.test(navigator.platform)?"⌘K":"Ctrl K")+'</kbd>';b.addEventListener("click",open);top.insertBefore(b,pf||null)}
 document.addEventListener("click",function(e){var b=e.target.closest&&e.target.closest("[data-cx]");if(!b)return;var k=b.dataset.cx;if(k==="go")E().nav(b.dataset.go);else if(k==="ev")newEv();});
 function nf(v){return String(Math.round(v*100)/100).replace(".",",")}
-function dget(){try{return JSON.parse(localStorage.getItem(scoped(DK)))||{}}catch(e){return{}}}
-function dset(d){try{localStorage.setItem(scoped(DK),JSON.stringify(d))}catch(e){}}
+function dget(){try{return api.prefs?.get("diagnosis")||JSON.parse(localStorage.getItem(scoped(DK)))||{}}catch(e){return{}}}
+function dset(d){try{localStorage.setItem(scoped(DK),JSON.stringify(d));api.prefs?.set("diagnosis",d)}catch(e){}}
 function plan(D,id){return(D.p&&D.p[id])||DEF.map(function(r){return{n:r[0],w:r[1],s:null}})}
-function rowsOf(c){return[].map.call(c.querySelectorAll(".dr"),function(r){var s=r.querySelector(".ds").value;return{n:r.querySelector(".dn").value,w:Math.max(0,+r.querySelector(".dw").value||0),s:s===""||!isFinite(s)?null:Math.min(20,Math.max(0,+s))}})}
-function calc(rows,T){var W=0,Wd=0,A=0,n=0;rows.forEach(function(r){var w=+r.w||0;W+=w;if(r.s!=null&&isFinite(r.s)){Wd+=w;A+=w*r.s}else n++});var Wr=W-Wd,o={W:W,Wr:Wr,n:n};
-if(!W){o.k="empty";return o}if(Wr<=0){o.k="final";o.f=A/W;return o}
-var need=(T*W-A)/Wr;o.mx=(A+20*Wr)/W;o.need=need;o.nd=Math.ceil(need*10-1e-9)/10;o.k=need<=0?"safe":need>20?"lost":"need";return o}
-function resHTML(rows,T){var o=calc(rows,T),t=nf(T),wn=o.W&&Math.abs(o.W-100)>.01?'<small class="wn">Los pesos suman '+nf(o.W)+'%; deberían sumar 100%. Se calcula en proporción.</small>':"";
-if(o.k==="empty")return"Agrega al menos una evaluación con su peso.";
+function rowsOf(c){return[].map.call(c.querySelectorAll(".dr"),function(r){var s=r.querySelector(".ds").value;return{n:r.querySelector(".dn").value,w:Math.max(0,+r.querySelector(".dw").value||0),s:s===""?null:parseGrade(s,scale())}})}
+function calc(rows,T){var result=evaluationResult(rows,T,scale()),Wr=rows.filter(function(r){return r.s==null}).reduce(function(s,r){return s+ +r.w},0),o={W:100,Wr:Wr,n:rows.filter(function(r){return r.s==null}).length};
+if(result.kind==="invalid"){o.k="invalid";return o}if(result.kind==="final"){o.k="final";o.f=result.grade;return o}
+var need=result.needed;o.mx=scale().max;o.need=need;o.nd=Math.ceil(need*100-1e-9)/100;o.k=need<=scale().min?"safe":need>scale().max?"lost":"need";return o}
+function resHTML(rows,T){var o=calc(rows,T),t=gf(T),wn=o.W&&Math.abs(o.W-100)>.01?'<small class="wn">Los pesos suman '+nf(o.W)+'%; deberían sumar 100%. Se calcula en proporción.</small>':"";
+if(o.k==="invalid")return"Revisa las notas y los pesos: deben sumar exactamente 100%.";
 if(o.k==="final")return'Nota final: <b>'+nf(o.f)+'</b> · '+(o.f>=T?"cumples tu objetivo de "+t:"no llegas a "+t)+wn;
 if(o.k==="safe")return'<b>Mínimo asegurado.</b> Aun con 0 en lo que falta ya llegas a '+t+'.'+wn;
-if(o.k==="lost")return'<b>Fuera de alcance.</b> Con 20 en todo lo que falta llegarías a '+nf(o.mx)+', menos de '+t+'.'+wn;
-var lv=o.nd<=12?"Alcanzable":o.nd<=15?"Exigente":"Muy exigente";
-return'Necesitas promediar <b>'+nf(o.nd)+'</b> en el '+Math.round(o.Wr/o.W*100)+'% restante'+(o.n===1?" (la evaluación que te falta)":"")+'. <span class="h-muted">'+lv+'</span><div class="bar"><i style="width:'+Math.min(100,o.nd/20*100)+'%"></i></div>'+wn}
-function rowsHTML(rows){return rows.map(function(r){return'<div class="dr"><input class="dn" value="'+esc(r.n)+'" aria-label="Nombre de la evaluación"><label><span>Peso %</span><input class="dw" type="number" min="0" max="100" step="5" value="'+r.w+'"></label><label><span>Nota</span><input class="ds" type="number" min="0" max="20" step="0.1" placeholder="—" value="'+(r.s==null?"":r.s)+'"></label><button type="button" class="dx" data-cx="delev" aria-label="Quitar evaluación">×</button></div>'}).join("")}
+if(o.k==="lost")return'<b>Fuera de alcance.</b> Con '+gf(scale().max)+' en todo lo que falta llegarías a '+nf(o.mx)+', menos de '+t+'.'+wn;
+var ratio=(o.nd-scale().min)/(scale().max-scale().min),lv=ratio<=.6?"Alcanzable":ratio<=.75?"Exigente":"Muy exigente";
+return'Necesitas promediar <b>'+nf(o.nd)+'</b> en el '+Math.round(o.Wr/o.W*100)+'% restante'+(o.n===1?" (la evaluación que te falta)":"")+'. <span class="h-muted">'+lv+'</span><div class="bar"><i style="width:'+Math.min(100,o.nd/scale().max*100)+'%"></i></div>'+wn}
+function rowsHTML(rows){return rows.map(function(r){return'<div class="dr"><input class="dn" value="'+esc(r.n)+'" aria-label="Nombre de la evaluación"><label><span>Peso %</span><input class="dw" type="number" min="0" max="100" step="5" value="'+(Number.isFinite(+r.w)?Math.max(0,Math.min(100,+r.w)):0)+'"></label><label><span>Nota</span><input class="ds" type="text" min="'+scale().min+'" max="'+scale().max+'" step="0.1" placeholder="—" value="'+(r.s==null?"":gf(r.s))+'"></label><button type="button" class="dx" data-cx="delev" aria-label="Quitar evaluación">×</button></div>'}).join("")}
 function diagHTML(d,T){var D=dget();if(!d.active.length)return'<p class="h-muted">Aún no tienes cursos matriculados. Márcalos en la <button class="lnk" data-cx="go" data-go="Mi carrera">Mi carrera</button> para diagnosticarlos.</p>';
-return'<div class="dgt"><label>Nota que buscas <input id="dg-t" type="number" min="0" max="20" step="0.5" value="'+T+'"></label><span class="h-muted">Se calcula en tu navegador y se guarda solo en este equipo.</span></div><div class="dgl">'+d.active.map(function(c){var rows=plan(D,c.id);return'<article class="dg" data-id="'+esc(c.id)+'"><header><b>'+esc(c.n)+'</b><small>'+nf(c.cr)+' créditos</small></header><div class="dgr">'+rowsHTML(rows)+'</div><button type="button" class="lnk" data-cx="addev">+ Agregar evaluación</button><div class="dres" aria-live="polite">'+resHTML(rows,T)+'</div></article>'}).join("")+'</div>'}
+return'<div class="dgt"><label>Nota que buscas <input id="dg-t" type="text" min="'+scale().min+'" max="'+scale().max+'" step="0.5" value="'+gf(T)+'"></label><span class="h-muted">Estimación personal sincronizada con tu cuenta. Pesos de ejemplo: ajústalos según tu curso.</span></div><div class="dgl">'+d.active.map(function(c){var rows=plan(D,c.id);return'<article class="dg" data-id="'+esc(c.id)+'"><header><b>'+esc(c.n)+'</b><small>'+nf(c.cr)+' créditos</small></header><div class="dgr">'+rowsHTML(rows)+'</div><button type="button" class="lnk" data-cx="addev">+ Agregar evaluación</button><div class="dres" aria-live="polite">'+resHTML(rows,T)+'</div></article>'}).join("")+'</div>'}
 function misNotas(d,X,T){var g=X.grades||{},by={},D=dget();
 d.courses.forEach(function(c){var gr=g[c.id],st=(X.statuses[c.id]||{}).status,has=Number.isFinite(gr)&&(X.done.has(c.id)||st==="desaprobado"),act=d.active.some(function(a){return a.id===c.id});if(has||act)(by[c.c]=by[c.c]||[]).push({c:c,g:has?gr:null,a:act&&!has})});
 var ch=function(l,v){return'<span>'+l+' <b>'+v+'</b></span>'},cs=Object.keys(by).map(Number).sort(function(a,b){return b-a});
@@ -199,20 +201,20 @@ var sum='<div class="rch ns">'+ch("Ponderado",d.weighted==null?"—":nf(d.weight
 if(!cs.length)return sum+'<p class="h-muted">Aún no hay notas registradas. Agrégalas desde «Editar notas».</p>';
 return sum+cs.map(function(c,i){var L=by[c],gs=L.filter(function(r){return r.g!=null}).map(function(r){return r.g}),av=gs.length?nf(gs.reduce(function(a,b){return a+b},0)/gs.length):"";
 return'<details class="cy"'+(i===0?" open":"")+'><summary><span>Ciclo '+c+'</span><small>'+(av?"promedio "+av:"en curso")+'</small></summary>'+L.map(function(r){var right,bar="";
-if(r.g!=null){var no=r.g<MIN;bar='<i class="'+(no?"no":"")+'" style="width:'+r.g/20*100+'%"></i>';right='<span class="nv'+(no?" no":"")+'">'+nf(r.g)+'</span>'}
-else{var rw=D.p&&D.p[r.c.id],o=rw&&calc(rw,D.t||MIN);right=o?'<span class="nv"><small>'+(o.k==="final"?"Final "+nf(o.f):o.k==="safe"?"Aprobado asegurado":o.k==="lost"?"Fuera de alcance":o.k==="need"?"Necesitas "+nf(o.nd):"En curso")+'</small></span>':'<button type="button" class="lnk" data-cx="todiag">Diagnosticar</button>'}
+if(r.g!=null){var no=r.g<pass();bar='<i class="'+(no?"no":"")+'" style="width:'+(r.g-scale().min)/(scale().max-scale().min)*100+'%"></i>';right='<span class="nv'+(no?" no":"")+'">'+gf(r.g)+'</span>'}
+else{var rw=D.p&&D.p[r.c.id],o=rw&&calc(rw,D.t||pass());right=o?'<span class="nv"><small>'+(o.k==="final"?"Final "+nf(o.f):o.k==="safe"?"Aprobado asegurado":o.k==="lost"?"Fuera de alcance":o.k==="need"?"Necesitas "+nf(o.nd):"En curso")+'</small></span>':'<button type="button" class="lnk" data-cx="todiag">Diagnosticar</button>'}
 return'<div class="nr"><div><b>'+esc(r.c.n)+'</b><small>'+nf(r.c.cr)+' créditos'+(r.a?" · en curso":"")+'</small></div><div class="nbar">'+bar+'</div>'+right+'</div>'}).join("")+'</details>'}).join("")}
-function notasHTML(){var e=E(),T=dget().t||MIN,d=e.data();
+function notasHTML(){var e=E(),T=dget().t||pass(),d=e.data();
 return'<div class="rh"><h3 class="bt">'+e.icon("cap",18)+'Calificaciones</h3><div class="seg2"><button type="button" class="'+(nv==="notas"?"on":"")+'" data-cx="nv" data-v="notas">Mis notas</button><button type="button" class="'+(nv==="diag"?"on":"")+'" data-cx="nv" data-v="diag">Diagnóstico</button></div>'+(nv==="notas"?'<button type="button" class="lnk" data-cx="tab" data-t="ponderado">Editar notas</button>':"")+'</div>'+(nv==="diag"?diagHTML(d,T):misNotas(d,e.x,T))}
 function goN(v){nv=v;E().nav("Inicio");setTimeout(function(){var w=$('.hw[data-w="notas"]');w&&w.scrollIntoView({behavior:"smooth",block:"start"})},90)}
 renderSemesterGrades=notasHTML;
 document.addEventListener("click",function(ev){var b=ev.target.closest&&ev.target.closest("[data-cx]");if(!b)return;var k=b.dataset.cx,r=$(".notas");
 if(k==="nv"||k==="todiag"){nv=k==="nv"?b.dataset.v:"diag";if(r){r.innerHTML=notasHTML();var nb=$('[data-cx="nv"][data-v="'+nv+'"]',r);nb&&nb.focus({preventScroll:true})}}
 else if(k==="tab"){if(!document.getElementById("h-tab-"+b.dataset.t))E().nav("Inicio");var t=document.getElementById("h-tab-"+b.dataset.t);t&&t.click()}
-else if(k==="addev"||k==="delev"){var c=b.closest(".dg"),rows=rowsOf(c);if(k==="addev")rows.push({n:"Evaluación",w:0,s:null});else rows.splice([].indexOf.call(c.querySelectorAll(".dr"),b.closest(".dr")),1);var d=dget();d.p=d.p||{};d.p[c.dataset.id]=rows;dset(d);c.querySelector(".dgr").innerHTML=rowsHTML(rows);c.querySelector(".dres").innerHTML=resHTML(rows,d.t||MIN)}});
+else if(k==="addev"||k==="delev"){var c=b.closest(".dg"),rows=rowsOf(c);if(k==="addev")rows.push({n:"Evaluación",w:0,s:null});else rows.splice([].indexOf.call(c.querySelectorAll(".dr"),b.closest(".dr")),1);var d=dget();d.p=d.p||{};d.p[c.dataset.id]=rows;dset(d);c.querySelector(".dgr").innerHTML=rowsHTML(rows);c.querySelector(".dres").innerHTML=resHTML(rows,d.t||pass())}});
 document.addEventListener("input",function(e){var c=e.target.closest&&e.target.closest(".dg"),isT=e.target.id==="dg-t";if(!c&&!isT)return;var d=dget();
-if(isT){var v=parseFloat(String(e.target.value).replace(",","."));d.t=isFinite(v)?Math.min(20,Math.max(0,v)):MIN;dset(d);[].forEach.call(document.querySelectorAll(".dg"),function(k){k.querySelector(".dres").innerHTML=resHTML(rowsOf(k),d.t)});return}
-var rows=rowsOf(c);d.p=d.p||{};d.p[c.dataset.id]=rows;dset(d);c.querySelector(".dres").innerHTML=resHTML(rows,d.t||MIN)});
+if(isT){var v=parseGrade(e.target.value,scale());d.t=Number.isFinite(v)?v:pass();dset(d);[].forEach.call(document.querySelectorAll(".dg"),function(k){k.querySelector(".dres").innerHTML=resHTML(rowsOf(k),d.t)});return}
+var rows=rowsOf(c);d.p=d.p||{};d.p[c.dataset.id]=rows;dset(d);c.querySelector(".dres").innerHTML=resHTML(rows,d.t||pass())});
 setInterval(function(){var d=$(".hoy");if(!d||document.hidden||d.contains(document.activeElement)||$(".hw.drag"))return;try{var n=hoyHTML();if(d.__h!==n){d.__h=n;d.innerHTML=n}}catch(x){}},60000)
 
  })();

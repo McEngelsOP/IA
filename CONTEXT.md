@@ -53,6 +53,8 @@ Planificar reúne diagnóstico, comparación, proyección y plan guardado. Se el
 
 La exportación comprueba identidad antes y después de leer, filtra por propietario y pagina. Incluye perfil, progreso, notas, estados, configuración, eventos y tareas. No incluye contenido comunitario completo ni claves personales de IA. Si falla una tabla, no se descarga un archivo parcial como completo.
 
+El botón «Exportar registro académico» descarga directamente un único PDF con texto seleccionable, fuente integrada, tablas paginadas, encabezados repetidos y numeración. Incluye datos del estudiante, resumen, cursos con nombres y códigos, notas, estados, planificación, detalles personales, agenda, tareas y preferencias académicas. No abre diálogos de impresión ni genera HTML o respaldos JSON. Los nombres y créditos se resuelven con la carrera y versión guardadas; si el catálogo falta, se conservan los identificadores sin inventar equivalencias. Las fechas se presentan en hora de Lima y las notas ausentes se distinguen de cero. La generación se realiza en el navegador, con jsPDF y AutoTable cargados al exportar; los datos se tratan como texto.
+
 Conservar RLS, candado de carrera y verificación de usuario antes de escrituras. Nunca publicar `service_role`, claves de IA o secretos del Worker en `VITE_`.
 
 Focus usa matrícula real, reloj del servidor e idempotencia. Los grupos exigen membresía para mensajes privados. Recursos conserva atribución y edición por autor. Arcade y Geoduelo siguen como complementos; el buzón usa `/api/mailbox`.
@@ -64,3 +66,11 @@ Base y Edge Functions son compartidas por los despliegues con las mismas variabl
 `npm run check` comprueba catálogo, Node/PostgreSQL local, Worker y build. `npm run test:browser` inicia Vite con datos fixture y servicios simulados. Las pruebas no crean cuentas reales ni prueban un despliegue de servidor no aplicado.
 
 No crear otra carpeta de descartes: usar Git para recuperar código retirado. Antes de borrar, revisar imports, entradas, rutas públicas, scripts, SQL y pruebas. Registrar decisiones materiales en `docs/cleanup.md`.
+
+## Corrección de fichas y Recursos · 25 de octubre de 2026
+
+Las correcciones de este apartado se publicaron inicialmente en `main`. La ficha del curso tiene un botón directo y selector de curso; conserva dificultad, profesores, recomendaciones positivas/negativas y etiquetas. Los comentarios históricos de herramientas vuelven a consultarse desde Recursos, separados de `tools.description`, mediante `ResourceComments` con carga al abrir, paginación y columnas públicas explícitas. No se modificaron tablas, permisos ni registros remotos. `courseCommunity.browser.mjs` cubre estos flujos, fallos independientes y vistas de 320/390/1440 px.
+
+## Ampliación del sistema · integración en Oficial el 2 de noviembre de 2026
+
+Rama de esta entrega: `Oficial`, integrada desde `feat/lyra-system-complete`: preferencias por cuenta, escalas institucionales, comparación y actualización de mallas con equivalencias, prevención de calendario, PWA de consulta y panel de servicios/reportes. La implementación y los límites están en `docs/system-complete.md`. La subida del código a `Oficial` está autorizada. La activación remota de la migración amplia y de `study-advisor` sigue pendiente de autorización específica; publicar la rama no ejecuta esos cambios en Supabase. No confundir las pruebas locales y fixtures con un recorrido de cuentas reales.

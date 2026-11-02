@@ -1,3 +1,4 @@
+import { reportServiceFailure } from '../../shared/lib/serviceTelemetry.js'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '../../shared/lib/supabaseClient.js'
 import './StudyAdvisor.css'
@@ -140,6 +141,7 @@ export default function StudyAdvisor({ userId, planCourses, careerId, careerVers
         try { errorCode = (await error.context?.json())?.error } catch { /* respuesta sin cuerpo JSON */ }
       }
       if (error || !data?.answer) {
+        if(!['unauthorized','rate_limited','account_suspended','moderation_strike'].includes(errorCode))void reportServiceFailure(client,userId,'ai_failure')
         if (!errorCode) {
           const status = error?.context?.status
           if (status === 401) errorCode = 'unauthorized'
@@ -154,6 +156,7 @@ export default function StudyAdvisor({ userId, planCourses, careerId, careerVers
     } catch {
       if (!alive.current) return
       restoreQuestion()
+      void reportServiceFailure(client,userId,'ai_failure')
       setErrorMessage('No pude conectar con el asesor. Revisa tu conexión e inténtalo de nuevo.')
     } finally {
       requestLock.current = false

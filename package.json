@@ -5,17 +5,20 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node scripts/buildOffline.mjs",
     "preview": "vite preview",
     "test": "node --test --test-concurrency=2 tests/*.test.mjs",
     "test:catalog": "node scripts/generateCurricula.mjs --check",
     "test:browser": "node scripts/checkBrowser.mjs",
     "test:worker": "node --test workers/geoduelo/test/*.test.mjs",
     "test:repository": "node scripts/checkRepositorySafety.mjs",
-    "check": "npm run test:repository && npm run test:catalog && npm test && npm run test:worker && npm run build"
+    "check": "npm run test:repository && npm run test:catalog && npm test && npm run test:worker && npm run build",
+    "test:offline": "node scripts/checkOffline.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.38.0",
+    "jspdf": "4.2.1",
+    "jspdf-autotable": "5.0.9",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "read-excel-file": "6.0.1"
@@ -25,9 +28,9 @@
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "@vitejs/plugin-react": "^4.2.0",
+    "esbuild": "0.21.5",
     "playwright": "1.62.1",
-    "vite": "^5.0.0",
-    "esbuild": "0.21.5"
+    "vite": "^5.0.0"
   },
   "workspaces": [
     "workers/geoduelo"
