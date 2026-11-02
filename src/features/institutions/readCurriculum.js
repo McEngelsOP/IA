@@ -1,0 +1,7 @@
+import {MAX_SOURCE} from './curriculumMarkdown.js'
+export async function readCurriculum(file){
+ if(!file||file.size>8*1024*1024)throw Error('Selecciona un archivo de hasta 8 MB.');let text=''
+ if(/\.pdf$/i.test(file.name)){const pdf=await import('pdfjs-dist');pdf.GlobalWorkerOptions.workerSrc=(await import('pdfjs-dist/build/pdf.worker.min.mjs?url')).default;const task=pdf.getDocument({data:new Uint8Array(await file.arrayBuffer()),isEvalSupported:false});try{const doc=await task.promise;if(doc.numPages>60)throw Error('Máximo 60 páginas.');for(let i=1;i<=doc.numPages;i++){const p=await doc.getPage(i),c=await p.getTextContent();text+=c.items.map(v=>v.str+(v.hasEOL?'\n':'\t')).join('')+'\n';p.cleanup();if(text.length>MAX_SOURCE)throw Error('El texto supera el límite.')}if(text.trim().length<20)throw Error('El PDF parece escaneado. Usa OCR previo o un archivo con texto.')}finally{await task.destroy()}}
+ else if(/\.xlsx$/i.test(file.name)){const{default:read,readSheetNames}=await import('read-excel-file'),sheets=await readSheetNames(file);if(sheets.length>20)throw Error('Máximo 20 hojas.');for(const sheet of sheets){const rows=await read(file,{sheet});text+=rows.map(r=>r.map(v=>String(v??'').replace(/[\r\n\t]+/g,' ')).join('\t')).join('\n')+'\n';if(text.length>MAX_SOURCE)throw Error('El texto supera el límite.')}}
+ else if(/\.(md|txt|csv|tsv)$/i.test(file.name))text=await file.text();else throw Error('Usa PDF, XLSX, Markdown o texto.');if(text.length>MAX_SOURCE)throw Error('La malla supera 180 000 caracteres.');return text
+}

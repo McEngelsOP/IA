@@ -118,10 +118,12 @@ function clearPasswords() {
   passwordGuide()
 }
 function invalid(id, text) { $(id).setAttribute('aria-invalid', 'true'); feedback(text, 'error'); $(id).focus(); return false }
-function validCode(id) { return /^\d{8}$/.test($(id).value.trim()) || invalid(id, 'Revisa tu código universitario: debe tener 8 dígitos.') }
+function validCode(id) { return (id!=='registerCode'&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test($(id).value.trim())) || /^\d{8}$/.test($(id).value.trim()) || invalid(id, 'Revisa tu código universitario: debe tener 8 dígitos.') }
 function available() { if (client) return true; feedback('El acceso no está disponible en este momento. Inténtalo más tarde.', 'error'); return false }
 function maskEmail(email) { const [name, domain] = email.split('@'); return `${name.slice(0, 2)}•••@${domain}` }
 async function authByCode(action, payload) {
+  if(String(payload.code||'').includes('@')){const email=payload.code.trim().toLowerCase();if(action==='login'){const r=await client.auth.signInWithPassword({email,password:payload.password});if(r.error)return{ok:false,error:r.error.code||'invalid_credentials'};return{ok:true,session:r.data.session}}const r=action==='recover'?await client.auth.resetPasswordForEmail(email,{redirectTo:callback}):await client.auth.resend({type:'signup',email,options:{emailRedirectTo:callback}});return{ok:!r.error,masked:maskEmail(email)}}
+
   const { data, error } = await client.functions.invoke('auth-by-code', { body: { action, ...payload } })
   if (error || !data || typeof data !== 'object') throw new Error('auth_request_failed')
   return data
@@ -219,20 +221,25 @@ $('loginForm').addEventListener('submit', async event => {
 $('registerForm').addEventListener('submit', async event => {
   event.preventDefault()
   if (busy || checkingSession || transitioning || acceptedSession) return
-  if (!available() || !validCode('registerCode')) return
+  if (!available() || ($('registerUniversityType').value==='esan'&&!validCode('registerCode'))) return
   const career = $('registerCareer').value, code = $('registerCode').value.trim(), email = $('registerEmail').value.trim().toLowerCase()
-  if (!Object.hasOwn(CAREER_OPTIONS, career)) { invalid('registerCareer', 'Elige tu carrera.'); return }
-  if (!isEsanStudentCode(code)) { invalid('registerCode', 'Ese código no corresponde a la universidad seleccionada.'); return }
+  const other=$('registerUniversityType').value==='other',university=$('registerUniversity').value.trim(),externalCareer=$('registerExternalCareer').value.trim();
+  if(other&&(/esan|^ue$/i.test(university.normalize('NFD').replace(/[\u0300-\u036f]/g,''))||/@ue\.edu\.pe$/i.test(email))){$('registerUniversityType').value='esan';$('registerUniversityType').dispatchEvent(new Event('change'));feedback('Completa el registro ESAN con código y correo institucional.','error');return}
+  if(other&&(university.length<2||externalCareer.length<2)){invalid('registerUniversity','Completa tu universidad y carrera.');return}
+  if (!other&&!Object.hasOwn(CAREER_OPTIONS, career)) { invalid('registerCareer', 'Elige tu carrera.'); return }
+  if (!other&&!isEsanStudentCode(code)) { invalid('registerCode', 'Ese código no corresponde a la universidad seleccionada.'); return }
+  if(!other&&!/^[a-z0-9._%+-]+@ue\.edu\.pe$/.test(email)){invalid('registerEmail','Usa tu correo institucional que termina en @ue.edu.pe.');return}
   if (!$('registerEmail').validity.valid || !email) { invalid('registerEmail', 'Ingresa un correo válido.'); return }
   if ($('registerPassword').value.length < 6) { invalid('registerPassword', 'La contraseña debe tener al menos 6 caracteres.'); return }
   if ($('registerPassword').value !== $('registerConfirm').value) { invalid('registerConfirm', 'Las contraseñas no coinciden.'); return }
   setBusy(true, 'Creando cuenta…'); feedback('')
   try {
-    const result = await client.auth.signUp({ email, password: $('registerPassword').value, options: { data: { student_code: code, carrera: career }, emailRedirectTo: callback } })
+    if(other){const probe=await client.rpc('search_universities',{p_query:university});if(probe.error){feedback('El registro de otras universidades todavía no está activado. Conservamos tus datos.','error');return}}
+    const result = await client.auth.signUp({ email, password: $('registerPassword').value, options: { data: other?{institution_id:'other',university_name:university,external_career:externalCareer}:{institution_id:'esan',university_name:'Universidad ESAN',student_code:code,carrera:career}, emailRedirectTo: callback } })
     if (result.error) throw result.error
     if (!result.data.user || result.data.user.identities?.length === 0) { feedback('Ese correo ya tiene una cuenta. Usa otro correo o inicia sesión.', 'error'); return }
     if (result.data.session) { if (webSession.begin(result.data.session)) await enterHome() }
-    else { clearPasswords(); await mailScreen('confirmation', code, maskEmail(email)) }
+    else { clearPasswords(); await mailScreen('confirmation', other?email:code, maskEmail(email)) }
   } catch (error) {
     feedback(error?.status === 429 ? 'Se alcanzó el límite de registros. Espera un momento antes de reintentar.' : 'No pudimos completar el registro. Revisa tus datos y reintenta; si persiste, contacta al soporte.', 'error')
   } finally { if (!acceptedSession) setBusy(false) }
@@ -339,3 +346,7 @@ foot(); initialize()
 
 
 
+
+let lookupRevision=0,lookupTimer;
+$('registerUniversityType').addEventListener('change',()=>{const other=$('registerUniversityType').value==='other';$('otherUniversityFields').hidden=!other;for(const id of ['registerCode','registerCareer']){$(id).closest('.field').hidden=other;$(id).required=!other}scheduleFit()});
+$('registerUniversity').addEventListener('input',()=>{const rev=++lookupRevision;clearTimeout(lookupTimer);lookupTimer=setTimeout(async()=>{if(!client)return;const r=await client.rpc('search_universities',{p_query:$('registerUniversity').value.trim()});if(rev!==lookupRevision)return;$('universityOptions').replaceChildren();for(const u of r.data||[]){const option=document.createElement('option');option.value=u.name;$('universityOptions').append(option)}$('universityLookup').textContent=r.error?'Registro de otras universidades pendiente de activación.':r.data?.length?'Selecciona una universidad disponible o escribe su nombre completo.':'No está en el catálogo. Podrás proponer tu universidad y malla.'},300)});

@@ -6,7 +6,8 @@ import { MAILBOX_TYPES } from '../../shared/data/mailboxTypes.js'
 import { getSupabaseClient } from '../../shared/lib/getSupabaseClient.js'
 
 let draftOwner = null, mailboxDrafts = {}
-function OfficialMailbox({ category = 'Aplicativo', career = 'ia', courses = [], onCategory, draftKey = 'guest' }) {
+function OfficialMailbox({ appOnly=false,category = 'Aplicativo', career = 'ia', courses = [], onCategory, draftKey = 'guest' }) {
+  if(appOnly)category='Aplicativo'
   if (draftOwner !== draftKey) { draftOwner = draftKey; mailboxDrafts = {} }
   const sending = useRef(false)
   const [busy, setBusy] = useState(false)
@@ -46,7 +47,7 @@ function OfficialMailbox({ category = 'Aplicativo', career = 'ia', courses = [],
     } finally { sending.current = false; setBusy(false) }
   }
   return <div className="z-wrap official-mailbox">
-    <div className="seg z-tabs" role="group" aria-label="Destinatario del buzón">{Object.keys(MAILBOX_TYPES).map(name => <button className={name === category ? 'on' : ''} aria-pressed={name === category} key={name} disabled={busy} onClick={() => onCategory(name)}>{name}</button>)}</div>
+    <div className="seg z-tabs" role="group" aria-label="Destinatario del buzón">{Object.keys(MAILBOX_TYPES).filter(name=>!appOnly||name==='Aplicativo').map(name => <button className={name === category ? 'on' : ''} aria-pressed={name === category} key={name} disabled={busy} onClick={() => onCategory(name)}>{name}</button>)}</div>
     <section className="blk hl z-hero"><span className="z-hi"><OfficialIcon name={category === 'Aplicativo' ? 'monitor' : category === 'Docente' ? 'cap' : 'landmark'} size={26}/></span><div><h2>{category}</h2><p>{config.sc}</p></div></section>
     <div className="z-grid"><form className="blk z-main" aria-label={`Buzón · ${category}`} onSubmit={send}>
       <fieldset disabled={busy} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}><div className={`z-sec${draft.type >= 0 ? ' done' : ''}`}><div className="z-sh"><span className="z-n">{draft.type >= 0 ? <OfficialIcon name="check" size={14}/> : 1}</span><div><h3>{config.lbl}</h3><small>Elige una opción</small></div></div><div className="z-og" role="group" aria-label={config.lbl}>{config.tipos.map(([title, description, icon], i) => <button type="button" className={`z-o${draft.type === i ? ' on' : ''}`} aria-pressed={draft.type === i} key={title} onClick={() => update({ type: i })}><span className="ico"><OfficialIcon name={icon}/></span><span><b>{title}</b><small>{description}</small></span><span className="rd">{draft.type === i && <OfficialIcon name="check" size={12}/>}</span></button>)}</div></div>

@@ -1,9 +1,10 @@
 import { GRADE_SCALES, validScale, validGrade, parseGrade, formatGrade, scaleLabel, weightedGrade } from '../core/academic/grading.js';
 import { createSystemRuntime } from '../features/account/systemRuntime.js';
+import { OFFLINE_ENABLED } from '../features/account/offlineEnabled.js';
 import { saveOfflineAccount, activateOfflineAccount } from '../shared/lib/offlineStore.js';
 import { NAV, TABS, resolveRoute, validRoute } from './navigation.js';
 import { ESAN } from '../institutions/esan/config.js';
-import { loadCurriculum } from '../institutions/registry.js';
+import { loadCurriculum,loadAssignedCurriculum } from '../institutions/registry.js';
 import { FOCUS_PRESETS, enrolledFocusCourses, focusRemaining, focusDuration, focusMotivation, focusError, todayLima } from '../features/focus/focusModel.js';
 import { getSupabaseClient } from '../shared/lib/getSupabaseClient.js';
 import { createWebSessionGuard, webAuthStorageKey } from '../shared/lib/webSession.js';
@@ -106,9 +107,9 @@ function homeReset(mode='guest',clearFocus=true){
  HOME_WIDGETS.calendarLoading=mode==='loading';HOME_WIDGETS.focusLoading=mode==='loading';HOME_WIDGETS.calendarError=false;HOME_WIDGETS.focusError=false;
  if(clearFocus)kReset();
 }
-function homeRender(){if(['Inicio','Mi carrera','Mi semestre','Grupos de estudio','Mod Focus','Planificar','Asistente','Recursos','Mi IA','Preferencias','Administración'].includes(cur))renderPage()}
+function homeRender(){if(['Mi perfil','Inicio','Mi carrera','Mi semestre','Grupos de estudio','Mod Focus','Planificar','Asistente','Recursos','Mi IA','Preferencias','Administración'].includes(cur))renderPage()}
 async function homeLoad(user){
- homeReset('loading',HOME.user?.id!==user.id);HOME.user=user;activateOfflineAccount(user.id);renderProfile();
+ homeReset('loading',HOME.user?.id!==user.id);HOME.user=user;if(OFFLINE_ENABLED)activateOfflineAccount(user.id);renderProfile();
  const revision=HOME.revision;
  homeRender();
  try{
@@ -122,14 +123,15 @@ async function homeLoad(user){
   if(revision!==HOME.revision)return;
   if(results.some(r=>r.error))throw new Error('read_failed');
   const [profile,progress,grades,statuses,achievements]=results.map(r=>r.data);
-  if(!profile||!CARRERAS[profile.carrera]){
+  if(profile?.institution_id&&profile.institution_id!=='esan'&&!profile.custom_curriculum_id){HOME.mode='institution';HOME.profile=profile;homeRender();renderProfile();return}
+  if(!profile||(!profile.custom_curriculum_id&&!CARRERAS[profile.carrera])){
    HOME.mode=profile?.carrera?'unsupported':'profile';HOME.profile=profile;homeRender();return;
   }
   const rules=await homeClient.from('institution_rules').select('grade_scale').eq('institution_id',profile.institution_id||'esan').maybeSingle();
   if(revision!==HOME.revision)return;
   if(validScale(rules.data?.grade_scale))HOME_SCALE=rules.data.grade_scale;else if((profile.institution_id||'esan')==='esan')HOME_SCALE={...GRADE_SCALES.twenty,...ESAN.gradeScale};else throw new Error('GRADE_SCALE_UNAVAILABLE');
   HOME_PASS=HOME_SCALE.passing;
-  const catalog=await loadCurriculum(profile.carrera,profile.curriculum_version,homeClient);
+  const catalog=await loadAssignedCurriculum(profile,homeClient);
   if(revision!==HOME.revision)return;
   HOME.catalog=catalog;HOME.profile=profile;HOME.career=profile.carrera;HOME.done=new Set(progress?.done||[]);HOME.plan=new Set(progress?.plan||[]);
   for(const row of grades||[]){const value=Number(row.grade);if(row.grade!==null&&Number.isFinite(value)&&validGrade(value,HOME_SCALE))HOME.grades[row.course_id]=value}
@@ -256,7 +258,7 @@ async function homeSignOut(){
  await systemRuntime?.signOut();homeReset();setMenu(false);location.replace(new URL('./login.html',location.href).href);
 }
 function homeEmpty(title,message,action=true){return `<div class="h-state"><h3>${homeEsc(title)}</h3><p>${homeEsc(message)}</p>${action?`<div class="h-state-actions"><a class="h-btn primary" href="./login.html">Iniciar sesión</a></div>`:''}</div>`}
-function unsupportedProfile(){return '<section class="blk"><h2 class="bt">Lyra está centrada en ESAN</h2><p>La carrera de esta cuenta ya no forma parte del catálogo activo. Tu registro académico se conserva y puedes descargarlo. Tu cuenta no se ha reasignado a otra carrera.</p><button class="h-btn primary" data-a="hexport">Exportar registro académico</button><p class="h-muted" role="status" id="export-status"></p></section>'}
+function unsupportedProfile(){return '<section class="blk"><h2 class="bt">Tu registro académico se conserva</h2><p>La carrera de esta cuenta ya no forma parte del catálogo activo. Tu registro académico se conserva y puedes descargarlo. Tu cuenta no se ha reasignado a otra carrera.</p><button class="h-btn primary" data-a="hexport">Exportar registro académico</button><p class="h-muted" role="status" id="export-status"></p></section>'}
 async function exportAcademicRecord(){
  if(!HOME.user||HOME.saving.has('export'))return;
  const userId=HOME.user.id,revision=HOME.revision;HOME.saving.add('export');
@@ -265,7 +267,7 @@ async function exportAcademicRecord(){
   const {readAcademicRecord,downloadAcademicRecord}=await import('../features/account/exportAcademicRecord.js');
   const record=await readAcademicRecord(homeClient,userId);
   const profile=record.profiles?.[0];let catalog=null;
-  if(profile&&CARRERAS[profile.carrera]){try{catalog=await loadCurriculum(profile.carrera,profile.curriculum_version,homeClient)}catch{/* El informe conserva los ids si la versión de la malla no está disponible. */}}
+  if(profile&&(profile.custom_curriculum_id||CARRERAS[profile.carrera])){try{catalog=await loadAssignedCurriculum(profile,homeClient)}catch{/* El informe conserva los ids si la versión de la malla no está disponible. */}}
   if(revision!==HOME.revision||HOME.user?.id!==userId)return;
   record.gradingRules=HOME_SCALE;downloadAcademicRecord(record,catalog);if(status)status.textContent='Informe académico descargado en PDF.';toast('Informe académico PDF descargado');
  }catch{if(revision===HOME.revision){if(status)status.textContent='No se pudo preparar el archivo. Reintenta; tus datos se conservan.';toast('No se pudo exportar. Reintenta.')}}
@@ -436,7 +438,7 @@ let curriculumUnmount=null,curriculumRender=0;
 function renderPage(){
  curriculumRender++;curriculumUnmount?.();curriculumUnmount=null;
  const y=$('page').scrollTop;
- const html=HOME.mode==='unsupported'&&!['Buzón de sugerencias'].includes(cur)?unsupportedProfile():cur==='Inicio'?dash():cur==='Mi carrera'?malla():cur==='Mi semestre'?cal2():cur==='Grupos de estudio'?salas():cur==='Mod Focus'?focus():['Planificar','Asistente','Recursos'].includes(cur)?toolSurface(cur==='Planificar'?'Brújula IA':cur==='Asistente'?'Asesor IA':'Recursos'):['Preferencias','Administración'].includes(cur)?systemSurface():cur==='Mi IA'?personalAiSurface():cur==='Buzón de sugerencias'?buzon(kid):'';
+ const html=cur==='Mi perfil'?(HOME.profile?'<div id="profile-preferences"></div>':'<section class="blk" role="status">'+(HOME.user?'Cargando tu perfil…':homeEmpty('Mi perfil','Inicia sesión para continuar.'))+'</section>'):HOME.mode==='institution'&&!['Mi IA','Preferencias','Administración','Buzón de sugerencias'].includes(cur)?'<div id="university-setup"></div>':HOME.mode==='unsupported'&&!['Buzón de sugerencias'].includes(cur)?unsupportedProfile():cur==='Inicio'?dash():cur==='Mi carrera'?malla():cur==='Mi semestre'?cal2():cur==='Grupos de estudio'?salas():cur==='Mod Focus'?focus():['Planificar','Asistente','Recursos'].includes(cur)?toolSurface(cur==='Planificar'?'Brújula IA':cur==='Asistente'?'Asesor IA':'Recursos'):['Preferencias','Administración'].includes(cur)?systemSurface():cur==='Mi IA'?personalAiSurface():cur==='Buzón de sugerencias'?buzon(kid):'';
  $('page').innerHTML='<div class="view-surface">'+html+'</div>';$('page').scrollTop=y;
  if($('wh'))kWheels();
  if($('official-curriculum'))mountCurriculum();
@@ -445,6 +447,8 @@ function renderPage(){
  if($('official-tool'))mountTool();
  if($('personal-ai-settings'))mountPersonalAi();
  if($('system-settings'))mountSystem();
+ if($('profile-preferences'))mountUniversity('profile-preferences','ProfilePreferences','mountProfilePreferences');
+ if($('university-setup'))mountUniversity('university-setup','UniversitySetup','mountUniversitySetup');
  if($('official-mailbox'))mountMailbox();
  if($('official-study-groups'))mountStudyGroups();
  if(cur==='Mod Focus'){if(fx.st==='run')kPaint(fx.left);kLoad()}
@@ -703,7 +707,7 @@ async function mountStudyGroups(){
  try{
   const {mountOfficialStudyGroups}=await import('../features/groups/OfficialStudyGroups.jsx');
   if(render!==curriculumRender||revision!==HOME.revision||!container.isConnected)return;
-  curriculumUnmount=mountOfficialStudyGroups(container,{client:homeClient,user:HOME.user,courses:homeCareer().cursos,onBusy:value=>{if(revision===HOME.revision){if(value)HOME.saving.add('groups');else HOME.saving.delete('groups')}}});container.removeAttribute('aria-busy');
+  curriculumUnmount=mountOfficialStudyGroups(container,{nickname:HOME.profile?.alias||'',client:homeClient,user:HOME.user,courses:homeCareer().cursos,onBusy:value=>{if(revision===HOME.revision){if(value)HOME.saving.add('groups');else HOME.saving.delete('groups')}}});container.removeAttribute('aria-busy');
  }catch{if(render===curriculumRender&&container.isConnected)container.innerHTML=homeEmpty('No se pudo abrir Grupos de estudio','Reintenta para consultar las salas.',false)+'<button class="h-btn" data-a="hretry">Reintentar</button>'}
 }
 function buzon(category){return '<div id="official-mailbox" aria-busy="true"><p role="status">Preparando el buzón…</p></div>'}
@@ -712,7 +716,7 @@ async function mountMailbox(){
  try{
   const {mountOfficialMailbox}=await import('../features/support/OfficialMailbox.jsx');
   if(render!==curriculumRender||!container.isConnected)return;
-  curriculumUnmount=mountOfficialMailbox(container,{draftKey:HOME.user?.id||'guest',category:kid||'Aplicativo',career:HOME.career,courses:HOME.mode==='live'?homeCareer().cursos:[],onCategory:name=>go(name,'Buzón de sugerencias')});container.removeAttribute('aria-busy');
+  curriculumUnmount=mountOfficialMailbox(container,{appOnly:HOME.profile?.institution_id!=='esan',draftKey:HOME.user?.id||'guest',category:kid||'Aplicativo',career:HOME.career,courses:HOME.mode==='live'?homeCareer().cursos:[],onCategory:name=>go(name,'Buzón de sugerencias')});container.removeAttribute('aria-busy');
  }catch{if(render===curriculumRender&&container.isConnected)container.innerHTML=homeEmpty('No se pudo abrir el buzón','Reintenta para volver a abrirlo.',false)+'<button class="h-btn" data-a="hretry">Reintentar</button>'}
 }
 function personalAiSurface(){
@@ -826,7 +830,7 @@ $('nav').onclick=e=>{const b=e.target.closest('.it');if(!b)return;
       syncNavGroup(x.n)}
     else{go(x.n);closeOverlay()}}};
 $('trig').onclick=()=>setDrawer(!app.classList.contains('dopen'),true);
-mqM.addEventListener('change',applySide);
+mqM.addEventListener('change',()=>{applySide();renderProfile();if(mqM.matches&&ARC.open)arcClose()});
 
 
 $('act').innerHTML=svg('user',23);
@@ -835,19 +839,20 @@ const toast=m=>{const t=$('toast');t.textContent=m;t.classList.add('show');clear
 const mq=matchMedia('(prefers-color-scheme: dark)');let ttm;
 const isDark=()=>root.dataset.theme?root.dataset.theme==='dark':mq.matches;
 /* Selector de tema: el indicador se estira hacia la opción elegida (el borde que avanza va primero) */
-function renderProfile(){const d=isDark();
+function renderProfile(){const d=isDark();$('uni').innerHTML=`<div class="um">${svg('landmark',20)}</div><div><b>${homeEsc(HOME.profile?.university_name||((HOME.profile?.institution_id==='esan'||CARRERAS[HOME.profile?.carrera])?'Universidad ESAN':'Lyra'))}</b><span>Tu espacio académico en Lyra</span></div>`;
   $('menu').innerHTML=`<div class="tg" data-s="${d?'dark':'light'}" role="radiogroup" aria-label="Tema"><span class="thm" aria-hidden="true"></span>${[['dark','moon','Oscuro'],['light','sun','Claro']].map(t=>`<button class="tgb ${t[0]}" role="radio" aria-checked="${(t[0]==='dark')===d}" data-t="${t[0]}">${svg(t[1],16)}<span>${t[2]}</span></button>`).join('')}</div>`
-  +[...(HOME.mode==='live'?[['preferences','wrench','Preferencias'],...((moderationAccess.admin||moderationAccess.scopes.length)?[['admin','lock','Administración']]:[]),['personal-ai','sparkles','Mi IA · claves personales']]:[]),['arcade','gamepad','ARCADE'],...(HOME.mode==='live'&&SETUP.owner===HOME.user?.id&&!SETUP.record?.completed_at?[['setup','wrench','Configuración inicial']]:[]),...(HOME.user?[['export','copy','Exportar registro académico']]:[]),['out','logout','Cerrar sesión']].map(r=>`<button class="it" role="menuitem" data-a="${r[0]}">${ic(r[1])}<span class="l">${r[2]}</span></button>`).join('')}
+  +[...(HOME.user?[['profile','user','Mi perfil']]:[]),...(HOME.mode==='live'?[['preferences','wrench','Preferencias'],...((moderationAccess.admin||moderationAccess.scopes.length)?[['admin','lock','Administración']]:[]),['personal-ai','sparkles','Mi IA · claves personales']]:[]),...(mqM.matches?[]:[['arcade','gamepad','ARCADE']]),...(HOME.mode==='live'&&SETUP.owner===HOME.user?.id&&!SETUP.record?.completed_at?[['setup','wrench','Configuración inicial']]:[]),...(HOME.user?[['export','copy','Exportar registro académico']]:[]),['out','logout','Cerrar sesión']].map(r=>`<button class="it" role="menuitem" data-a="${r[0]}">${ic(r[1])}<span class="l">${r[2]}</span></button>`).join('')}
 function syncTg(){const g=$('menu').querySelector('.tg');if(!g)return;const d=isDark();g.dataset.s=d?'dark':'light';g.querySelectorAll('.tgb').forEach(b=>b.setAttribute('aria-checked',(b.dataset.t==='dark')===d))}
-function setTheme(dark){if(dark===isDark())return;root.classList.add('tt');root.dataset.theme=dark?'dark':'light';syncTg();clearTimeout(ttm);ttm=setTimeout(()=>root.classList.remove('tt'),900)}
+function setTheme(dark){try{localStorage.setItem('lyra-theme',dark?'dark':'light')}catch{}if(dark===isDark()){root.dataset.theme=dark?'dark':'light';return;}root.classList.add('tt');root.dataset.theme=dark?'dark':'light';syncTg();clearTimeout(ttm);ttm=setTimeout(()=>root.classList.remove('tt'),900)}
 $('menu').onclick=e=>{const t=e.target.closest('.tgb');if(t){setTheme(t.dataset.t==='dark');systemRuntime?.sync.set('theme',t.dataset.t);return}
   const b=e.target.closest('.it');if(!b)return;const a=b.dataset.a;
+  if(a==='profile'){setMenu(false);go('Mi perfil');return}
   if(a==='preferences'||a==='admin'){setMenu(false);go(a==='admin'?'Administración':'Preferencias');return}
   if(a==='personal-ai'){setMenu(false);go('Mi IA');return}
   if(a==='arcade'){setMenu(false);arcOpen();return}
   if(a==='setup'){setMenu(false);setupOpen();return}
   if(a==='export'){setMenu(false);void exportAcademicRecord();return}
-  homeSignOut();};
+  if(a==='out')homeSignOut();};
 $('menu').addEventListener('keydown',e=>{const t=e.target.closest&&e.target.closest('.tgb');if(!t||(e.key!=='ArrowLeft'&&e.key!=='ArrowRight'))return;
   e.preventDefault();const dk=e.key==='ArrowLeft';setTheme(dk);systemRuntime?.sync.set('theme',dk?'dark':'light');$('menu').querySelector(dk?'.tgb.dark':'.tgb.light').focus({preventScroll:true})});
 mq.addEventListener('change',renderProfile);
@@ -1045,7 +1050,7 @@ function gmArt(id){
  return `<svg viewBox="0 0 280 292" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${p}</svg>`;
 }
 function arcHTML(){return `<div class="gm-ambient" aria-hidden="true">${GAMES.map(g=>`<div class="gm-aura" data-glow="${g.id}" style="--a:${g.a};--b:${g.b}"></div>`).join('')}</div>
- <header class="gm-header"><div class="gm-brand">${svg('gamepad',23)}<span>ESAN<i></i><b>Arcade</b></span></div><div class="gm-top-controls"><button class="gm-icon gm-sound" data-gm="sound" aria-pressed="true" aria-label="Silenciar sonidos" title="Silenciar sonidos">${gmSoundIcon(true)}</button><button class="gm-icon gm-auto" data-gm="auto" aria-pressed="false" aria-label="Activar recorrido automático" title="Recorrido automático">${gmPlayIcon()}</button><button class="gm-icon gm-back" id="arx" data-gm="close" aria-label="Salir de Arcade">${svg('x',18)}<span>Salir</span></button></div></header>
+ <header class="gm-header"><div class="gm-brand">${svg('gamepad',23)}<span>Lyra<i></i><b>Arcade</b></span></div><div class="gm-top-controls"><button class="gm-icon gm-sound" data-gm="sound" aria-pressed="true" aria-label="Silenciar sonidos" title="Silenciar sonidos">${gmSoundIcon(true)}</button><button class="gm-icon gm-auto" data-gm="auto" aria-pressed="false" aria-label="Activar recorrido automático" title="Recorrido automático">${gmPlayIcon()}</button><button class="gm-icon gm-back" id="arx" data-gm="close" aria-label="Salir de Arcade">${svg('x',18)}<span>Salir</span></button></div></header>
  <div class="gm-content" id="gmgallery"><h2 class="gm-heading">Una pausa para jugar.</h2><p class="gm-intro">Encuentra tu próximo reto y cambia de ritmo.</p><div class="gm-filters" role="group" aria-label="Categoría de juegos">${[['all','Todos'],['arcade','Arcade'],['educational','Educativos']].map(([v,t])=>`<button class="gm-filter${ARC.filter===v?' on':''}" data-gm="filter" data-filter="${v}" aria-pressed="${ARC.filter===v}">${t}</button>`).join('')}</div>
  <section class="gm-shelf" id="gmshelf" aria-label="Elegir juego" aria-roledescription="carrusel" tabindex="0"></section>
  <div class="gm-selection" id="gmselection" aria-live="polite" aria-atomic="true"></div><div class="gm-dots" id="gmdots" role="group" aria-label="Seleccionar juego"></div>
@@ -1081,7 +1086,7 @@ function arIntroHTML(){
 <div class="ar-scene">
 <div class="ar-sky"><div class="ar-sun">${arSun()}</div>${arStar(9,8,0)+arStar(90,12,.5)+arStar(78,52,1.1)+arStar(16,58,.7)+arStar(48,3,.3)}${arCloud(30,46,-12,56)+arCloud(14,70,-40,40)+arCloud(44,58,-26,48)}</div>
 <div class="ar-floor"><div class="ar-plane"></div></div>
-<div class="ar-title">${arPix('ESAN',.35)}${arPix('ARCADE',.8)}<p class="ar-tag">JUEGA · APRENDE · GANA</p></div>
+<div class="ar-title">${arPix('LYRA',.35)}${arPix('ARCADE',.8)}<p class="ar-tag">JUEGA · APRENDE · GANA</p></div>
 ${arCoin(8,0)+arCoin(54,.35)+arCoin(8,.7)}
 <div class="ar-hero">${arHero()}</div>
 <div class="ar-gr"><i></i><i></i></div>
@@ -1113,7 +1118,7 @@ function arReady(){
   $('argo').disabled=false;$('argo').focus({preventScroll:true})}
 
 function arcOpen(){
- if(ARC.open)return;
+ if(mqM.matches||ARC.open)return;
  clearTimeout(ARC.closing);ARC.open=true;ARC.stage='intro';ARC.n=-1;ARC.sg=-1;ARC.active=0;
  ARC.returnFocus=document.activeElement;const el=$('arc');
  el.classList.remove('out','rdy','gallery-ready');el.classList.add('arc-intro');
@@ -1254,7 +1259,7 @@ mqM.addEventListener('change',()=>{setMenu(false);renderMobileDock();renderProfi
 renderMobileDock();
 
 systemRuntime=createSystemRuntime({client:homeClient,getUser:()=>HOME.user,getAgenda:()=>HOME_WIDGETS,apply:applySyncedPreferences});
-mountHomeEnhancements({get prefs(){return systemRuntime.sync},get scale(){return HOME_SCALE},nav_items:NAV,nav:go,icon:svg,courses:()=>homeCareer().cursos,data:homeModel,get st(){return HOME_WIDGETS},get x(){return HOME},get tab(){return HOME.tab}});
+mountHomeEnhancements({closeMenu:()=>setMenu(false),get prefs(){return systemRuntime.sync},get scale(){return HOME_SCALE},nav_items:NAV,nav:go,icon:svg,courses:()=>homeCareer().cursos,data:homeModel,get st(){return HOME_WIDGETS},get x(){return HOME},get tab(){return HOME.tab}});
 mountHomeCompanion($('page'));
 homeInit();
 window.addEventListener('focus',()=>{if(HOME.mode==='profile'&&HOME.user&&!HOME.saving.size)homeLoad(HOME.user)});
@@ -1264,11 +1269,12 @@ if(homeClient)homeClient.auth.onAuthStateChange((event,session)=>{
 });
 
 function legacyPreferences(id){
- const values={};try{const order=JSON.parse(localStorage.getItem('esan-inicio-orden-v1:'+id));if(order)values.homeOrder=order;const diagnosis=JSON.parse(localStorage.getItem('esan-diagnostico-v1:'+id));if(diagnosis)values.diagnosis=diagnosis;const glow=JSON.parse(localStorage.getItem('esan-brillo-v1'));if(glow)values.glow=glow}catch{}return values;
+ const values={};try{const layout=JSON.parse(localStorage.getItem('lyra-home-layout-v1:'+id));if(layout)values.homeLayout=layout;const order=JSON.parse(localStorage.getItem('esan-inicio-orden-v1:'+id));if(order)values.homeOrder=order;const diagnosis=JSON.parse(localStorage.getItem('esan-diagnostico-v1:'+id));if(diagnosis)values.diagnosis=diagnosis;const glow=JSON.parse(localStorage.getItem('esan-brillo-v1'));if(glow)values.glow=glow}catch{}return values;
 }
 function applySyncedPreferences(values){
  if(!HOME.user)return;let changed=false;
  for(const [key,prefix] of [['homeOrder','esan-inicio-orden-v1:'],['diagnosis','esan-diagnostico-v1:']])if(key in values){const k=prefix+HOME.user.id,v=JSON.stringify(values[key]);if(localStorage.getItem(k)!==v){localStorage.setItem(k,v);changed=true}}
+ if(values.homeLayout){const k='lyra-home-layout-v1:'+HOME.user.id,v=JSON.stringify(values.homeLayout);if(localStorage.getItem(k)!==v){localStorage.setItem(k,v);window.dispatchEvent(new Event('lyra-home-layout-updated'))}}
  if(values.theme)setTheme(values.theme==='dark');
  if(values.glow)window.__esanBrillo?.set(values.glow,true);
  if(values.focus)setupApply(values.focus);
@@ -1276,6 +1282,7 @@ function applySyncedPreferences(values){
  if(changed&&HOME.mode==='live'&&['Inicio','Mi semestre'].includes(cur)&&!HOME.saving.size)homeRender();
 }
 async function homeSnapshot(calendar=false){
+ if(!OFFLINE_ENABLED)return;
  if(!HOME.user||HOME.mode!=='live')return;
  const patch={profile:{alias:HOME.profile?.alias},catalog:homeCareer(),done:[...HOME.done],academicAt:new Date().toISOString()};
  if(calendar){patch.events=HOME_WIDGETS.calendar_events;patch.tasks=HOME_WIDGETS.calendar_tasks;patch.calendarAt=new Date().toISOString()}
@@ -1289,3 +1296,5 @@ async function mountSystem(){
  curriculumUnmount=module[admin?'mountAdministration':'mountSystemSettings'](container,{client:homeClient,user:HOME.user,profile:HOME.profile,scale:HOME_SCALE,sync:systemRuntime.sync,syncStatus:systemRuntime.status,install:systemRuntime.install,access:moderationAccess,onBusy:value=>{if(revision===HOME.revision){if(value)HOME.saving.add('system');else HOME.saving.delete('system')}}});container.removeAttribute('aria-busy');
  }catch{if(container.isConnected)container.textContent='No se pudo abrir esta sección. Reintenta desde el perfil.'}
 }
+
+async function mountUniversity(id,file,method){const container=$(id),revision=HOME.revision,render=curriculumRender;try{const mod=await ({ProfilePreferences:()=>import('../features/institutions/ProfilePreferences.jsx'),UniversitySetup:()=>import('../features/institutions/UniversitySetup.jsx')})[file]();if(revision!==HOME.revision||render!==curriculumRender||!container.isConnected)return;curriculumUnmount=mod[method](container,{client:homeClient,profile:HOME.profile,onSaved:()=>homeLoad(HOME.user),onCatalogChanged:()=>homeLoad(HOME.user),onBusy:value=>value?HOME.saving.add('university'):HOME.saving.delete('university')})}catch{if(container.isConnected)container.textContent='No pudimos abrir esta sección. Reintenta desde el menú.'}}

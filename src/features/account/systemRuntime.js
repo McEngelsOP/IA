@@ -1,3 +1,4 @@
+import { OFFLINE_ENABLED } from './offlineEnabled.js'
 import { createPreferenceSync } from '../../shared/lib/preferenceSync.js'
 import { activateOfflineAccount, clearOfflineAccount } from '../../shared/lib/offlineStore.js'
 import { dueReminders } from '../../core/calendar/prevention.js'
@@ -5,7 +6,7 @@ import './system.css'
 export function createSystemRuntime({ client, getUser, getAgenda, apply }) {
   let owner = null, status = '', installPrompt, lastRefresh = 0
   const sync = createPreferenceSync({ client, onChange: apply, onStatus: value => { status = value; window.dispatchEvent(new CustomEvent('lyra-sync-status', { detail: value })) } })
-  window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installPrompt = e })
+  if (OFFLINE_ENABLED) window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installPrompt = e })
   async function install() {
     if (installPrompt) { await installPrompt.prompt(); installPrompt = null }
     else alert('Para instalar Lyra, abre el menú del navegador y elige «Instalar aplicación» o «Añadir a pantalla de inicio».')
@@ -14,7 +15,7 @@ export function createSystemRuntime({ client, getUser, getAgenda, apply }) {
     document.querySelector('#lyra-connection')?.remove()
     if (!navigator.onLine) {
       const el = document.createElement('p'); el.id = 'lyra-connection'; el.className = 'system-connection'; el.setAttribute('role', 'status')
-      el.append('Sin conexión. '); const link = document.createElement('a'); link.href = './offline.html'; link.textContent = 'Consultar copia guardada'; el.append(link); document.body.append(el)
+      el.append('Sin conexión. Los cambios requieren conexión. '); const link = document.createElement('a'); link.href = './offline.html'; link.textContent = 'Consultar copia guardada'; if (OFFLINE_ENABLED) el.append(link); document.body.append(el)
     }
   }
   window.addEventListener('online', () => { connection(); void sync.refresh() }); window.addEventListener('offline', connection); connection()
@@ -43,9 +44,10 @@ export function createSystemRuntime({ client, getUser, getAgenda, apply }) {
     localStorage.setItem(key, JSON.stringify(sent))
   }
   setInterval(() => void reminders(), 60000)
-  if ('serviceWorker' in navigator && import.meta.env.PROD) navigator.serviceWorker.register('/sw.js').catch(() => {})
+  if (OFFLINE_ENABLED && 'serviceWorker' in navigator && import.meta.env.PROD) navigator.serviceWorker.register('/sw.js').catch(() => {})
+  if (!OFFLINE_ENABLED && 'serviceWorker' in navigator) void navigator.serviceWorker.getRegistrations().then(items => Promise.all(items.filter(item => {const script=item.active?.scriptURL||item.waiting?.scriptURL;return script&&new URL(script).origin===location.origin&&new URL(script).pathname==='/sw.js'}).map(item=>item.unregister()))).catch(()=>{})
   return { sync, install, record, get status() { return status },
-    async start(id, legacy) { owner = id; activateOfflineAccount(id); await sync.start(id, legacy); void reminders() },
+    async start(id, legacy) { owner = id; if (OFFLINE_ENABLED) activateOfflineAccount(id); await sync.start(id, legacy); void reminders() },
     stop() { owner = null; sync.stop() },
     async signOut() { owner = null; sync.stop(); try { await clearOfflineAccount() } catch { /* The active account marker is already cleared. */ } }
   }

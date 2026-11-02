@@ -4,7 +4,7 @@ export const ESAN = Object.freeze({
   shortName: 'ESAN',
   timeZone: 'America/Lima',
   gradeScale: { min: 0, max: 20, passing: 10.5 },
-  registration: { firstPromotion: 25, codeLength: 8 },
+  registration: { firstPromotion: 20, codeLength: 8 },
   enabled: true
 })
 

@@ -1,8 +1,10 @@
-const keys = ['homeOrder', 'glow', 'diagnosis', 'theme', 'sidebar', 'focus', 'notifications']
+import {normalizeLayout} from '../../features/home/homeLayout.js'
+const keys = ['homeLayout','homeOrder', 'glow', 'diagnosis', 'theme', 'sidebar', 'focus', 'notifications']
 const safe = value => value && typeof value === 'object' && !Array.isArray(value)
 export function normalizePreferences(input) {
   if (!safe(input)) return {}
   const result = {}
+  if(safe(input.homeLayout))result.homeLayout=normalizeLayout(input.homeLayout)
   if (['light','dark'].includes(input.theme)) result.theme = input.theme
   if (['full','rail'].includes(input.sidebar)) result.sidebar = input.sidebar
   if (Array.isArray(input.homeOrder)) result.homeOrder = [...new Set(input.homeOrder.filter(k => ['hero','hoy','stats','notas','racha','semestre','panel'].includes(k)))]

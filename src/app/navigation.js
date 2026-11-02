@@ -19,5 +19,5 @@ export function resolveRoute(name, parent) {
 export function validRoute(snapshot) {
   if (!snapshot || typeof snapshot.page !== 'string') return false
   const route = resolveRoute(snapshot.kid || snapshot.page, snapshot.kid ? snapshot.page : undefined)
-  return ['Mi IA','Preferencias','Administración'].includes(route.page) || NAV.some(n => n.n === route.page && (!route.kid || n.kids?.some(k => k[0] === route.kid)))
+  return ['Mi perfil','Mi IA','Preferencias','Administración'].includes(route.page) || NAV.some(n => n.n === route.page && (!route.kid || n.kids?.some(k => k[0] === route.kid)))
 }

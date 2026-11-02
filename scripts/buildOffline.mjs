@@ -1,5 +1,12 @@
-import { readFile, writeFile } from 'node:fs/promises'
+import { loadEnv } from 'vite'
+import { readFile, writeFile, rm } from 'node:fs/promises'
 import { createHash } from 'node:crypto'
+const offlineEnabled={...loadEnv('production',process.cwd(),''),...process.env}.VITE_ENABLE_OFFLINE==='true'
+if(!offlineEnabled){
+ await rm('dist/sw.js',{force:true});await rm('dist/manifest.webmanifest',{force:true})
+ for(const file of ['login.html','pagina.html']){const path='dist/'+file;await writeFile(path,(await readFile(path,'utf8')).replace(/<link[^>]*rel="manifest"[^>]*>/g,''))}
+ console.log('Offline desactivado: opción pendiente.');process.exit(0)
+}
 const manifest = JSON.parse(await readFile('dist/.vite/manifest.json','utf8'))
 const urls = new Set(['/offline.html','/icon-192.png','/manifest.webmanifest'])
 const visited = new Set()

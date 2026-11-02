@@ -1,9 +1,11 @@
+import { OFFLINE_ENABLED } from './offlineEnabled.js'
 import { readOfflineAccount } from '../../shared/lib/offlineStore.js'
 import { eventsOn, todayLima } from '../../core/calendar/calendarModel.js'
 import './system.css'
 const root = document.querySelector('#offline')
 const node = (tag, text) => { const el = document.createElement(tag); el.textContent = text; return el }
 async function boot(){
+if (!OFFLINE_ENABLED) {root.append(node('h1','Consulta sin conexión pendiente'),node('p','Abre Lyra con conexión para continuar.'));return}
 try {
   const data = await readOfflineAccount()
   if (!data?.catalog) { root.append(node('h1', 'Aún no hay una copia disponible'), node('p', 'Abre Lyra con conexión e inicia sesión para preparar tus datos en este dispositivo.')) }

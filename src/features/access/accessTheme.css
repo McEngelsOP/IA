@@ -1,0 +1,10 @@
+:root[data-theme=light]{--ink:#23221e;--soft:#464138;--accent:#89482e;color-scheme:light}
+:root[data-theme=light] body[data-state] .panel{background:rgba(250,247,240,.89);border-color:rgba(51,43,35,.35)}
+:root[data-theme=light] body[data-state] :is(input,select){background:rgba(255,253,248,.82);color:var(--ink);border-color:#958b7b;caret-color:var(--ink)}
+:root[data-theme=light] body[data-state] :is(input,select):focus{background:rgba(255,253,248,.92);border-color:var(--accent)}
+:root[data-theme=light] body[data-state] input::placeholder{color:#635b50}
+:root[data-theme=light] select option{background:#fffdf8;color:#23221e;color-scheme:light}
+:root[data-theme=light] body[data-state] .primary{background:#292d24;color:#fffdf8}
+:root[data-theme=light] body[data-state] :is(button,a,input,select):focus-visible{outline-color:#89482e}
+@media(max-width:860px){:root[data-theme=light] body[data-state] .panel{background:rgba(250,247,240,.72)}}
+@media(prefers-reduced-transparency:reduce){:root[data-theme=light] body[data-state] .panel{background:#faf7f0}}
