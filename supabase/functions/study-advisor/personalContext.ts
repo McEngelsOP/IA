@@ -22,7 +22,7 @@ async function read(query: any) {
 }
 // Closed, deterministic read registry. No SQL, table names, owner or URLs from the model/client.
 export async function loadPersonalContext(client: any, userId: string, question: string, history: any[]) {
-  const profile = await read(client.from('profiles').select('carrera,curriculum_version,institution_id,alias').eq('id',userId).maybeSingle());
+  const profile = await read(client.from('profiles').select('carrera,curriculum_version,institution_id,alias,custom_curriculum_id,university_name').eq('id',userId).maybeSingle());
   if (!profile) throw new Error('profile_required');
   const topic = normalized(question + ' ' + history.filter(m=>m.role==='user').slice(-1).map(m=>m.content).join(' '));
   const academic = /curso|carrera|ciclo|credit|malla|plan|matricul|prerrequis|requisito|requiere|avance|estudi/.test(topic);
@@ -31,7 +31,7 @@ export async function loadPersonalContext(client: any, userId: string, question:
   const today = limaDate();
   const end = new Date(today+'T12:00:00Z'); end.setUTCDate(end.getUTCDate()+30);
   const until = end.toISOString().slice(0,10);
-  const result: any = { today, timezone:'America/Lima', profile:{ alias:text(profile.alias,60), careerId:profile.carrera, institutionId:profile.institution_id, curriculumVersion:profile.curriculum_version }, consulted:[], limits:{calendarWindow:{from:today,to:until}}, unavailable:[] };
+  const result: any = { today, timezone:'America/Lima', profile:{ alias:text(profile.alias,60), careerId:profile.carrera, institutionId:profile.institution_id, customCurriculumId:profile.custom_curriculum_id, universityName:profile.university_name, curriculumVersion:profile.curriculum_version }, consulted:[], limits:{calendarWindow:{from:today,to:until}}, unavailable:[] };
   // Three bounded tools at most, plus profile. Independent reads share one request deadline.
   if (academic) {
     const [progress,statuses,setup] = await Promise.all([

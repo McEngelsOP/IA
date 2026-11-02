@@ -1,3 +1,4 @@
+import { customCatalog } from '../../../src/features/institutions/curriculumMarkdown.js';
 import { loadPersonalContext, validateHistory, LIMITS } from './personalContext.ts';
 import { prepareApproval, verifyApproval, validateDraft, parseAdvisorOutput } from './drafts.ts';
 import { loadAiRoute, policyMessage } from './aiRouting.ts';
@@ -161,6 +162,12 @@ export function createAdvisorHandler({
     let career = catalog[personal.profile.careerId];
     if(career?.institutionId!==personal.profile.institutionId)career=null;
     const assignedVersion = personal.profile.curriculumVersion;
+    if(personal.profile.customCurriculumId && assignedVersion===personal.profile.customCurriculumId){
+      const result=await client.from('custom_curricula').select('*').eq('id',personal.profile.customCurriculumId).eq('institution_id',personal.profile.institutionId).maybeSingle();
+      if(result.error||!result.data)return json({error:'curriculum_version_unavailable'},503);
+      const revision=customCatalog({...result.data,university_name:personal.profile.universityName});
+      career={id:revision.key,name:revision.nombre,institutionId:revision.institutionId,version:revision.version,courses:Object.fromEntries(revision.cursos.map((c:any)=>[c.id,{id:c.id,name:c.n,credits:c.cr,prerequisites:c.r,requiredCompletedCredits:c.rc||0,prerequisitesKnown:c.prerequisitesKnown!==false&&!c.requirementNote,requirementNote:c.requirementNote||''}]))};
+    }
     if(assignedVersion && assignedVersion!==career?.version){
       // Versioned curricula require their separate schema activation. Default preserves the live behavior.
       if(env('ADVISOR_VERSIONED_CURRICULA')!=='true')return json({error:'curriculum_version_mismatch'},409);

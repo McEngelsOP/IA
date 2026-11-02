@@ -20,7 +20,10 @@ return async function handler(req, res) {
       global: { headers: { Authorization: `Bearer ${token}` } } })
     const { data: identity, error: authError } = await client.auth.getUser(token)
     if (authError || !identity?.user) return res.status(401).json({ ok: false })
+    const profile=await client.from('profiles').select('institution_id,carrera').eq('id',identity.user.id).maybeSingle();
+    if(profile.error||!profile.data)return res.status(503).json({ok:false});
     const data = typeof req.body === 'string' ? JSON.parse(req.body) : req.body
+    if(profile.data.institution_id!=='esan'&&data?.categoria!=='Aplicativo')return res.status(403).json({ok:false});
     const config = MAILBOX_TYPES[data?.categoria]
     if (!config || !config.tipos.some(([name]) => name === data.tipo) ||
       typeof data.mensaje !== 'string' || data.mensaje.trim().length < 25 || data.mensaje.length > 800 ||
@@ -38,7 +41,7 @@ return async function handler(req, res) {
     const response = await fetch(endpoint, {
       method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({ fecha_legible: new Date().toLocaleString('es-PE', { timeZone: 'America/Lima' }),
-        carrera: data.carrera, alias: 'Anónimo', categoria: data.categoria,
+        carrera: profile.data.carrera||'Sin carrera asignada', alias: 'Anónimo', categoria: data.categoria,
         categoria_nombre: data.categoria + ' · ' + data.tipo, mensaje: safeCell(message) }),
       signal: AbortSignal.timeout(25000), redirect: 'follow'
     })
