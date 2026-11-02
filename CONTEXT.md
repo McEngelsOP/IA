@@ -4,7 +4,7 @@ Actualizado el 20 de octubre de 2026 para la reestructuración en `aea`. El cód
 
 ## Alcance y entradas
 
-Solo ESAN está habilitada, con las 18 carreras del catálogo. Lyra es la marca general. Las diferencias institucionales se separan del motor para permitir expansión futura.
+Oficial prepara el registro de otras universidades con las migraciones 202611020001–005; su activación remota sigue siendo manual. Se conservan las 18 carreras ESAN. Lyra es la marca general. Las diferencias institucionales se separan del motor para permitir expansión futura.
 
 Mecatrónica PUCP se retiró del registro, grafos y asesor. Se conserva la cuenta histórica y sus registros: al entrar se muestra un estado específico con exportación, sin reasignarla a ESAN. El SQL conserva ese valor histórico y rechaza registros o asignaciones nuevos de esa carrera.
 
@@ -41,7 +41,9 @@ La interfaz admite la base anterior: perfiles sin asignación usan el catálogo 
 
 ## Semestre, planificación y asistente
 
-Mi semestre reúne Calendario y tareas, Notas y objetivos y Cursos actuales. El cálculo de objetivos reutiliza Inicio y guarda estimaciones locales por cuenta; no son notas oficiales ni están sincronizadas. Las notas finales usan `grades`.
+La reconciliación de noviembre está descrita en `docs/integration-oficial.md` y `docs/universities-curriculum.md`. El modo offline queda desactivado por defecto.
+
+Mi semestre reúne Calendario y tareas, Notas y objetivos y Cursos actuales. El cálculo de objetivos reutiliza Inicio y guarda estimaciones locales por cuenta; no son notas oficiales; sus preferencias se sincronizan por cuenta. Las notas finales usan `grades`.
 
 Solo Mi semestre ofrece importación de horario `.xlsx`. La propuesta se revisa y edita antes de guardar únicamente clases confirmadas. El onboarding remite allí y conserva clases de borradores anteriores, sin ofrecer CSV ni otro importador.
 

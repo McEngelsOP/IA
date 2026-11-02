@@ -9,3 +9,5 @@ En escritorio el lateral admite ancho completo y compacto, con iconos anclados y
 Mostrar carga, errores, datos vacíos y estados no soportados. Los guardados comunican actividad y evitan acciones simultáneas. Los lienzos y horarios pueden desplazarse dentro de su región; la página no debe desbordar horizontalmente.
 
 La paloma acompaña Inicio sin controles obligatorios. Las simulaciones declaran condiciones y los requisitos por verificar tienen una indicación textual independiente del color.
+
+Inicio mantiene el banner fijo y usa bloques de tamaño pequeño, mediano o completo. Los resúmenes se encajan, con orden accesible y movimiento reducido. El acceso conserva su material transparente en ambos viewports y temas.

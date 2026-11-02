@@ -40,9 +40,9 @@ async function fixture(width=1440,admin=false){
  const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));await page.goto(base+'/pagina.html');await page.locator('.hoy').waitFor();return{context,page}
 }
 try{
- const first=await fixture();await first.page.locator('.hw[data-w="hero"] .w-grip').focus();await first.page.locator('.hw[data-w="hero"] .w-grip').press('ArrowDown');await first.page.waitForTimeout(700)
- assert.equal(preferences.homeOrder[0],'hoy')
- const second=await fixture(390);assert.equal(await second.page.locator('.hw').first().getAttribute('data-w'),'hoy')
+ const first=await fixture();await first.page.getByRole('button',{name:'Personalizar Inicio'}).click();await first.page.locator('.hw[data-w="hoy"] .w-grip').focus();await first.page.locator('.hw[data-w="hoy"] .w-grip').press('ArrowDown');await first.page.waitForTimeout(700)
+ assert.equal(preferences.homeLayout.order.filter(id=>id!=='hero')[0],'stats')
+ const second=await fixture(390);assert.equal(await second.page.locator('.hw').first().getAttribute('data-w'),'stats')
  await second.page.locator('#act').click();await second.page.locator('[data-a="preferences"]').click();await second.page.getByRole('heading',{name:'Tu cuenta, en cada dispositivo'}).waitFor()
  await second.page.getByLabel('Qué ocurrió').fill('No puedo encontrar un curso dentro de mi malla.');await second.page.getByRole('button',{name:'Enviar reporte'}).click();await second.page.getByText('Reporte enviado al panel de atención.').waitFor();assert.equal(reports.length,1)
  assert.equal(await second.page.locator('[data-a="admin"]').count(),0)
@@ -58,10 +58,8 @@ try{
  await publication.getByRole('alert').scrollIntoViewIfNeeded()
  if(shots)await admin.page.screenshot({path:shots+'/admin-feedback.png',fullPage:true})
 
- await first.page.goto(base+'/offline.html');await first.page.getByRole('heading',{name:/Lyra · Engels/}).waitFor();await first.page.getByRole('button',{name:'Tareas',exact:true}).click();await first.page.getByText(/Informe de Física/).waitFor()
- await first.page.getByRole('button',{name:'Malla',exact:true}).click();await first.page.getByRole('heading',{name:'Ingeniería en Inteligencia Artificial'}).waitFor()
- await first.page.evaluate(()=>localStorage.removeItem('lyra-offline-owner'));await first.page.reload();await first.page.getByRole('heading',{name:'Aún no hay una copia disponible'}).waitFor()
+ await first.page.goto(base+'/offline.html');await first.page.getByRole('heading',{name:'Consulta sin conexión pendiente'}).waitFor()
  assert.deepEqual(errors,[])
  await Promise.all([first.context.close(),second.context.close(),admin.context.close()])
- console.log('PASS: two devices share home ordering; preferences and report lifecycle; restricted administration; calendar conflicts; offline account snapshots and account clearing; desktop/mobile.')
+ console.log('PASS: two devices share home ordering; preferences and report lifecycle; restricted administration; calendar conflicts; offline remains disabled by default; desktop/mobile.')
 }finally{await browser.close()}

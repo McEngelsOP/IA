@@ -1,6 +1,6 @@
 # Servicios académicos y continuidad de Lyra
 
-Esta ampliación conserva el catálogo ESAN y la información existente. Las nuevas universidades no se habilitan automáticamente. Las pantallas están en **Perfil → Preferencias** y, para cuentas autorizadas, **Perfil → Administración**. Mi semestre incorpora prevención y Mi carrera incorpora comparación de versiones.
+Esta ampliación conserva el catálogo ESAN y la información existente. Las nuevas universidades requieren las migraciones descritas en [universidades y mallas](universities-curriculum.md). Las pantallas están en **Perfil → Preferencias** y, para cuentas autorizadas, **Perfil → Administración**. Mi semestre incorpora prevención y Mi carrera incorpora comparación de versiones.
 
 ## Persistencia y sincronización
 
@@ -26,7 +26,9 @@ Mi semestre muestra el resumen de la semana, choques de horarios de las próxima
 
 Los avisos son opcionales, requieren permiso en cada navegador y se revisan mientras Lyra está abierta. Se respetan la zona horaria elegida y el silencio, incluso si atraviesa medianoche. El resumen semanal se ofrece los lunes desde las 08:00. Esta entrega no implementa un servidor push para enviar avisos con la aplicación cerrada.
 
-## Consulta sin conexión
+## Consulta sin conexión — pendiente
+
+Desactivada por defecto con `VITE_ENABLE_OFFLINE=false`, según la decisión del usuario sobre la opción 5. La descripción siguiente corresponde a la implementación reservada para una futura activación explícita.
 
 La PWA prepara una página independiente de consulta y sus dependencias durante el build. El Service Worker permite abrirla al fallar una navegación. IndexedDB conserva malla, avance, horarios y tareas de la cuenta activa, con fechas independientes de actualización académica y de agenda. La copia se actualiza al leer o guardar información confirmada. No permite escrituras sin conexión.
 
