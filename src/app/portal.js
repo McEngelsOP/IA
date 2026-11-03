@@ -869,7 +869,7 @@ $('menu').onclick=e=>{const t=e.target.closest('.tgb');if(t){setTheme(t.dataset.
 $('menu').addEventListener('keydown',e=>{const t=e.target.closest&&e.target.closest('.tgb');if(!t||(e.key!=='ArrowLeft'&&e.key!=='ArrowRight'))return;
   e.preventDefault();const dk=e.key==='ArrowLeft';setTheme(dk);systemRuntime?.sync.set('theme',dk?'dark':'light');$('menu').querySelector(dk?'.tgb.dark':'.tgb.light').focus({preventScroll:true})});
 mq.addEventListener('change',()=>{setAndroidSystemBars(isDark());renderProfile()});
-let profileCloseTimer=0;
+let profileCloseTimer=0, mobileIndicatorStretch;
 function setMenu(o,restoreFocus){
   const menu=$('menu');clearTimeout(profileCloseTimer);
   if(o)setDrawer(false);
@@ -1261,8 +1261,21 @@ function renderMobileDock(){
  const names=TABS.map(t=>t[2]);
  if(!tabs.children.length)tabs.innerHTML=TABS.map(([label,icon,name])=>`<button type="button" data-mobile-page="${name}" aria-label="${name}" title="${name}">${svg(icon,24)}</button>`).join('');
  [...tabs.children].forEach(b=>{if(b.dataset.mobilePage===cur)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')});
- dock.style.setProperty('--mobile-index',Math.max(0,names.indexOf(cur)));
- dock.classList.toggle('has-current',names.includes(cur));tabs.inert=app.classList.contains('open');
+ const index=names.indexOf(cur), last=dock.style.getPropertyValue('--mobile-index');
+ if(index>=0&&last!==String(index)){
+  const indicator=dock.querySelector('.mobile-ind');
+  if(mqM.matches&&dock.classList.contains('has-current')&&!navReduced()&&indicator?.animate){
+   const scale=getComputedStyle(indicator).scale;
+   mobileIndicatorStretch?.cancel();
+   mobileIndicatorStretch=indicator.animate([
+    {scale:scale==='none'?'1':scale,easing:'ease-out'},
+    {scale:'1.12 .95',offset:.28,easing:'cubic-bezier(.22,.75,.25,1)'},
+    {scale:'1'}
+   ],{duration:560});
+  }
+  dock.style.setProperty('--mobile-index',index);
+ }
+ dock.classList.toggle('has-current',index>=0);tabs.inert=app.classList.contains('open');
 }
 $('mobile-tabs').addEventListener('click',e=>{const b=e.target.closest('[data-mobile-page]');if(!b)return;setMenu(false);setDrawer(false);go(b.dataset.mobilePage)});
 

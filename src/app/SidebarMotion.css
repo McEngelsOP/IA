@@ -77,11 +77,11 @@
 @media(max-width:860px){
   #app[data-side=hidden] #side{
     filter:none;transform:translate3d(-22px,0,0);
-    transition:transform 280ms var(--side-ease),opacity 180ms ease;
+    transition:transform 400ms var(--side-ease),opacity 320ms ease;
   }
   #app[data-side=hidden].dopen #side{
     transform:translate3d(0,0,0);
-    transition:transform 380ms var(--side-ease),opacity 220ms ease;
+    transition:transform 460ms var(--side-ease),opacity 360ms ease;
   }
 }
 
