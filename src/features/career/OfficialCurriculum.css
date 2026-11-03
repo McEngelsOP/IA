@@ -45,8 +45,9 @@
 .oc-status strong{color:var(--txt);font-weight:600}
 .oc-feedback{margin:0;padding:12px 22px;font-size:13px;border-bottom:1px solid var(--bar-b);background:var(--tile)}
 .oc-feedback.error{border-left:0;color:var(--txt);font-weight:500}
-.oc-scroller{overflow:auto;height:clamp(350px,calc(100dvh - 370px),720px);max-width:100%;cursor:grab;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--tile-p) transparent}
+.oc-scroller{overflow:auto;height:clamp(350px,calc(100dvh - 370px),720px);max-width:100%;cursor:grab;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--tile-p) transparent;touch-action:pan-x pan-y}
 .oc-scroller:active{cursor:grabbing}
+.oc-zoom-frame{overflow:clip}
 .oc-canvas{position:relative;transform-origin:0 0;user-select:none}
 .oc-edges{position:absolute;inset:0;pointer-events:none}
 .oc-edge{fill:none;stroke:var(--area-color);stroke-width:1.4;opacity:.65;transition:opacity .15s,stroke .15s}
@@ -128,7 +129,7 @@
  .oc-zoom{margin-left:auto}.oc-zoom button{min-width:44px;min-height:44px}
  .oc .oc-modes button,.oc .oc-areas button,.oc button.oc-arrow,.oc .oc-actions button,.oc .oc-detail-head button,.oc-plan-list button{min-height:44px;min-width:44px}
  .oc-cycle-view{padding:16px}.oc-course-list{grid-template-columns:minmax(0,1fr)}
- .oc-scroller{height:clamp(280px,52dvh,460px);touch-action:pan-x pan-y pinch-zoom}
+ .oc-scroller{height:clamp(280px,52dvh,460px)}
  .oc-details,.oc-confirm{scroll-margin-top:90px;scroll-margin-bottom:110px}
  .oc-facts dd,.oc-plan-list li>span{overflow-wrap:anywhere;min-width:0}
  .oc-grade label,.oc-professor-form label{width:100%;min-width:0}

@@ -896,7 +896,7 @@ a{text-underline-offset:3px}.page button:not(.ck){min-height:36px}
  #app .focus-web{width:100%;min-width:0}
  #app .focus-web .k-grid{display:flex;flex-direction:column;gap:14px;width:100%;min-width:0}
  #app .focus-web .k-grid>section{width:100%;min-width:0}
- #app .focus-web .k-pv{order:2;position:static}
+ #app .focus-web .k-pv{position:static}
  #app .focus-web .k-settings{width:100%;min-width:0}
  #app .focus-web .k-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
  #app .focus-web .k-chip{min-height:48px;padding:10px 8px;font-size:13px;line-height:1.4}
