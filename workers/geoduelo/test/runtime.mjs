@@ -1,14 +1,14 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import { build } from 'esbuild'
-import { Miniflare } from 'miniflare'
+import { Miniflare, convertV4MiniflareOptions } from 'miniflare'
 const origin = 'http://127.0.0.1:5173'
 export const ids = Array.from({ length: 8 }, (_, i) => `10000000-0000-4000-8000-${String(i + 1).padStart(12, '0')}`)
 export const capitals = JSON.parse(await fs.readFile(new URL('../src/capitals.json', import.meta.url)))
 const script = (await build({ entryPoints: [new URL('../src/index.js', import.meta.url).pathname], bundle: true, write: false, format: 'esm', platform: 'browser', target: 'es2022' })).outputFiles[0].text
 export async function runtime() {
   const results = [], authCalls = [], writes = { fail: false }
-  const mf = new Miniflare({ modules: true, script, compatibilityDate: '2025-10-01',
+  const mf = new Miniflare(convertV4MiniflareOptions({ modules: true, script, compatibilityDate: '2025-10-01',
     durableObjects: { LOBBY: { className: 'Lobby', useSQLite: true }, ROOM: { className: 'Room', useSQLite: true } },
     bindings: { ALLOWED_ORIGINS: origin, SUPABASE_URL: 'https://supabase.test', SUPABASE_ANON_KEY: 'public', SUPABASE_SERVICE_ROLE_KEY: 'secret', TICKET_SECRET: 'x'.repeat(64), MAX_PLAYERS: '50' },
     outboundService: async request => {
@@ -25,7 +25,7 @@ export async function runtime() {
       }
       throw new Error(`Unexpected outbound ${url}`)
     }
-  })
+  }))
   await mf.ready
   async function session(seat, action, extra = {}) {
     const r = await mf.dispatchFetch('https://game.test/session', { method: 'POST', headers: { origin, authorization: `Bearer ${ids[seat]}`, 'content-type': 'application/json' }, body: JSON.stringify({ action, protocol:2, ...extra }) })

@@ -18,7 +18,7 @@ Grupos, Mod Focus, Recursos y Buzón están en Más herramientas. Arcade y las c
 
 ## Desarrollo y comprobaciones
 
-Requisitos: Node.js 20 o posterior y npm. El workspace raíz incluye el Worker de Geoduelo y usa un solo lockfile.
+Requisitos: Node.js 22.13 o posterior (22 LTS o 24+) y npm. El workspace raíz incluye el Worker de Geoduelo y usa un solo lockfile.
 
 ```bash
 npm ci
