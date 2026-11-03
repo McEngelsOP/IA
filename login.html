@@ -865,9 +865,9 @@
           <p class="subtitle">Tu espacio, a tu ritmo.</p>
           <form class="access-form" id="loginForm" method="post" action="#" novalidate>
             <div class="field">
-              <label for="studentCode">Código ESAN o correo</label>
+              <label for="studentCode">Código o correo</label>
               <input id="studentCode" name="studentCode" type="text" inputmode="email" autocomplete="username"
-                maxlength="180" placeholder="Código ESAN o correo" required spellcheck="false"
+                maxlength="180" placeholder="Código o correo" required spellcheck="false"
                 aria-describedby="accessHint formMessage">
             </div>
             <div class="field">
@@ -906,11 +906,32 @@
           <h1 id="registerTitle" tabindex="-1">Crea tu cuenta.</h1>
           <p class="subtitle">Primera vez aquí: elige cómo entrar.</p>
           <form class="access-form" id="registerForm" novalidate>
-            <div class="field"><label for="registerUniversityType">¿Estudias en Universidad ESAN?</label><select id="registerUniversityType"><option value="esan">Sí, Universidad ESAN</option><option value="other">Otra universidad</option></select></div><div id="otherUniversityFields" hidden><div class="field"><label for="registerUniversity">Universidad</label><input id="registerUniversity" maxlength="120" list="universityOptions" autocomplete="organization"><datalist id="universityOptions"></datalist><p id="universityLookup" role="status"></p></div><div class="field"><label for="registerExternalCareer">Carrera</label><input id="registerExternalCareer" maxlength="120"></div><p>Después de confirmar tu correo podrás aportar tu malla y validarla con IA.</p></div><div class="field"><label for="registerCode">Código universitario</label><input id="registerCode" type="text" inputmode="numeric" maxlength="8" autocomplete="username" placeholder="8 dígitos" required></div>
-            <div class="field"><label for="registerCareer">Carrera en ESAN</label><select id="registerCareer" required><option value="" disabled selected>Elige tu carrera</option></select></div>
+            <fieldset class="register-group">
+              <legend class="sr-only">Datos académicos</legend>
+              <div class="field">
+                <label for="registerUniversityType">Universidad</label>
+                <select id="registerUniversityType" aria-describedby="universityLookup" required>
+                  <option value="esan">Universidad ESAN</option>
+                  <option value="other">Otro</option>
+                </select>
+                <p class="field-hint" id="universityLookup" role="status" aria-live="polite" hidden></p>
+                <button class="text-button catalog-retry" id="retryUniversities" type="button" hidden>Reintentar carga</button>
+              </div>
+              <div id="otherUniversityFields" hidden>
+                <div class="field"><label for="registerUniversity">Nombre de tu universidad</label><input id="registerUniversity" maxlength="120" autocomplete="organization" placeholder="Nombre completo"></div>
+              </div>
+              <div class="field" id="knownCareerField" hidden><label for="registerKnownCareer">Carrera</label><select id="registerKnownCareer"><option value="">Elige tu carrera</option></select></div>
+              <div class="field" id="externalCareerField" hidden><label for="registerExternalCareer">Carrera</label><input id="registerExternalCareer" maxlength="120" placeholder="Nombre de tu carrera"></div>
+              <div class="field"><label for="registerCode">Código universitario</label><input id="registerCode" type="text" inputmode="numeric" maxlength="8" autocomplete="username" placeholder="8 dígitos" required></div>
+              <div class="field"><label for="registerCareer">Carrera en ESAN</label><select id="registerCareer" required><option value="" disabled selected>Elige tu carrera</option></select></div>
+              <p class="field-hint" id="externalRegistrationHint" hidden>Después de confirmar tu correo podrás aportar tu malla y validarla con IA.</p>
+            </fieldset>
+            <fieldset class="register-group">
+              <legend class="sr-only">Datos de acceso</legend>
             <div class="field"><label for="registerEmail">Correo institucional</label><input id="registerEmail" type="email" autocomplete="email" required></div>
             <div class="field"><label for="registerPassword">Nueva contraseña</label><div class="password-wrap"><input id="registerPassword" type="password" autocomplete="new-password" placeholder="Mínimo 6 caracteres" minlength="6" required><button class="eye" type="button" data-password="registerPassword" aria-label="Mostrar contraseña" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2 12s3.7-7 10-7 10 7 10 7-3.7 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/><path class="eye-slash" d="m3 3 18 18" hidden/></svg></button></div></div>
             <div class="field"><label for="registerConfirm">Confirmar contraseña</label><div class="password-wrap"><input id="registerConfirm" type="password" autocomplete="new-password" placeholder="Repite tu contraseña" minlength="6" required><button class="eye" type="button" data-password="registerConfirm" aria-label="Mostrar contraseña" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2 12s3.7-7 10-7 10 7 10 7-3.7 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/><path class="eye-slash" d="m3 3 18 18" hidden/></svg></button></div></div>
+            </fieldset>
             <button type="submit" class="primary" data-label="Crear cuenta y entrar">Crear cuenta y entrar <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h15m-6-6 6 6-6 6"/></svg></button>
           </form>
           <button class="text-button back-link" type="button" data-view="loginScreen">← Volver a iniciar sesión</button>
@@ -918,9 +939,9 @@
 
         <div id="forgotScreen" hidden aria-labelledby="forgotTitle">
           <h1 id="forgotTitle" tabindex="-1">Recupera tu contraseña.</h1>
-          <p class="subtitle">Ingresa tu código y te enviaremos un enlace al correo con el que te registraste.</p>
+          <p class="subtitle">Ingresa tu código o correo y te enviaremos un enlace para recuperar tu contraseña.</p>
           <form class="access-form" id="forgotForm" novalidate>
-            <div class="field"><label for="recoveryCode">Código ESAN o correo</label><input id="recoveryCode" type="text" maxlength="180" autocomplete="username" placeholder="Tu código" required></div>
+            <div class="field"><label for="recoveryCode">Código o correo</label><input id="recoveryCode" type="text" maxlength="180" autocomplete="username" placeholder="Código o correo" required></div>
             <button type="submit" class="primary" data-label="Enviarme el enlace">Enviarme el enlace <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h15m-6-6 6 6-6 6"/></svg></button>
           </form>
           <button class="text-button back-link" type="button" data-view="loginScreen">← Volver a iniciar sesión</button>
@@ -990,4 +1011,3 @@
 </body>
 
 </html>
-

@@ -79,6 +79,7 @@ async function show(id, animate = true) {
   screens.forEach(el => { el.hidden = el !== next; el.classList.remove('entrance', 'screen-exit') })
   const shouldAnimate = animate && !reduce.matches
   document.body.dataset.state = id; foot(); panel.classList.remove('has-message')
+  if (id === 'registerScreen') void loadUniversities()
   feedback('', 'info', false)
   document.querySelector('.stage').scrollTop = 0
   fitViewport()
@@ -223,9 +224,14 @@ $('registerForm').addEventListener('submit', async event => {
   if (busy || checkingSession || transitioning || acceptedSession) return
   if (!available() || ($('registerUniversityType').value==='esan'&&!validCode('registerCode'))) return
   const career = $('registerCareer').value, code = $('registerCode').value.trim(), email = $('registerEmail').value.trim().toLowerCase()
-  const other=$('registerUniversityType').value==='other',university=$('registerUniversity').value.trim(),externalCareer=$('registerExternalCareer').value.trim();
+  const selection = $('registerUniversityType').value
+  const other = selection !== 'esan'
+  const university = selection === 'other' ? $('registerUniversity').value.trim() : universities.get(selection)?.name || ''
+  const externalCareer = selection === 'other' || $('registerKnownCareer').value === 'other'
+    ? $('registerExternalCareer').value.trim() : $('registerKnownCareer').value
   if(other&&(/esan|^ue$/i.test(university.normalize('NFD').replace(/[\u0300-\u036f]/g,''))||/@ue\.edu\.pe$/i.test(email))){$('registerUniversityType').value='esan';$('registerUniversityType').dispatchEvent(new Event('change'));feedback('Completa el registro ESAN con código y correo institucional.','error');return}
-  if(other&&(university.length<2||externalCareer.length<2)){invalid('registerUniversity','Completa tu universidad y carrera.');return}
+  if (other && university.length < 2) { invalid(selection === 'other' ? 'registerUniversity' : 'registerUniversityType', 'Completa el nombre de tu universidad.'); return }
+  if (other && externalCareer.length < 2) { invalid(selection === 'other' || $('registerKnownCareer').value === 'other' ? 'registerExternalCareer' : 'registerKnownCareer', 'Completa tu carrera.'); return }
   if (!other&&!Object.hasOwn(CAREER_OPTIONS, career)) { invalid('registerCareer', 'Elige tu carrera.'); return }
   if (!other&&!isEsanStudentCode(code)) { invalid('registerCode', 'Ese código no corresponde a la universidad seleccionada.'); return }
   if(!other&&!/^[a-z0-9._%+-]+@ue\.edu\.pe$/.test(email)){invalid('registerEmail','Usa tu correo institucional que termina en @ue.edu.pe.');return}
@@ -347,6 +353,63 @@ foot(); initialize()
 
 
 
-let lookupRevision=0,lookupTimer;
-$('registerUniversityType').addEventListener('change',()=>{const other=$('registerUniversityType').value==='other';$('otherUniversityFields').hidden=!other;for(const id of ['registerCode','registerCareer']){$(id).closest('.field').hidden=other;$(id).required=!other}scheduleFit()});
-$('registerUniversity').addEventListener('input',()=>{const rev=++lookupRevision;clearTimeout(lookupTimer);lookupTimer=setTimeout(async()=>{if(!client)return;const r=await client.rpc('search_universities',{p_query:$('registerUniversity').value.trim()});if(rev!==lookupRevision)return;$('universityOptions').replaceChildren();for(const u of r.data||[]){const option=document.createElement('option');option.value=u.name;$('universityOptions').append(option)}$('universityLookup').textContent=r.error?'Registro de otras universidades pendiente de activación.':r.data?.length?'Selecciona una universidad disponible o escribe su nombre completo.':'No está en el catálogo. Podrás proponer tu universidad y malla.'},300)});
+const universities = new Map()
+let catalogLoaded = false, catalogLoading = false
+async function loadUniversities() {
+  if (catalogLoaded || catalogLoading || !client) return
+  catalogLoading = true
+  $('retryUniversities').hidden = true
+  $('universityLookup').hidden = false
+  $('universityLookup').textContent = 'Cargando universidades…'
+  try {
+    const { data, error } = await client.rpc('registration_universities')
+    if (error || !Array.isArray(data)) throw new Error('catalog_unavailable')
+    const select = $('registerUniversityType'), selected = select.value
+    for (const item of data) {
+      if (!item || typeof item.id !== 'string' || typeof item.name !== 'string' || item.id === 'esan' || item.id === 'other' || universities.has(item.id)) continue
+      const careers = Array.isArray(item.careers) ? [...new Set(item.careers.filter(name => typeof name === 'string' && name.trim().length >= 2))].sort((a, b) => a.localeCompare(b, 'es')) : []
+      universities.set(item.id, { name: item.name, careers })
+    }
+    select.replaceChildren(new Option('Universidad ESAN', 'esan'))
+    for (const [id, university] of [...universities].sort((a, b) => a[1].name.localeCompare(b[1].name, 'es'))) select.add(new Option(university.name, id))
+    select.add(new Option('Otro', 'other'))
+    select.value = selected
+    catalogLoaded = true
+    $('universityLookup').hidden = true
+  } catch {
+    $('universityLookup').textContent = 'No pudimos cargar el catálogo. Puedes elegir ESAN u Otro, o reintentar.'
+    $('retryUniversities').hidden = false
+  } finally { catalogLoading = false; scheduleFit() }
+}
+function updateUniversityFields() {
+  const selection = $('registerUniversityType').value
+  const esan = selection === 'esan', manual = selection === 'other'
+  $('otherUniversityFields').hidden = !manual
+  $('registerUniversity').required = manual
+  $('knownCareerField').hidden = esan || manual
+  $('registerKnownCareer').required = !esan && !manual
+  $('externalRegistrationHint').hidden = esan
+  for (const id of ['registerCode', 'registerCareer']) {
+    $(id).closest('.field').hidden = !esan
+    $(id).required = esan
+  }
+  const select = $('registerKnownCareer')
+  select.replaceChildren(new Option('Elige tu carrera', ''))
+  for (const name of universities.get(selection)?.careers || []) select.add(new Option(name, name))
+  select.add(new Option('Otra carrera', 'other'))
+  if (!esan && !manual && !universities.get(selection)?.careers.length) select.value = 'other'
+  updateExternalCareerField()
+  feedback('')
+  scheduleFit()
+}
+function updateExternalCareerField() {
+  const selection = $('registerUniversityType').value
+  const manual = selection === 'other' || (selection !== 'esan' && $('registerKnownCareer').value === 'other')
+  $('externalCareerField').hidden = !manual
+  $('registerExternalCareer').required = manual
+  $('externalCareerField').querySelector('label').textContent = selection === 'other' ? 'Carrera' : 'Nombre de tu carrera'
+  scheduleFit()
+}
+$('registerUniversityType').addEventListener('change', updateUniversityFields)
+$('registerKnownCareer').addEventListener('change', updateExternalCareerField)
+$('retryUniversities').addEventListener('click', () => { void loadUniversities() })
