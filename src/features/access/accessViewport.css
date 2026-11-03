@@ -251,3 +251,29 @@ body[data-state="registerScreen"] .register-group select { padding-right: 32px; 
   body[data-state="registerScreen"] .panel { width: min(880px, 84vw); }
   #registerForm { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 36px; }
 }
+
+/* Let the shell settle before revealing the next form. Real dimensions keep
+   text and controls crisp; native transitions can retarget on another action. */
+@media (prefers-reduced-motion: no-preference) {
+  body[data-state] .panel {
+    transition: width 640ms cubic-bezier(.22, .61, .36, 1),
+      padding 640ms cubic-bezier(.22, .61, .36, 1);
+  }
+  body[data-state] .brand {
+    transition: height 640ms cubic-bezier(.22, .61, .36, 1),
+      margin-bottom 640ms cubic-bezier(.22, .61, .36, 1);
+  }
+  .stage > .screen-exit { animation-duration: 180ms; }
+  .stage > .entrance { animation: access-form-arrive 440ms cubic-bezier(.22, .61, .36, 1) 200ms both; }
+}
+@media (min-width: 861px) and (prefers-reduced-motion: no-preference) {
+  body[data-state] .panel {
+    transition: width 640ms cubic-bezier(.22, .61, .36, 1),
+      height 640ms cubic-bezier(.22, .61, .36, 1),
+      padding 640ms cubic-bezier(.22, .61, .36, 1);
+  }
+}
+@keyframes access-form-arrive {
+  from { opacity: 0; transform: translateY(6px); filter: blur(2px); }
+  to { opacity: 1; transform: none; filter: blur(0); }
+}

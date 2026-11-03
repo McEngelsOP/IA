@@ -75,7 +75,7 @@ async function show(id, animate = true) {
   const next = $(id), old = screens.find(el => !el.hidden)
   if (next === old || transitioning) return
   transitioning = true
-  if (old && animate && !reduce.matches) { old.classList.add('screen-exit'); await delay(320) }
+  if (old && animate && !reduce.matches) { old.classList.add('screen-exit'); await delay(180) }
   screens.forEach(el => { el.hidden = el !== next; el.classList.remove('entrance', 'screen-exit') })
   const shouldAnimate = animate && !reduce.matches
   document.body.dataset.state = id; foot(); panel.classList.remove('has-message')
