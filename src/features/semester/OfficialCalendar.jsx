@@ -26,11 +26,31 @@ function TimedDay({ events, firstHour, busy, onEdit, span }) {
   </div>)
 }
 function OfficialCalendar({ client, user, courses, onBusy }) {
+  const [now, setNow] = useState(() => new Date())
   const [day, setDay] = useState(todayLima), [view, setView] = useState(() => window.matchMedia('(max-width:860px)').matches ? 'agenda' : 'week')
   const [events, setEvents] = useState([]), [tasks, setTasks] = useState([]), [state, setState] = useState('loading')
   const [hidden, setHidden] = useState(new Set()), [draft, setDraft] = useState(null), [taskDraft, setTaskDraft] = useState(null)
   const [busy, setBusy] = useState(false), [error, setError] = useState(''), [message, setMessage] = useState(''), [deleting, setDeleting] = useState(false)
   const lock = useRef(false), alive = useRef(true), generation = useRef(0), editor = useRef(null), createButton = useRef(null), previousFocus = useRef(null)
+  const today = todayLima(now), previousToday = useRef(today)
+  useEffect(() => {
+    let timer
+    function refresh() {
+      clearTimeout(timer)
+      if (document.hidden) return
+      setNow(new Date())
+      timer = setTimeout(refresh, 60000 - Date.now() % 60000)
+    }
+    refresh()
+    document.addEventListener('visibilitychange', refresh)
+    window.addEventListener('focus', refresh)
+    return () => { clearTimeout(timer); document.removeEventListener('visibilitychange', refresh); window.removeEventListener('focus', refresh) }
+  }, [])
+  useEffect(() => {
+    const previous = previousToday.current
+    previousToday.current = today
+    setDay(selected => selected === previous ? today : selected)
+  }, [today])
   useEffect(() => { alive.current = true; load(); return () => { alive.current = false; generation.current++ } }, [])
   useEffect(() => { if(state==='ready')window.dispatchEvent(new CustomEvent('lyra-calendar-updated',{detail:{userId:user.id,events,tasks}})) },[events,tasks,state])
   useEffect(() => { if (draft || taskDraft) { editor.current?.scrollIntoView({ block: 'start', behavior: 'instant' }); editor.current?.querySelector('input')?.focus({ preventScroll: true }) } }, [draft?.id, !!draft, taskDraft?.id, !!taskDraft])
@@ -100,11 +120,11 @@ function OfficialCalendar({ client, user, courses, onBusy }) {
     if (view === 'month') { const date = civil(day.slice(0, 8) + '01'); date.setUTCMonth(date.getUTCMonth() + direction); setDay(date.toISOString().slice(0, 10)) }
     else setDay(addDays(day, direction * (view === 'week' ? 7 : 1)))
   }
-  const today = todayLima(), week = monday(day), days = ['day', 'agenda'].includes(view) ? [day] : Array.from({ length: 7 }, (_, i) => addDays(week, i))
+  const week = monday(day), days = ['day', 'agenda'].includes(view) ? [day] : Array.from({ length: 7 }, (_, i) => addDays(week, i))
   const visible = days.flatMap(d => eventsOn(events, d, hidden)), timed = visible.filter(e => e.start_time && e.end_time)
   const firstHour = Math.min(7, ...timed.map(e => Math.floor(minutes(e.start_time) / 60))), lastHour = Math.max(20, ...timed.map(e => Math.ceil(minutes(e.end_time) / 60)))
   const selected = eventsOn(events, day, hidden), dailyTasks = tasks.filter(t => t.due_date === day)
-  const clock = new Intl.DateTimeFormat('en-GB', { timeZone: 'America/Lima', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date())
+  const clock = new Intl.DateTimeFormat('en-GB', { timeZone: 'America/Lima', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(now)
   const nextCandidates = events.filter(e => e.event_type === 'clase' && e.start_time).map(e => {
     let start = e.date || e.start_date
     if (!civil(start)) return null
