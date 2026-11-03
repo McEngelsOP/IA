@@ -204,10 +204,9 @@
 
 /* Mobile navigation keeps the section accent used by the sidebar. */
 #mobile-tabs button[data-mobile-page="Inicio"]{--mobile-accent:var(--c-in)}
-#mobile-tabs button[data-mobile-page="Malla Curricular"]{--mobile-accent:var(--c-ma)}
-#mobile-tabs button[data-mobile-page="Calendario/Horarios"]{--mobile-accent:var(--c-ca)}
-#mobile-tabs button{color:var(--mobile-accent,var(--ic))}
-#mobile-tabs button[aria-current="page"]{color:var(--mobile-accent,var(--ic))}
+#mobile-tabs button[data-mobile-page="Mi carrera"]{--mobile-accent:var(--c-ma)}
+#mobile-tabs button[data-mobile-page="Mi semestre"]{--mobile-accent:var(--c-ca)}
+#app #mobile-tabs button{color:var(--mobile-accent,var(--ic))}
 @media(pointer:coarse){.hw>.w-grip{top:-18px;width:52px;height:44px;opacity:.82}}
 
 /* Interior móvil: controles táctiles y composición independiente del login. */
@@ -217,9 +216,9 @@
  #app .top .title{margin-right:0}
  #app .top .cmdk-btn{display:grid;place-items:center;width:44px;height:44px;padding:0}
  #app .top .cmdk-btn span,#app .top .cmdk-btn kbd{display:none}
- #app .page{padding-left:max(14px,env(safe-area-inset-left,0px))!important;padding-right:max(14px,env(safe-area-inset-right,0px))!important;-webkit-overflow-scrolling:touch;scroll-padding-top:88px}
+ #app .page{padding-left:max(14px,env(safe-area-inset-left,0px))!important;padding-right:max(14px,env(safe-area-inset-right,0px))!important;-webkit-overflow-scrolling:touch;scroll-padding-top:12px}
  #app .h-home,#app .h-home .hw,#app .h-home .blk{min-width:0;max-width:100%;box-sizing:border-box}
- #app .h-home .hw{padding-top:48px;margin-bottom:18px;scroll-margin-top:88px}
+ #app .h-home .hw{padding-top:48px;margin-bottom:18px;scroll-margin-top:12px}
  #app .h-home .hw::before{content:attr(data-n);position:absolute;left:2px;top:14px;max-width:calc(100% - 150px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:600;color:var(--txt)}
  #app .h-home .hw>.w-grip,#app .h-home .hw>.w-step{position:absolute;top:0;width:44px;height:44px;min-height:44px;display:grid;place-items:center;box-sizing:border-box;padding:0;opacity:.85;border-radius:12px;border:1px solid var(--bar-b);background:var(--panel);color:var(--ic);box-shadow:none;transform:none;transition:background-color 150ms ease}
  #app .h-home .hw>.w-grip{left:auto;right:96px;translate:none;touch-action:none}

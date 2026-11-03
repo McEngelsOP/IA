@@ -873,14 +873,14 @@ function setMenu(o,restoreFocus){
   $('act').setAttribute('aria-label',o?'Cerrar perfil':'Abrir perfil');
   if(o){
     menu.hidden=false;app.classList.add('open');renderMobileDock();
-    if(menu.animate)menu.animate(navReduced()?[{opacity:.75},{opacity:1}]:[
+    if(!mqM.matches&&menu.animate)menu.animate(navReduced()?[{opacity:.75},{opacity:1}]:[
       {opacity:0,transform:'translateY(-6px) scale(.96)'},
       {opacity:1,transform:'none'}
     ],{duration:navReduced()?140:480,easing:'cubic-bezier(.22,.7,.25,1)'});
     setTimeout(()=>{if(app.classList.contains('open'))menu.querySelector('.tgb[aria-checked="true"],.it')?.focus({preventScroll:true})},60);
   }else{
     app.classList.remove('open');renderMobileDock();
-    profileCloseTimer=setTimeout(()=>{if(!app.classList.contains('open'))menu.hidden=true},navReduced()?0:240);
+    if(!mqM.matches)profileCloseTimer=setTimeout(()=>{if(!app.classList.contains('open'))menu.hidden=true},navReduced()?0:240);
     if(restoreFocus)$('act').focus({preventScroll:true});
   }
 }
@@ -1247,8 +1247,12 @@ const webSession=homeClient?createWebSessionGuard(homeClient,{authKey:webAuthSto
 /* La plataforma es informativa; el diseño responde al espacio y al tipo de entrada. */
 function renderMobileDock(){
  const dock=$('mobile-dock'),tabs=$('mobile-tabs');if(!dock||!tabs)return;
- const profile=$('act').closest('.pf'),host=mqM.matches?dock:$('top');if(profile.parentElement!==host)host.append(profile);
- $('act').innerHTML=svg(mqM.matches?'plus':'user',mqM.matches?26:23);
+ const act=$('act'),profile=act.closest('.pf'),host=mqM.matches?dock:$('top');
+ if(profile.parentElement!==host){
+  host.append(profile);
+  $('menu').hidden=!mqM.matches&&!app.classList.contains('open');
+  act.innerHTML=svg(mqM.matches?'plus':'user',mqM.matches?26:23);
+ }
  const names=TABS.map(t=>t[2]);
  if(!tabs.children.length)tabs.innerHTML=TABS.map(([label,icon,name])=>`<button type="button" data-mobile-page="${name}" aria-label="${name}" title="${name}">${svg(icon,24)}</button>`).join('');
  [...tabs.children].forEach(b=>{if(b.dataset.mobilePage===cur)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')});

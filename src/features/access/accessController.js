@@ -30,21 +30,42 @@ const webSession = client ? createWebSessionGuard(client, {
   onExpired: reason => location.replace(new URL('./login.html?reason=' + reason, location.href).href),
 }) : null
 
-let fitFrame = 0
+const mobileAccess = matchMedia('(max-width: 860px)')
+const stage = document.querySelector('.stage')
+let fitFrame = 0, layoutHeight = window.innerHeight, layoutWidth = window.innerWidth
+let keyboardOpen = false
 function scheduleFit() {
   if (!fitFrame) fitFrame = requestAnimationFrame(() => { fitFrame = 0; fitViewport() })
 }
 function fitViewport() {
   const viewport = window.visualViewport
   const height = Math.min(window.innerHeight, viewport?.height || window.innerHeight)
-  document.documentElement.style.setProperty('--access-height', `${height}px`)
-  document.documentElement.style.setProperty('--access-top', `${viewport?.offsetTop || 0}px`)
-  const extreme = height < 520 || height < window.innerHeight - 100
-  document.body.dataset.extreme = String(extreme)
-  // CSS determines the panel and controls before the first paint. Only the
-  // visual viewport (virtual keyboard / zoom) needs runtime geometry.
+  const focused = document.activeElement
+  const editing = focused?.matches('input:not([readonly]), textarea:not([readonly])')
+  const viewportReduced = (viewport?.scale ?? 1) === 1 && height < window.innerHeight - 100
+  if (layoutWidth !== window.innerWidth || (!editing && !keyboardOpen && !viewportReduced)) {
+    layoutWidth = window.innerWidth
+    layoutHeight = window.innerHeight
+  } else {
+    layoutHeight = Math.max(layoutHeight, window.innerHeight)
+  }
+  keyboardOpen = mobileAccess.matches && (viewportReduced || ((editing || keyboardOpen) && height < layoutHeight - 100))
+  const rootStyle = document.documentElement.style
+  rootStyle.setProperty('--access-height', `${height}px`)
+  rootStyle.setProperty('--access-layout-height', `${layoutHeight}px`)
+  rootStyle.setProperty('--access-top', `${viewport?.offsetTop || 0}px`)
+  document.body.dataset.extreme = String(height < 520 || viewportReduced)
+  document.body.dataset.accessDensity = layoutHeight <= 520 ? 'short' : layoutHeight <= 700 ? 'compact' : 'regular'
+  document.body.dataset.accessKeyboard = String(keyboardOpen)
+
+  if (keyboardOpen && editing && stage.contains(focused)) {
+    const field = focused.getBoundingClientRect(), area = stage.getBoundingClientRect()
+    if (field.bottom > area.bottom - 12) stage.scrollTop += field.bottom - area.bottom + 12
+    else if (field.top < area.top + 12) stage.scrollTop += field.top - area.top - 12
+  }
 }
 window.addEventListener('resize', scheduleFit)
+document.addEventListener('focusin', scheduleFit)
 window.visualViewport?.addEventListener('resize', scheduleFit)
 window.visualViewport?.addEventListener('scroll', scheduleFit)
 fitViewport()
@@ -81,7 +102,7 @@ async function show(id, animate = true) {
   document.body.dataset.state = id; foot(); panel.classList.remove('has-message')
   if (id === 'registerScreen') void loadUniversities()
   feedback('', 'info', false)
-  document.querySelector('.stage').scrollTop = 0
+  stage.scrollTop = 0
   fitViewport()
   if (shouldAnimate) {
     next.classList.add('entrance')

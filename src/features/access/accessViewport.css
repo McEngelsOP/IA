@@ -107,7 +107,7 @@ body {
   --brand-gap: 20px; --form-gap: 16px; --field-gap: 10px; --label-gap: 5px;
   --button-gap: 16px; --back-gap: 8px; --foot-gap: 12px;
 }
-@media (max-height: 800px) {
+@media (min-width: 861px) and (max-height: 800px) {
   body {
   --frame-gap: 16px;
   --panel-top: 16px; --panel-bottom: 14px;
@@ -119,7 +119,7 @@ body {
   --button-gap: 10px; --back-gap: 4px; --foot-gap: 8px; --foot-line: 1.4;
 }
 }
-@media (max-height: 700px) {
+@media (min-width: 861px) and (max-height: 700px) {
   body {
   --frame-gap: 16px;
   --panel-top: 10px; --panel-bottom: 10px;
@@ -132,7 +132,7 @@ body {
   --error-pad: 6px; --error-gap: 6px;
 }
 }
-@media (max-height: 600px) {
+@media (min-width: 861px) and (max-height: 600px) {
   body {
   --frame-gap: 16px;
   --panel-top: 8px; --panel-bottom: 8px;
@@ -145,7 +145,7 @@ body {
   --error-pad: 4px; --error-gap: 4px; --error-line: 1.3;
 }
 }
-@media (max-height: 520px) {
+@media (min-width: 861px) and (max-height: 520px) {
   body {
   --frame-gap: 8px;
   --panel-top: 6px; --panel-bottom: 6px;
@@ -169,7 +169,14 @@ body[data-extreme="true"][data-state] .panel { height: calc(var(--access-height)
 /* Móvil: una única imagen estable, página inmóvil y formulario dentro del panel. */
 .mobile-landscape{display:none}
 @media(max-width:860px){
- :root{--accent:#d8e7ba;--soft:#e1e1d5}
+ :root{
+  --accent:#d8e7ba;
+  --soft:#e1e1d5;
+  --access-layout-height:var(--access-height);
+  --access-frame-top:max(16px,env(safe-area-inset-top),calc((var(--access-layout-height) - 700px) / 2));
+  --access-frame-bottom:max(16px,env(safe-area-inset-bottom));
+  --access-panel-height:min(700px,calc(var(--access-layout-height) - var(--access-frame-top) - var(--access-frame-bottom)));
+ }
  html,body{height:100%;min-height:0;overflow:hidden;overscroll-behavior:none}
  html,.environment{background:#394743}
  body{position:fixed;inset:0;--frame-gap:16px;--panel-top:24px;--panel-bottom:20px;--panel-side:24px;--brand-gap:16px;--logo-height:44px;--logo-size:44px;--brand-size:27px;--heading-size:28px;--subtitle-size:16px;--subtitle-line:1.5;--subtitle-gap:8px;--form-gap:18px;--field-gap:12px;--label-size:14px;--label-line:1.4;--label-gap:6px;--input-height:48px;--button-height:50px;--button-gap:18px;--back-gap:6px;--foot-gap:14px}
@@ -178,9 +185,13 @@ body[data-extreme="true"][data-state] .panel { height: calc(var(--access-height)
  @supports(height:100lvh){.mobile-landscape{height:100lvh}}
  .mobile-landscape img{display:block;width:100%;height:100%;object-fit:cover;object-position:center;transform:none;transition:none;animation:none}
  .landscape{display:none}
- body[data-state] .entry{position:fixed;left:0;right:0;top:var(--access-top,0px);bottom:auto;height:var(--access-height);min-height:0;padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));align-items:center;justify-content:center;overflow:hidden;pointer-events:none}
- body[data-state] .panel,body[data-state="registerScreen"] .panel,body[data-extreme="true"][data-state] .panel{width:100%;max-width:440px;min-width:0;min-height:0;height:min(700px,calc(var(--access-height) - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom)));max-height:calc(var(--access-height) - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom));padding:var(--panel-top) var(--panel-side) var(--panel-bottom);background:rgba(18,29,23,.72);border:1px solid rgba(245,238,211,.48);border-radius:22px;backdrop-filter:blur(1px);-webkit-backdrop-filter:blur(1px);box-shadow:none;overflow:hidden;pointer-events:auto}
+ body[data-state] .entry{position:fixed;left:0;right:0;top:var(--access-top,0px);bottom:auto;height:var(--access-height);min-height:0;padding:var(--access-frame-top) max(16px,env(safe-area-inset-right)) 0 max(16px,env(safe-area-inset-left));align-items:flex-start;justify-content:center;overflow:hidden;pointer-events:none}
+ body[data-state] .panel,body[data-state="registerScreen"] .panel,body[data-extreme="true"][data-state] .panel{width:100%;max-width:440px;min-width:0;min-height:0;height:var(--access-panel-height);max-height:var(--access-panel-height);padding:var(--panel-top) var(--panel-side) var(--panel-bottom);background:rgba(18,29,23,.72);border:1px solid rgba(245,238,211,.48);border-radius:22px;backdrop-filter:blur(1px);-webkit-backdrop-filter:blur(1px);box-shadow:none;overflow:hidden;pointer-events:auto}
  body[data-state] .stage{flex:1 1 auto;min-height:0;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:auto;scroll-padding:12px;touch-action:pan-y}
+ body[data-access-keyboard="true"] .stage{
+  margin-bottom:calc(-8px + max(0px,var(--access-frame-top) + var(--access-panel-height) - var(--access-height)));
+ }
+ body[data-state] :is(.primary,.icon-button):active{transform:none}
  body[data-state] .brand{gap:14px;min-height:0;margin-bottom:var(--brand-gap)}
  body[data-state] .brand span{display:block;letter-spacing:.22em}
  body[data-state] h1,body[data-state] h2{line-height:1.2;max-width:none;letter-spacing:-.025em}
@@ -200,8 +211,8 @@ body[data-extreme="true"][data-state] .panel { height: calc(var(--access-height)
  body[data-state] .scene-caption{display:none}
  body[data-state] button:focus-visible,body[data-state] a:focus-visible,body[data-state] input:focus-visible,body[data-state] select:focus-visible{outline-color:#d8e9b9;outline-offset:3px}
 }
-@media(max-width:860px) and (max-height:700px){body{--panel-top:18px;--panel-bottom:16px;--panel-side:20px;--brand-gap:12px;--logo-height:38px;--logo-size:38px;--brand-size:25px;--heading-size:26px;--form-gap:12px;--field-gap:10px;--button-gap:12px;--foot-gap:10px}}
-@media(max-width:860px) and (max-height:520px){body{--panel-top:12px;--panel-bottom:12px;--brand-gap:8px;--logo-height:30px;--logo-size:30px;--brand-size:23px;--heading-size:24px;--form-gap:10px;--field-gap:8px;--button-gap:10px;--foot-gap:8px}body[data-extreme="true"][data-state] .brand span{display:block}body[data-state] .panel-foot{display:none}}
+@media(max-width:860px){body:is([data-access-density="compact"],[data-access-density="short"]){--panel-top:18px;--panel-bottom:16px;--panel-side:20px;--brand-gap:12px;--logo-height:38px;--logo-size:38px;--brand-size:25px;--heading-size:26px;--form-gap:12px;--field-gap:10px;--button-gap:12px;--foot-gap:10px}}
+@media(max-width:860px){body[data-access-density="short"]{--panel-top:12px;--panel-bottom:12px;--brand-gap:8px;--logo-height:30px;--logo-size:30px;--brand-size:23px;--heading-size:24px;--form-gap:10px;--field-gap:8px;--button-gap:10px;--foot-gap:8px}body[data-access-density="short"][data-state] .panel-foot{display:none}}
 @media(max-width:360px){body{--panel-side:18px;--heading-size:25px}}
 @media(prefers-reduced-transparency:reduce) and (max-width:860px){body[data-state] .panel{background:#17251e;backdrop-filter:none;-webkit-backdrop-filter:none}}
 
