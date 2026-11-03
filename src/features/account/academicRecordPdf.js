@@ -69,16 +69,18 @@ export function createAcademicRecordPdf(record, catalog = null) {
   heading('Datos del estudiante')
   fields([
     ['Nombre', profile.full_name || profile.alias], ['Código de estudiante', profile.student_code],
-    ['Carrera', model.catalog?.nombre || profile.carrera],
-    ['Universidad', model.catalog?.uni || (profile.institution_id === 'esan' ? 'Universidad ESAN' : null)],
+    ['Carrera', model.catalog?.nombre || profile.external_career || profile.carrera],
+    ['Universidad', model.catalog?.uni || profile.university_name || (profile.institution_id === 'esan' ? 'Universidad ESAN' : null)],
     ['Correo', profile.email], ['Ciclo actual', preferences.semester ? `Ciclo ${preferences.semester}` : null]
   ])
   heading('Resumen académico')
-  table(null, ['Cursos llevados', 'Créditos completados', 'Cursos matriculados', 'Ponderado general'], [[
+  table(null, ['Cursos llevados', 'Créditos completados', 'Cursos matriculados', model.scale.weighting === 'equal' ? 'Promedio general' : 'Ponderado general'], [[
     String(model.completedCount), number(model.completedCredits, Number.isInteger(model.completedCredits) ? 0 : 1),
     String(model.enrolledCount), number(model.weighted, 2)
   ]], [44.5, 44.5, 44.5, 44.5])
-  paragraph('Los cursos llevados y sus créditos se toman de tu avance guardado. El ponderado usa las notas de cursos llevados o desaprobados, según sus créditos. Excluye cursos sin nota o sin créditos. Un guion indica que no hay datos suficientes para calcular el valor.', 8)
+  paragraph('Los cursos llevados y sus créditos se toman de tu avance guardado. ' + (model.scale.weighting === 'equal'
+    ? 'El promedio asigna el mismo peso a cada curso llevado o desaprobado con nota, según la configuración institucional.'
+    : 'El ponderado usa las notas de cursos llevados o desaprobados, según sus créditos. Excluye cursos sin nota o sin créditos.') + ' Un guion indica que no hay datos suficientes para calcular el valor.', 8)
   heading('Cursos y calificaciones')
   paragraph(model.catalog
     ? `Malla: ${model.catalog.nombre}. Versión: ${model.catalog.version}. El ciclo corresponde a la ubicación del curso en la malla.`

@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { academicRecordModel } from '../src/features/account/academicRecordReport.js'
 import { createAcademicRecordPdf } from '../src/features/account/academicRecordPdf.js'
+import { GRADE_SCALES } from '../src/core/academic/grading.js'
 
 const catalog = { key: 'ia', version: 'v1', nombre: 'Ingeniería en Inteligencia Artificial', uni: 'Universidad ESAN', cursos: [
   { id: 'intro', n: 'Introducción', cr: 0, c: 0 }, { id: 'a', n: 'Álgebra', cr: 4, c: 1 },
@@ -40,6 +41,15 @@ test('legacy and missing-version records retain ids without using an unrelated c
   }
   const record = fixture(); record.progress[0].done.push('orphan')
   assert.equal(academicRecordModel(record, catalog).completedCredits, null)
+})
+
+test('equal course weighting works without catalog credits and includes zero-credit courses', () => {
+  const record = fixture()
+  record.gradingRules = { ...GRADE_SCALES.twenty, weighting: 'equal' }
+  assert.equal(academicRecordModel(record, catalog).weighted, 12)
+  assert.equal(academicRecordModel(record, null).weighted, 12)
+  record.grades = []
+  assert.equal(academicRecordModel(record, catalog).weighted, null)
 })
 
 test('download is a real PDF and contains no executable HTML or PDF scripts', () => {

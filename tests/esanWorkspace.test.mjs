@@ -64,4 +64,6 @@ test('academic export paginates only the signed-in user and rejects partial expo
   await assert.rejects(()=>readAcademicRecord(client,'other'),/SESSION_CHANGED/)
   const broken={...client,from(){const q={select(){return q},eq(){return q},order(){return q},range:async()=>({error:new Error('offline')})};return q}}
   await assert.rejects(()=>readAcademicRecord(broken,'owner'),issue=>issue.message==='EXPORT_READ_FAILED'&&issue.cause.message==='offline'&&!!issue.section)
+  const incomplete={...client,from(){const q={select(){return q},eq(){return q},order(){return q},range:async()=>({data:null})};return q}}
+  await assert.rejects(()=>readAcademicRecord(incomplete,'owner'),issue=>issue.message==='EXPORT_READ_FAILED'&&!!issue.section)
 })

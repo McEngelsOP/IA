@@ -19,9 +19,9 @@ export async function readAcademicRecord(client, userId, signal) {
       let query = client.from(table).select(fields).eq(owner, userId).order(table === 'grades' || table === 'course_status' ? 'course_id' : table === 'profiles' || table.startsWith('calendar_') ? 'id' : 'student_id').range(offset, offset + 499)
       if (signal) query = query.abortSignal(signal)
       const result = await query
-      if (result.error) throw Object.assign(new Error('EXPORT_READ_FAILED', { cause: result.error }), { section })
-      rows.push(...(result.data || []))
-      if (!result.data || result.data.length < 500) break
+      if (result.error || !Array.isArray(result.data)) throw Object.assign(new Error('EXPORT_READ_FAILED', { cause: result.error }), { section })
+      rows.push(...result.data)
+      if (result.data.length < 500) break
     }
     return [table, rows]
   }))

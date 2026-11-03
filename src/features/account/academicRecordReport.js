@@ -31,12 +31,11 @@ export function academicRecordModel(record, catalog) {
   }).sort((a, b) => (a.cycle ?? Infinity) - (b.cycle ?? Infinity) || a.name.localeCompare(b.name, 'es') || a.id.localeCompare(b.id, 'es'))
   const completed = rows.filter(row => row.completed)
   const graded = rows.filter(row => row.grade !== null && (row.completed || row.status === 'desaprobado'))
-  const weighted = graded.filter(row => row.credits > 0)
-  const gradedCredits = weighted.reduce((sum, row) => sum + row.credits, 0)
   const knownCredits = completed.every(row => Number.isFinite(row.credits))
+  const canAverage = scale.weighting === 'equal' || graded.every(row => Number.isFinite(row.credits))
   return { profile, scale, catalog: matched, courses, rows,
     completedCount: completed.length,
     completedCredits: knownCredits ? completed.reduce((sum, row) => sum + row.credits, 0) : null,
     enrolledCount: rows.filter(row => row.status === 'matriculado' && !row.completed).length,
-    weighted: gradedCredits && graded.every(row => Number.isFinite(row.credits)) ? weightedGrade(graded.map(row=>({grade:row.grade,credits:row.credits})),scale) : null }
+    weighted: canAverage ? weightedGrade(graded, scale) : null }
 }
