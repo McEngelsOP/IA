@@ -12,7 +12,7 @@ Se revisaron los commits de comunicaciones individuales, temas/PDF/estado de IA,
 - **Grupos:** se corrigió una variable inexistente al paginar mensajes anteriores y se verificó que la moderación siga actualizando el historial cargado.
 - **Comunicaciones:** diagnóstico de configuración y errores de Brevo más preciso; las acciones administrativas se coordinan durante un envío. Las pruebas usan un proveedor simulado.
 - **Importación:** lector PDF actualizado y etiquetas del prompt/tabla separadas del contenido para evitar nombres accesibles ambiguos.
-- **Mantenimiento:** dependencias actualizadas, CI con Node 22, una sola versión directa de esbuild y retirada de código sin uso. Node admitido: 22.13+ de la serie 22, o 24+.
+- **Mantenimiento:** dependencias actualizadas, CI con Node 22, una sola versión directa de esbuild y retirada de código sin uso. Node admitido: 22.13+ de la serie 22, o 24+. GitHub Pages queda como publicación manual opcional; Vercel mantiene la publicación automática de `main`.
 
 ## Por qué una cuenta ESAN puede pedir una API key
 
@@ -52,3 +52,5 @@ Referencia: [despliegue de Edge Functions](https://supabase.com/docs/guides/func
 La revisión usa pruebas Node/PostgreSQL local, partidas reales del Worker dentro del simulador, archivos PDF de prueba y recorridos de navegador con servicios simulados. Incluye tamaños de 1440, 390 y 320 px, temas, lectura/guardado fallidos, sesión, cuotas y aislamiento por cuenta. Los ensayos no envían correos ni consumen proveedores de IA reales. La comprobación de Vercel previa a los cambios no encontró errores de ejecución registrados en la ventana de 24 horas; eso no acredita el acceso individual a IA.
 
 Resultado: `npm run check` completado (165 pruebas de aplicación/SQL y 4 de Worker, catálogo reproducible y build), 13 recorridos de `npm run test:browser` y auditoría de dependencias con cero alertas. La cuadrícula de los resúmenes personalizados se comprobó además en escritorio y móvil después del ajuste visual final.
+
+La validación de GitHub pasó con Node 22 y Vercel publicó la revisión. El flujo antiguo de GitHub Pages también compiló correctamente, pero falló al configurar Pages con `Not Found`: el repositorio no tiene ese destino habilitado. Se retiró su ejecución automática en cada push; puede ejecutarse manualmente si en el futuro se habilita Pages.

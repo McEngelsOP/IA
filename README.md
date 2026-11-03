@@ -67,7 +67,7 @@ El backend de Lyra quedó activado el 20 de octubre de 2026: catálogo de 18 car
 
 Para otro entorno con el esquema previo, ejecutar **`supabase/careers_catalog.sql`** y desplegar **`study-advisor`** de la misma revisión. No ejecutar todos los SQL históricos. Cambiar de rama no despliega automáticamente SQL o Edge Functions; un preview que comparte variables de producción utiliza los mismos servicios remotos.
 
-Vite genera `dist/`. Las entradas y rutas de publicación permanecen en `vite.config.js` y `vercel.json`. La validación automática incluye `aea`; GitHub Pages conserva su despliegue de `main`.
+Vite genera `dist/`. Las entradas y rutas de publicación permanecen en `vite.config.js` y `vercel.json`. La validación automática incluye `aea`. Vercel publica `main`; el flujo opcional de GitHub Pages es manual y requiere que Pages esté habilitado antes de ejecutarlo.
 
 ## Documentación
 
