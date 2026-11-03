@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useId, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { extractCurriculum, validateRows, curriculumMarkdown, MAX_SOURCE } from './curriculumMarkdown.js'
 import { readCurriculum } from './readCurriculum.js'
@@ -10,6 +10,7 @@ export function CurriculumImport({ client, profile, onSaved, onBusy = () => {}, 
   const [source,setSource]=useState(initialRecord?.source_text||''), [rows,setRows]=useState(initialRecord?.rows||[]), [issues,setIssues]=useState([]), [filename,setFilename]=useState(initialRecord?.source_name||'Texto pegado'),[sourceUrl,setSourceUrl]=useState(initialRecord?.source_url||'')
   const [career,setCareer]=useState(initialRecord?.career_name||profile.external_career || ''), [busy,setBusy]=useState(false), [error,setError]=useState(''), [confirmed,setConfirmed]=useState(false)
   const lock=useRef(false), requestId=useRef(crypto.randomUUID())
+  const sourceId=useId()
   const markdown=curriculumMarkdown({university:profile.university_name || 'Mi universidad',career,rows,source:filename})
   function change(next){setRows(next);setConfirmed(false);setError('')}
   async function file(e){const f=e.target.files?.[0];if(!f||lock.current)return;lock.current=true;setBusy(true);onBusy(true);setError('');try{setSource(await readCurriculum(f));setFilename(f.name);setRows([]);setConfirmed(false)}catch(e){setError(e.message)}finally{lock.current=false;setBusy(false);onBusy(false)}}
@@ -20,7 +21,7 @@ export function CurriculumImport({ client, profile, onSaved, onBusy = () => {}, 
     <label>Carrera<input value={career} maxLength={120} onChange={e=>{setCareer(e.target.value);setConfirmed(false)}} required/></label>
     <label>Archivo de la malla<input type="file" accept=".pdf,.xlsx,.md,.txt,.csv,.tsv" onChange={file}/></label><p className="h-muted">PDF con texto, Excel o texto · hasta 8 MB. El archivo se procesa en tu dispositivo. Los PDF escaneados necesitan OCR previo.</p>
     <CurriculumImportGuide/>
-    <label>Texto de la malla<textarea rows="7" maxLength={MAX_SOURCE} value={source} onChange={e=>{setSource(e.target.value);setConfirmed(false)}} placeholder={'Código;Curso;Créditos;Ciclo;Tipo;Requisitos\nMAT1;Matemáticas;4;1;curso;Por verificar'}/></label>
+    <label htmlFor={sourceId}>Texto de la malla</label><textarea id={sourceId} rows="7" maxLength={MAX_SOURCE} value={source} onChange={e=>{setSource(e.target.value);setConfirmed(false)}} placeholder={'Código;Curso;Créditos;Ciclo;Tipo;Requisitos\nMAT1;Matemáticas;4;1;curso;Por verificar'}/>
     <label>Enlace institucional de la malla · opcional<input type="url" maxLength={1000} placeholder="https://…" value={sourceUrl} onChange={e=>{setSourceUrl(e.target.value);setConfirmed(false)}}/></label>
     <button className="h-btn" type="button" disabled={!source.trim()} onClick={extract}>Convertir y extraer datos</button>
     {!!issues.length&&<details><summary>{issues.length} líneas no interpretadas · revisar fuente</summary><pre>{issues.slice(0,200).map(v=>`${v.line}: ${v.text}`).join('\n')}</pre></details>}

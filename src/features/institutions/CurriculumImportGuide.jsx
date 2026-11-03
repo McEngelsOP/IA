@@ -1,9 +1,10 @@
-import { useRef, useState } from 'react'
+import { useId, useRef, useState } from 'react'
 import { CURRICULUM_PROMPT } from './curriculumPrompt.js'
 
 export function CurriculumImportGuide() {
   const [message, setMessage] = useState('')
   const promptField = useRef(null)
+  const promptId = useId()
 
   async function copyPrompt() {
     try {
@@ -27,7 +28,7 @@ export function CurriculumImportGuide() {
       <li>Vuelve aquí, sube el archivo .md en <strong>Archivo de la malla</strong> o pega la tabla, y pulsa <strong>Convertir y extraer datos</strong>. Revisa las filas, añade el enlace institucional si lo tienes y confirma la revisión antes de guardar.</li>
     </ol>
     <p>Formatos admitidos: <strong>.md, .txt, .csv, .tsv, .xlsx y PDF con texto seleccionable</strong>. Hasta 8 MB, 400 cursos y 180 000 caracteres; los PDF admiten hasta 60 páginas. Los PDF escaneados necesitan reconocimiento de texto (OCR). Para este procedimiento, solicita .md en lugar de Word (.doc/.docx) o un nuevo PDF.</p>
-    <label>Prompt para copiar<textarea ref={promptField} className="ci-guide-prompt" readOnly rows={12} value={CURRICULUM_PROMPT} spellCheck={false}/></label>
+    <label htmlFor={promptId}>Prompt para copiar</label><textarea id={promptId} ref={promptField} className="ci-guide-prompt" readOnly rows={12} value={CURRICULUM_PROMPT} spellCheck={false}/>
     <button className="h-btn" type="button" onClick={copyPrompt}>Copiar prompt</button>
     <p role="status" aria-live="polite">{message}</p>
     <p>Preparar el archivo con otra IA ayuda a leerlo. El resultado seguirá pasando por la revisión de Lyra; no garantiza su aprobación.</p>
