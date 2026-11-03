@@ -347,7 +347,7 @@ export function createHomeBoard({ owner, registered, announce, navigate, closeMe
   document.addEventListener('click',event=>{if(event.target.closest('[data-home-restore]')){state=readLayout(owner());state.hidden=[];undo=null;writeLayout(owner(),state);onSave(state);syncRestore();closeMenu();if(root?.isConnected){arrange();toolbar.querySelector('[data-home-edit]').focus({preventScroll:true})}else navigate('Inicio');announce('Bloques de Inicio recuperados.')}})
   return {mount,detach,syncRestore,
     refresh:id=>{if(nodes.has(id))preview(nodes.get(id))},
-    reveal:id=>{if(!registered())return;state=readLayout(owner());state.hidden=state.hidden.filter(v=>v!==id);state.sizes[id]='wide';writeLayout(owner(),state);onSave(state);syncRestore();if(root?.isConnected){preview(nodes.get(id));arrange()}},
+    reveal:id=>{if(!registered())return;state=readLayout(owner());state.hidden=state.hidden.filter(v=>v!==id);state.sizes[id]='wide';delete state.frames[id];writeLayout(owner(),state);onSave(state);syncRestore();if(root?.isConnected){preview(nodes.get(id));arrange()}},
     reset:()=>{if(!registered())return false;state=readLayout(owner());state.order=[...HOME_BLOCKS];writeLayout(owner(),state);onSave(state);syncRestore();if(root?.isConnected)arrange();else navigate('Inicio');announce('Orden de Inicio restablecido.');return true}
   }
 }

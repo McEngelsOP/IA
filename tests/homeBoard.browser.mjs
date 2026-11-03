@@ -11,6 +11,7 @@ async function mount(page) {
     document.body.innerHTML = '<div id="app"><div id="menu"></div><main id="page"><div class="h-home" id="home"><section class="h-hero">La paloma permanece fija</section><p class="h-foot">Fin</p></div></main></div>'
     window.saves = []
     const board = createHomeBoard({ owner: () => 'resize-browser', registered: () => true, announce() {}, navigate() {}, onSave: value => window.saves.push(structuredClone(value)) })
+    window.homeBoardFixture = board
     const items = ['hoy','stats','notas','racha','semestre','panel'].map(id => {
       const node = document.createElement('section');node.className='blk sample';node.innerHTML='<h2>'+id+'</h2><p>Contenido completo del bloque</p>'
       return { id, name: id, elements: [node], summary: () => ({ value: '16', label: 'Resumen del bloque', detail: 'Los datos se adaptan al espacio disponible.' }) }
@@ -69,6 +70,15 @@ try {
     assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1))
     await mount(page)
     assert.equal(await page.locator('.hw[data-w=stats]').getAttribute('data-size'),'medium')
+    await page.getByRole('button',{name:'Personalizar Inicio',exact:true}).click()
+    await handle.focus();for(let step=0;step<4;step++)await handle.press('ArrowDown')
+    await page.evaluate(()=>window.homeBoardFixture.reveal('stats'))
+    assert.equal(await block.getAttribute('data-size'),'wide')
+    await page.waitForTimeout(300)
+    const fullHeight=await block.locator('.hw-content').evaluate(node=>node.getBoundingClientRect().height)
+    await handle.focus();await handle.press('ArrowDown')
+    const afterReveal=await page.evaluate(()=>JSON.parse(localStorage.getItem('lyra-home-layout-v1:resize-browser')).frames.stats.height)
+    assert.equal(afterReveal,Math.round(fullHeight)+24,'After expanding a block, resize must start from its visible size')
     assert.deepEqual(errors,[])
     await context.close()
   }
