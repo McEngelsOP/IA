@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { extractCurriculum, validateRows, curriculumMarkdown, MAX_SOURCE } from './curriculumMarkdown.js'
 import { readCurriculum } from './readCurriculum.js'
 import './CurriculumImport.css'
+import { CurriculumImportGuide } from './CurriculumImportGuide.jsx'
 import { analysisError,startAnalysis } from './curriculumAnalysisClient.js'
 const blank = () => ({code:'',name:'',credits:'',cycle:'',type:'curso',requirements:''})
 export function CurriculumImport({ client, profile, onSaved, onBusy = () => {}, initialRecord }) {
@@ -18,6 +19,7 @@ export function CurriculumImport({ client, profile, onSaved, onBusy = () => {}, 
   return <section className="ci blk" aria-label="Importar mi malla"><h2>{initialRecord?'Corrige tu malla':'Prepara tu malla'}</h2><p>La IA integrada revisará la coherencia de los cursos con tu documento. Si todo está claro, se compartirá automáticamente con tu universidad. Los casos inconclusos pasan a moderación.</p>{initialRecord&&<p>Si ya registraste avance, conserva los códigos, el orden y el número de cursos para mantener tus datos.</p>}<form onSubmit={save}><fieldset disabled={busy}>
     <label>Carrera<input value={career} maxLength={120} onChange={e=>{setCareer(e.target.value);setConfirmed(false)}} required/></label>
     <label>Archivo de la malla<input type="file" accept=".pdf,.xlsx,.md,.txt,.csv,.tsv" onChange={file}/></label><p className="h-muted">PDF con texto, Excel o texto · hasta 8 MB. El archivo se procesa en tu dispositivo. Los PDF escaneados necesitan OCR previo.</p>
+    <CurriculumImportGuide/>
     <label>Texto de la malla<textarea rows="7" maxLength={MAX_SOURCE} value={source} onChange={e=>{setSource(e.target.value);setConfirmed(false)}} placeholder={'Código;Curso;Créditos;Ciclo;Tipo;Requisitos\nMAT1;Matemáticas;4;1;curso;Por verificar'}/></label>
     <label>Enlace institucional de la malla · opcional<input type="url" maxLength={1000} placeholder="https://…" value={sourceUrl} onChange={e=>{setSourceUrl(e.target.value);setConfirmed(false)}}/></label>
     <button className="h-btn" type="button" disabled={!source.trim()} onClick={extract}>Convertir y extraer datos</button>
