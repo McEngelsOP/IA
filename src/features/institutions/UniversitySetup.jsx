@@ -1,0 +1,12 @@
+import { useEffect,useState,useRef } from 'react'
+import { createRoot } from 'react-dom/client'
+import { CurriculumImport } from './CurriculumImport.jsx'
+function UniversitySetup(props){
+ const {client,profile,onSaved,onBusy}=props
+ const [catalogs,setCatalogs]=useState([]),[state,setState]=useState('loading'),[selected,setSelected]=useState(''),[importing,setImporting]=useState(false),[error,setError]=useState(''),[busy,setBusy]=useState(false)
+ const lock=useRef(false)
+ useEffect(()=>{let alive=true;client.from('custom_curricula').select('id,career_name').eq('institution_id',profile.institution_id).eq('status','approved').order('career_name').limit(100).then(r=>{if(alive){setCatalogs(r.data||[]);setState(r.error?'error':'ready')}});return()=>{alive=false}},[profile.institution_id])
+ async function adopt(){if(lock.current||!selected)return;lock.current=true;setBusy(true);onBusy(true);setError('');try{const r=await client.rpc('adopt_curriculum',{p_curriculum:selected});if(r.error)throw r.error;onBusy(false);await onSaved()}catch{setError('No pudimos seleccionar la malla. Reintenta.')}finally{lock.current=false;setBusy(false);onBusy(false)}}
+ return <div><section className="blk ci"><h2>{profile.university_name}</h2><p>Configura la carrera y la malla de tu universidad para preparar tus siguientes ciclos.</p>{state==='loading'?<p role="status">Consultando las mallas disponibles…</p>:<>{state==='error'&&<p role="alert">No pudimos consultar las mallas compartidas. Puedes añadir tu documento.</p>}{!!catalogs.length&&!importing&&<><label>Malla revisada<select value={selected} onChange={e=>setSelected(e.target.value)}><option value="">Elige tu carrera y plan</option>{catalogs.map(c=><option value={c.id} key={c.id}>{c.career_name}</option>)}</select></label><button className="h-btn primary" disabled={busy||!selected} onClick={adopt}>Usar esta malla</button><button className="h-btn" disabled={busy} onClick={()=>setImporting(true)}>Mi plan no aparece · Añadir malla</button></>}{!catalogs.length&&<p>Todavía no hay mallas aprobadas para esta universidad. Añade la tuya: podrás usar tu borrador mientras la IA lo valida antes de compartirlo.</p>}</>}{error&&<p role="alert">{error}</p>}</section>{(importing||state!=='loading'&&!catalogs.length)&&<CurriculumImport {...props}/>}</div>
+}
+export function mountUniversitySetup(container,props){const root=createRoot(container);root.render(<UniversitySetup {...props}/>);return()=>root.unmount()}

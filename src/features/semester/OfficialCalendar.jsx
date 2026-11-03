@@ -1,3 +1,5 @@
+import { reportServiceFailure } from '../../shared/lib/serviceTelemetry.js'
+import CalendarPrevention from './CalendarPrevention.jsx'
 import { useEffect, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { EVENT_TYPES, DAYS, civil, addDays, monday, monthDays, labelDate, todayLima, minutes, timeLabel, eventsOn, timedEventGroups, validateEvent, eventPayload, eventGeometry, CALENDAR_PIXELS_PER_MINUTE } from '../../core/calendar/calendarModel.js'
@@ -30,6 +32,7 @@ function OfficialCalendar({ client, user, courses, onBusy }) {
   const [busy, setBusy] = useState(false), [error, setError] = useState(''), [message, setMessage] = useState(''), [deleting, setDeleting] = useState(false)
   const lock = useRef(false), alive = useRef(true), generation = useRef(0), editor = useRef(null), createButton = useRef(null), previousFocus = useRef(null)
   useEffect(() => { alive.current = true; load(); return () => { alive.current = false; generation.current++ } }, [])
+  useEffect(() => { if(state==='ready')window.dispatchEvent(new CustomEvent('lyra-calendar-updated',{detail:{userId:user.id,events,tasks}})) },[events,tasks,state])
   useEffect(() => { if (draft || taskDraft) { editor.current?.scrollIntoView({ block: 'start', behavior: 'instant' }); editor.current?.querySelector('input')?.focus({ preventScroll: true }) } }, [draft?.id, !!draft, taskDraft?.id, !!taskDraft])
   async function verify() {
     const result = await client.auth.getUser()
@@ -56,7 +59,7 @@ function OfficialCalendar({ client, user, courses, onBusy }) {
       ])
       if (results.some(r => r.error)) throw new Error('read')
       if (alive.current && revision === generation.current) { setEvents(results[0].data || []); setTasks(results[1].data || []); setState('ready') }
-    } catch { if (alive.current && revision === generation.current) { setState('error'); setError('No pudimos cargar tu calendario. Reintenta; si el problema continúa, la configuración de la cuenta necesita revisión.') } }
+    } catch { void reportServiceFailure(client,user.id,'calendar_load'); if (alive.current && revision === generation.current) { setState('error'); setError('No pudimos cargar tu calendario. Reintenta; si el problema continúa, la configuración de la cuenta necesita revisión.') } }
   }
   async function write(table, payload, id, remove = false) {
     if (lock.current) return false
@@ -73,7 +76,7 @@ function OfficialCalendar({ client, user, courses, onBusy }) {
       setter(previous => remove ? previous.filter(e => e.id !== id) : id ? previous.map(e => e.id === id ? result.data : e) : [...previous, result.data])
       setMessage(remove ? 'Eliminado de tu cuenta.' : 'Guardado en tu cuenta.')
       return true
-    } catch { if (alive.current) setError('No se pudo guardar. Tus datos anteriores y el borrador se conservan. Reintenta o vuelve a iniciar sesión.'); return false }
+    } catch { void reportServiceFailure(client,user.id,'calendar_save'); if (alive.current) setError('No se pudo guardar. Tus datos anteriores y el borrador se conservan. Reintenta o vuelve a iniciar sesión.'); return false }
     finally { lock.current = false; onBusy(false); if (alive.current) setBusy(false) }
   }
   function closeEditor() { if (lock.current) return; setDraft(null); setTaskDraft(null); setDeleting(false); (previousFocus.current?.isConnected ? previousFocus.current : createButton.current)?.focus({ preventScroll: true }) }
@@ -117,6 +120,7 @@ function OfficialCalendar({ client, user, courses, onBusy }) {
   if (state === 'loading') return <section className="blk sc" role="status" aria-busy="true"><h2 className="bt">Cargando tu calendario…</h2><p>Consultando tus eventos, horarios y tareas.</p></section>
   if (state === 'error') return <section className="blk sc"><h2 className="bt">Calendario no disponible</h2><p role="alert">{error}</p><button className="h-btn primary" onClick={load}>Reintentar</button></section>
   return <div className={`sc sc-view-${view}${draft || taskDraft ? ' sc-editing' : ''}`} onKeyDown={e => { if (e.key === 'Escape' && (draft || taskDraft) && !busy) { e.stopPropagation(); closeEditor() } }}>
+    <CalendarPrevention events={events} tasks={tasks} draft={draft}/>
     <div className="sc-status" aria-live="polite">{busy ? 'Guardando…' : message}</div>{error && <p className="sc-error" role="alert">{error}</p>}
     <ExcelScheduleImport client={client} user={user} events={events} disabled={busy} onBusy={value => { lock.current = value; setBusy(value); onBusy(value) }} onSaved={saved => setEvents(old => [...old.filter(t => !saved.some(s => s.id === t.id)), ...saved])}/>
     <TextToTasks client={client} user={user} courses={courses} disabled={busy} onBusy={value => { lock.current = value; setBusy(value); onBusy(value) }} onSaved={saved => setTasks(old => [...old.filter(t => !saved.some(s => s.id === t.id)), ...saved])}/>

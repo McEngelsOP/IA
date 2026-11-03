@@ -2,7 +2,7 @@
 
 Lyra ayuda a estudiantes de Universidad ESAN a entender su avance, planificar sus cursos y organizar el semestre. El catálogo activo incluye las 18 carreras ESAN presentes en las fuentes del proyecto. Es una herramienta independiente de apoyo; no confirma matrícula ni sustituye información institucional.
 
-La rama de trabajo actual es **`main`**. Las correcciones de la ficha del curso y los comentarios de Recursos se mantienen en esta rama.
+La rama de trabajo de esta entrega es **`Oficial`**. Incluye las correcciones de la ficha del curso y los comentarios de Recursos, junto a la ampliación del sistema.
 
 ## Recorrido del estudiante
 
@@ -94,3 +94,11 @@ Recursos conserva la descripción editable por su autor y recupera los comentari
 ## Acceso al código
 
 El repositorio de desarrollo debe mantenerse privado y compartirse solo con colaboradores. Para probar Lyra, compartir la web publicada. Ver [seguridad](SECURITY.md) y [uso del código](NOTICE.md). Las guías administrativas y los informes de producción se conservan fuera de GitHub.
+
+## Ampliación del sistema en revisión
+
+La ampliación integrada en `Oficial` añade sincronización de preferencias, escalas institucionales, actualización de mallas, prevención de calendario, consulta sin conexión y administración de reportes/servicios. [Funcionamiento y límites](docs/system-complete.md). El SQL general y la resolución de nuevas versiones de malla en `study-advisor` siguen pendientes de activación; estas funciones no se presentan como activadas en producción. Tras `npm run build`, `npm run test:offline` comprueba la PWA con un corte real de conexión.
+
+La política independiente del asistente exige claves propias a cuentas externas o sin afiliación ESAN verificada, unifica las cuotas y añade modos de respuesta y contexto consultado. [Acceso de IA, instalación y pruebas](docs/ai-access-policy.md).
+
+La comparación de los últimos commits de Oficial y la recuperación del borrador se documentan en [la reconciliación de noviembre](docs/integration-oficial.md). La ampliación de universidades requiere [activación manual de SQL y funciones](docs/universities-curriculum.md). El modo sin conexión permanece pendiente y desactivado.

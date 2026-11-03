@@ -1,3 +1,4 @@
+import { scaleLabel,formatGrade } from '../../core/academic/grading.js'
 import { jsPDF } from 'jspdf'
 import { autoTable } from 'jspdf-autotable'
 import { academicRecordModel, academicDate as date, academicNumber as number } from './academicRecordReport.js'
@@ -85,10 +86,10 @@ export function createAcademicRecordPdf(record, catalog = null) {
   if (model.catalog && rows.some(row => !model.courses.has(row.id))) {
     paragraph('Algunos cursos no aparecen en esta versión de la malla. Se muestran con su identificador original, sin créditos estimados.', 8)
   }
-  table('Registro por curso', ['Ciclo', 'Curso', 'Créditos', 'Estado', 'Nota / 20', 'En mi plan'], rows.map(row => [
+  table('Registro por curso', ['Ciclo', 'Curso', 'Créditos', 'Estado', 'Nota · '+scaleLabel(model.scale), 'En mi plan'], rows.map(row => [
     row.cycle === 0 ? 'Pre-formación' : Number.isFinite(row.cycle) ? `Ciclo ${row.cycle}` : '-',
     `${row.name}\n${row.id}`, number(row.credits, Number.isInteger(row.credits) ? 0 : 1), row.label,
-    row.grade === null ? 'Sin nota' : number(row.grade, 2), row.planned ? 'Sí' : '-'
+    row.grade === null ? 'Sin nota' : formatGrade(row.grade,model.scale), row.planned ? 'Sí' : '-'
   ]), [29, 56, 21, 32, 22, 18], 'Aún no hay cursos con avance, notas o planificación registrados.')
   paragraph('«Sin nota» no equivale a cero. «En mi plan» indica cursos guardados en la planificación. La matrícula se indica en Estado.', 8)
   const details = rows.filter(row => row.times_taken || row.passed_at || row.personal_note)

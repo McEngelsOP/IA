@@ -1,9 +1,10 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.110.2';
 import { generateAdvisorAnswer } from '../study-advisor/providers.ts';
-import { loadAiRoute } from '../study-advisor/aiRouting.ts';
+import { loadAiRoute, policyMessage } from '../study-advisor/aiRouting.ts';
 const headers = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Cache-Control': 'no-store' };
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...headers, 'Content-Type': 'application/json' } });
 Deno.serve(async req => {
+  let activeRoute: Awaited<ReturnType<typeof loadAiRoute>> | null = null;
   if (req.method === 'OPTIONS') return new Response('ok', { headers });
   if (req.method !== 'POST') return json({ message: 'Método no permitido.' }, 405);
   try {
@@ -25,18 +26,20 @@ Deno.serve(async req => {
     if (body.action === 'test') {
       const moderation = await client.rpc('advisor_check_moderation', { p_is_profane: false, p_severity: 1, p_bad_words: [] });
       if (moderation.error || moderation.data?.allowed !== true) return json({ message: 'La IA no está disponible para tu cuenta en este momento.' }, 403);
-      const route = await loadAiRoute({ client, server, userId: user.id, env: name => Deno.env.get(name) });
+      const route = await loadAiRoute({ client, server, userId: user.id, env: name => Deno.env.get(name),resource:'key_test',forcePersonal:true });activeRoute=route;
       // Test only the student's chosen key, never the app's credentials.
-      if (!route.personal) return json({ message: 'Activa «Mis claves» para probar tu proveedor.' }, 400);
+
       const provider = route.providers.find(p => p.name === body.provider);
       if (!provider) return json({ message: 'Guarda y activa primero una clave de este proveedor.' }, 400);
       const quota = await route.usage(true);
-      if (!quota?.allowed) return json({ message: 'Alcanzaste el límite de pruebas. Reintenta más tarde.' }, 429);
-      const result = await generateAdvisorAnswer({ providers: [provider], system: 'Responde únicamente OK.', context: 'Prueba de disponibilidad de mi clave.', history: [], fetch, reserve: route.reserve, report: route.report });
-      return json({ status: result.answer ? 'ok' : result.error, provider: provider.name, message: result.answer ? 'Tu clave respondió correctamente.' : result.error === 'provider_configuration' ? 'El proveedor rechazó la clave o el modelo. Revisa tu clave.' : result.error === 'rate_limited' ? 'Tu proveedor alcanzó su cuota o está en pausa. Reintenta más tarde.' : 'Tu proveedor no respondió. Puedes usar otra clave o cambiar al servicio de la app.' });
+      if (!quota?.allowed) return json({error:quota?.reason||'quota_unavailable',message:policyMessage(quota?.reason||'quota_unavailable'),usage:quota},quota?.reason==='request_in_progress'?409:429);
+      const result = await generateAdvisorAnswer({ providers: [provider], maxAttempts:1,maxOutputTokens:256,system: 'Responde únicamente OK.', context: 'Prueba de disponibilidad de mi clave.', history: [], fetch, reserve: route.reserve, report: route.report });
+      return json({usage:quota,access:route.access,status: result.answer ? 'ok' : result.error, provider: provider.name, message: result.answer ? 'Tu clave respondió correctamente.' : result.error === 'provider_configuration' ? 'El proveedor rechazó la clave o el modelo. Revisa tu clave.' : result.error === 'rate_limited' ? 'Tu proveedor alcanzó su cuota o está en pausa. Reintenta más tarde.' : 'Tu proveedor no respondió. Reintenta o configura otra clave propia; no se usarán claves de Lyra como respaldo.' });
     }
     const result = await server.rpc('ai_key_manage', { p_user_id: user.id, p_action: body.action, p_provider: body.provider || null, p_key: body.action === 'save' ? body.key.trim() : null, p_enabled: body.action === 'toggle' ? body.enabled : null, p_mode: body.action === 'mode' ? body.mode : null });
+    if(result.error?.message?.includes('PERSONAL_KEY_REQUIRED'))return json({error:'personal_key_required',message:policyMessage('personal_key_required')},403);
     if (result.error || !result.data) return json({ message: 'No se pudo guardar la configuración. Reintenta.' }, 503);
     return json(result.data);
-  } catch { return json({ message: 'No pudimos completar la operación. Reintenta.' }, 503); }
+  } catch { return json({ error:'ai_policy_unavailable',message:policyMessage('ai_policy_unavailable') }, 503); }
+  finally { await activeRoute?.finish(); }
 });

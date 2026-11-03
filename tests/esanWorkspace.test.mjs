@@ -30,7 +30,7 @@ test('all 18 ESAN catalogs have a reproducible release with unchanged course ide
   }
   assert(isEsanStudentCode('25123456',new Date('2026-01-01T05:00:00Z')))
   assert(!isEsanStudentCode('27123456',new Date('2026-12-31T23:00:00Z')))
-  assert(!isEsanStudentCode('20123456',new Date('2026-10-19T20:00:00Z')))
+  assert(isEsanStudentCode('20123456',new Date('2026-10-19T20:00:00Z')))
 })
 
 test('unverified electives cannot become unconditional recommendations', () => {

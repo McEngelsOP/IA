@@ -1,6 +1,10 @@
+import { GRADE_SCALES, validScale, validGrade, parseGrade, formatGrade, scaleLabel, weightedGrade } from '../core/academic/grading.js';
+import { createSystemRuntime } from '../features/account/systemRuntime.js';
+import { OFFLINE_ENABLED } from '../features/account/offlineEnabled.js';
+import { saveOfflineAccount, activateOfflineAccount } from '../shared/lib/offlineStore.js';
 import { NAV, TABS, resolveRoute, validRoute } from './navigation.js';
 import { ESAN } from '../institutions/esan/config.js';
-import { loadCurriculum } from '../institutions/registry.js';
+import { loadCurriculum,loadAssignedCurriculum } from '../institutions/registry.js';
 import { FOCUS_PRESETS, enrolledFocusCourses, focusRemaining, focusDuration, focusMotivation, focusError, todayLima } from '../features/focus/focusModel.js';
 import { getSupabaseClient } from '../shared/lib/getSupabaseClient.js';
 import { createWebSessionGuard, webAuthStorageKey } from '../shared/lib/webSession.js';
@@ -60,7 +64,8 @@ let cur='Inicio',kid=null;const ex={};const mqM=matchMedia('(max-width:860px)');
 
 /* Inicio reúne Mi panel. Usa las mismas tablas privadas y los mismos ids de cursos. */
 const HOME_TABS=[['graficos','trend','Gráficos'],['ponderado','cap','Ponderados'],['stats','listc','Estadísticas'],['logros','sparkles','Logros'],['historia','clock','Historia']];
-const HOME_PASS=ESAN.gradeScale.passing;
+let HOME_SCALE={...GRADE_SCALES.twenty,...ESAN.gradeScale},HOME_PASS=HOME_SCALE.passing;
+let systemRuntime=null,moderationAccess={admin:false,scopes:[]};
 const homeEsc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const homeNum=(n,d=0)=>Number.isFinite(n)?n.toLocaleString('es-PE',{minimumFractionDigits:d,maximumFractionDigits:d}):'—';
 const homeDate=value=>{const date=new Date(value);return Number.isNaN(date.getTime())?'':date.toLocaleDateString('es-PE',{day:'numeric',month:'short',year:'numeric',timeZone:'America/Lima'})};
@@ -75,8 +80,8 @@ try{
 function homeCareer(){return HOME.catalog||CARRERAS[HOME.career]||CARRERAS.ia}
 function homeCounts(courses=homeCareer().cursos){
  const items=courses.filter(c=>Number.isFinite(HOME.grades[c.id])&&(HOME.done.has(c.id)||HOME.statuses[c.id]?.status==='desaprobado'));
- const weighted=items.filter(c=>c.cr>0),credits=weighted.reduce((s,c)=>s+c.cr,0);
- return {items,credits,weighted:credits?weighted.reduce((s,c)=>s+c.cr*HOME.grades[c.id],0)/credits:null};
+ const credits=items.filter(c=>c.cr>0).reduce((s,c)=>s+c.cr,0);
+ return {items,credits,weighted:weightedGrade(items.map(c=>({grade:HOME.grades[c.id],credits:c.cr})),HOME_SCALE)};
 }
 function homeModel(){
  const career=homeCareer(),courses=career.cursos,all=homeCounts(),done=courses.filter(c=>HOME.done.has(c.id));
@@ -93,6 +98,7 @@ function homeModel(){
  return {career,courses,total,approvedCredits,done,cycles,perCycle,active,...all,grades,median,simple,passed,eligible,selected:homeCounts(selected)};
 }
 function homeReset(mode='guest',clearFocus=true){
+ systemRuntime?.stop();moderationAccess={admin:false,scopes:[]};
  setupClose(false);SETUP.record=null;SETUP.error='';SETUP.owner=null;
  if(clearFocus)SETUP.deferred=false;
  HOME.revision++;HOME.mode=mode;HOME.user=null;HOME.career='ia';HOME.catalog=null;HOME.careerDraft='';HOME.profile=null;
@@ -101,9 +107,9 @@ function homeReset(mode='guest',clearFocus=true){
  HOME_WIDGETS.calendarLoading=mode==='loading';HOME_WIDGETS.focusLoading=mode==='loading';HOME_WIDGETS.calendarError=false;HOME_WIDGETS.focusError=false;
  if(clearFocus)kReset();
 }
-function homeRender(){if(['Inicio','Mi carrera','Mi semestre','Grupos de estudio','Mod Focus','Planificar','Asistente','Recursos','Mi IA'].includes(cur))renderPage()}
+function homeRender(){if(['Mi perfil','Inicio','Mi carrera','Mi semestre','Grupos de estudio','Mod Focus','Planificar','Asistente','Recursos','Mi IA','Preferencias','Administración'].includes(cur))renderPage()}
 async function homeLoad(user){
- homeReset('loading',HOME.user?.id!==user.id);HOME.user=user;renderProfile();
+ homeReset('loading',HOME.user?.id!==user.id);HOME.user=user;if(OFFLINE_ENABLED)activateOfflineAccount(user.id);renderProfile();
  const revision=HOME.revision;
  homeRender();
  try{
@@ -117,23 +123,33 @@ async function homeLoad(user){
   if(revision!==HOME.revision)return;
   if(results.some(r=>r.error))throw new Error('read_failed');
   const [profile,progress,grades,statuses,achievements]=results.map(r=>r.data);
-  if(!profile||!CARRERAS[profile.carrera]){
+  if(profile?.institution_id&&profile.institution_id!=='esan'&&!profile.custom_curriculum_id){HOME.mode='institution';HOME.profile=profile;homeRender();renderProfile();return}
+  if(!profile||(!profile.custom_curriculum_id&&!CARRERAS[profile.carrera])){
    HOME.mode=profile?.carrera?'unsupported':'profile';HOME.profile=profile;homeRender();return;
   }
-  const catalog=await loadCurriculum(profile.carrera,profile.curriculum_version);
+  const rules=await homeClient.from('institution_rules').select('grade_scale').eq('institution_id',profile.institution_id||'esan').maybeSingle();
+  if(revision!==HOME.revision)return;
+  if(validScale(rules.data?.grade_scale))HOME_SCALE=rules.data.grade_scale;else if((profile.institution_id||'esan')==='esan')HOME_SCALE={...GRADE_SCALES.twenty,...ESAN.gradeScale};else throw new Error('GRADE_SCALE_UNAVAILABLE');
+  HOME_PASS=HOME_SCALE.passing;
+  const catalog=await loadAssignedCurriculum(profile,homeClient);
   if(revision!==HOME.revision)return;
   HOME.catalog=catalog;HOME.profile=profile;HOME.career=profile.carrera;HOME.done=new Set(progress?.done||[]);HOME.plan=new Set(progress?.plan||[]);
-  for(const row of grades||[]){const value=Number(row.grade);if(row.grade!==null&&Number.isFinite(value)&&value>=0&&value<=20)HOME.grades[row.course_id]=value}
+  for(const row of grades||[]){const value=Number(row.grade);if(row.grade!==null&&Number.isFinite(value)&&validGrade(value,HOME_SCALE))HOME.grades[row.course_id]=value}
   HOME.statuses=Object.fromEntries((statuses||[]).map(r=>[r.course_id,r]));
   HOME.plan=validPlan(buildMalla(homeCareer()),HOME.plan,HOME.done,HOME.statuses);
   HOME.achievements=Object.fromEntries((achievements||[]).map(r=>[r.logro,r.earned_at]));
   HOME.cycle='all';
   HOME.mode='live';homeRender();
+  await systemRuntime.start(user.id,legacyPreferences(user.id));
+  if(revision!==HOME.revision)return;
+  void homeSnapshot();
+  const access=await homeClient.rpc('moderation_access');if(revision!==HOME.revision)return;
+  if(access.data?.scopes)moderationAccess=access.data;renderProfile();
   void homeWidgetLoad(user,revision);
   await setupLoad(user,revision);
  }catch{
   if(revision!==HOME.revision)return;
-  HOME.mode='error';HOME.error='No pudimos cargar tu información académica. Reintenta para consultar tus datos.';homeRender();
+  void systemRuntime?.record('academic_load');HOME.mode='error';HOME.error='No pudimos cargar tu información académica. Reintenta para consultar tus datos.';homeRender();
  }
 }
 const HOME_EVENT_FIELDS='id,student_id,title,date,start_date,end_date,event_type,start_time,end_time,location,repeat_rule,repeat_until,course_id';
@@ -169,7 +185,7 @@ async function homeWidgetLoad(user,revision){
   HOME_WIDGETS.calendarError=true;HOME_WIDGETS.focusError=true;
  }finally{
   if(revision===HOME.revision&&HOME.user?.id===user.id){
-   HOME_WIDGETS.calendarLoading=false;HOME_WIDGETS.focusLoading=false;if(cur==='Inicio')homeRender();
+   HOME_WIDGETS.calendarLoading=false;HOME_WIDGETS.focusLoading=false;if(!HOME_WIDGETS.calendarError)void homeSnapshot(true);if(cur==='Inicio')homeRender();
   }
  }
 }
@@ -181,6 +197,8 @@ async function setupLoad(user,revision=HOME.revision){
   if(result.error)throw result.error;
   SETUP.record=result.data;SETUP.error='';SETUP.owner=user.id;
   if(result.data?.completed_at)setupApply(result.data.preferences);
+  if(systemRuntime.sync.get('theme'))setTheme(systemRuntime.sync.get('theme')==='dark');
+  if(systemRuntime.sync.get('focus'))setupApply(systemRuntime.sync.get('focus'));
   if(result.data?.preferences?.semester)HOME.cycle=String(result.data.preferences.semester);
   homeRender();renderProfile();
   if(!result.data?.completed_at&&!SETUP.deferred)setupOpen();
@@ -220,7 +238,7 @@ async function homeInit(){
   const {data,error}=await homeClient.auth.getSession();
   if(revision!==HOME.revision)return;
   if(error)throw error;
-  if(!data.session){homeReset();homeRender();return}
+  if(!data.session){await systemRuntime?.signOut();homeReset();homeRender();return}
   if(!webSession.restore(data.session))return;
   const verified=await homeClient.auth.getUser();
   if(revision!==HOME.revision)return;
@@ -235,11 +253,12 @@ async function homeInit(){
 async function homeSignOut(){
  if(HOME.saving.size){toast('Espera a que termine el guardado');return}
  if(!await kBeforeSignOut())return;
+ await systemRuntime?.sync.flush();
  if(homeClient){const {error}=await homeClient.auth.signOut();if(error){toast('No se pudo cerrar la sesión. Reintenta.');return}}
- homeReset();setMenu(false);location.replace(new URL('./login.html',location.href).href);
+ await systemRuntime?.signOut();homeReset();setMenu(false);location.replace(new URL('./login.html',location.href).href);
 }
 function homeEmpty(title,message,action=true){return `<div class="h-state"><h3>${homeEsc(title)}</h3><p>${homeEsc(message)}</p>${action?`<div class="h-state-actions"><a class="h-btn primary" href="./login.html">Iniciar sesión</a></div>`:''}</div>`}
-function unsupportedProfile(){return '<section class="blk"><h2 class="bt">Lyra está centrada en ESAN</h2><p>La carrera de esta cuenta ya no forma parte del catálogo activo. Tu registro académico se conserva y puedes descargarlo. Tu cuenta no se ha reasignado a otra carrera.</p><button class="h-btn primary" data-a="hexport">Exportar registro académico</button><p class="h-muted" role="status" id="export-status"></p></section>'}
+function unsupportedProfile(){return '<section class="blk"><h2 class="bt">Tu registro académico se conserva</h2><p>La carrera de esta cuenta ya no forma parte del catálogo activo. Tu registro académico se conserva y puedes descargarlo. Tu cuenta no se ha reasignado a otra carrera.</p><button class="h-btn primary" data-a="hexport">Exportar registro académico</button><p class="h-muted" role="status" id="export-status"></p></section>'}
 async function exportAcademicRecord(){
  if(!HOME.user||HOME.saving.has('export'))return;
  const userId=HOME.user.id,revision=HOME.revision;HOME.saving.add('export');
@@ -248,9 +267,9 @@ async function exportAcademicRecord(){
   const {readAcademicRecord,downloadAcademicRecord}=await import('../features/account/exportAcademicRecord.js');
   const record=await readAcademicRecord(homeClient,userId);
   const profile=record.profiles?.[0];let catalog=null;
-  if(profile&&CARRERAS[profile.carrera]){try{catalog=await loadCurriculum(profile.carrera,profile.curriculum_version)}catch{/* El informe conserva los ids si la versión de la malla no está disponible. */}}
+  if(profile&&(profile.custom_curriculum_id||CARRERAS[profile.carrera])){try{catalog=await loadAssignedCurriculum(profile,homeClient)}catch{/* El informe conserva los ids si la versión de la malla no está disponible. */}}
   if(revision!==HOME.revision||HOME.user?.id!==userId)return;
-  downloadAcademicRecord(record,catalog);if(status)status.textContent='Informe académico descargado en PDF.';toast('Informe académico PDF descargado');
+  record.gradingRules=HOME_SCALE;downloadAcademicRecord(record,catalog);if(status)status.textContent='Informe académico descargado en PDF.';toast('Informe académico PDF descargado');
  }catch{if(revision===HOME.revision){if(status)status.textContent='No se pudo preparar el archivo. Reintenta; tus datos se conservan.';toast('No se pudo exportar. Reintenta.')}}
  finally{if(revision===HOME.revision)HOME.saving.delete('export')}
 }
@@ -262,31 +281,31 @@ function homeReady(m){
  return null;
 }
 function homeCyclePicker(m){return `<label class="h-cycle" for="h-cycle">Ver<select id="h-cycle"><option value="all"${HOME.cycle==='all'?' selected':''}>Todos los ciclos</option>${m.cycles.map(n=>`<option value="${n}"${HOME.cycle===String(n)?' selected':''}>${n===0?'Pre-formación':`Ciclo ${n}`}</option>`).join('')}</select></label>`}
-function homeBins(items){const bins=[{label:'0–10,49',min:0,max:10.5},{label:'10,5–12,99',min:10.5,max:13},{label:'13–15,99',min:13,max:16},{label:'16–17,99',min:16,max:18},{label:'18–20',min:18,max:21}];return bins.map(b=>({...b,count:items.filter(c=>HOME.grades[c.id]>=b.min&&HOME.grades[c.id]<b.max).length}))}
+function homeBins(items){const S=HOME_SCALE;const bins=S.kind==='letters'?Object.entries(S.letters).map(([label,n])=>({label,min:n,max:n+.001})):[{label:'Por debajo de '+S.passing,min:S.min,max:S.passing},{label:'Desde '+S.passing,min:S.passing,max:S.passing+(S.max-S.passing)/2},{label:'Hasta '+S.max,min:S.passing+(S.max-S.passing)/2,max:S.max+.001}];return bins.map(b=>({...b,count:items.filter(c=>HOME.grades[c.id]>=b.min&&HOME.grades[c.id]<b.max).length}))}
 function homeGraphs(m){
  const items=m.selected.items,visible=items.slice(0,8),bins=homeBins(items),max=Math.max(1,...bins.map(b=>b.count));
- const bars=items.length?`<div class="h-bars" role="img" aria-label="Notas por curso, escala de cero a veinte">${visible.map(c=>`<div class="h-bar-row${HOME.grades[c.id]<HOME_PASS?' fail':''}"><span>${homeEsc(c.n)}</span><strong>${homeNum(HOME.grades[c.id],1)}</strong><div class="bar2"><i style="width:${HOME.grades[c.id]/20*100}%"></i></div></div>`).join('')}</div><div class="h-chart-note"><i></i>Aprobado · desde 10,5<i class="h-fail-dot"></i>Desaprobado</div>${items.length>8?`<p class="h-foot">Se muestran 8 de ${items.length} cursos. La tabla incluye todos.</p>`:''}`:homeEmpty('Aún no hay notas','Registra las notas de tus cursos llevados o desaprobados en la tabla inferior.',false);
- const distribution=items.length?`<div class="h-distribution" role="img" aria-label="Distribución de notas: ${bins.map(b=>`${b.label}: ${b.count} cursos`).join('; ')}">${bins.map(b=>`<div class="h-bin"><b>${b.count}</b><i style="height:${b.count/max*115}px"></i><span>${b.label}</span></div>`).join('')}</div><p class="h-foot">${items.length} ${items.length===1?'nota registrada':'notas registradas'} · escala 0–20</p>`:homeEmpty('Cada nota cuenta','La distribución aparecerá cuando registres tus primeras notas.',false);
+ const bars=items.length?`<div class="h-bars" role="img" aria-label="Notas por curso, escala ${homeEsc(scaleLabel(HOME_SCALE))}">${visible.map(c=>`<div class="h-bar-row${HOME.grades[c.id]<HOME_PASS?' fail':''}"><span>${homeEsc(c.n)}</span><strong>${homeEsc(formatGrade(HOME.grades[c.id],HOME_SCALE))}</strong><div class="bar2"><i style="width:${(HOME.grades[c.id]-HOME_SCALE.min)/(HOME_SCALE.max-HOME_SCALE.min)*100}%"></i></div></div>`).join('')}</div><div class="h-chart-note"><i></i>Aprobado · desde ${homeEsc(formatGrade(HOME_PASS,HOME_SCALE))}<i class="h-fail-dot"></i>Desaprobado</div>${items.length>8?`<p class="h-foot">Se muestran 8 de ${items.length} cursos. La tabla incluye todos.</p>`:''}`:homeEmpty('Aún no hay notas','Registra las notas de tus cursos llevados o desaprobados en la tabla inferior.',false);
+ const distribution=items.length?`<div class="h-distribution" role="img" aria-label="Distribución de notas: ${bins.map(b=>`${b.label}: ${b.count} cursos`).join('; ')}">${bins.map(b=>`<div class="h-bin"><b>${b.count}</b><i style="height:${b.count/max*115}px"></i><span>${b.label}</span></div>`).join('')}</div><p class="h-foot">${items.length} ${items.length===1?'nota registrada':'notas registradas'} · escala ${homeEsc(scaleLabel(HOME_SCALE))}</p>`:homeEmpty('Cada nota cuenta','La distribución aparecerá cuando registres tus primeras notas.',false);
  const editing=HOME.mode==='live';
  const rows=m.eligible.map(c=>{const has=Number.isFinite(HOME.grades[c.id]),busy=HOME.saving.has(c.id),formId=`h-form-${c.id}`;
-  return `<tr><td>${homeEsc(c.n)}<small>${homeNum(c.cr,2).replace(/,00$/,'')} créditos · ${HOME.statuses[c.id]?.status==='desaprobado'?'Desaprobado':HOME.statuses[c.id]?.status==='convalidado'?'Convalidado':'Llevado'}</small><small id="h-feedback-${c.id}" role="status">${homeEsc(HOME.feedback[c.id]||'')}</small></td><td class="h-numeric">${c.c===0?'Pre':`C${c.c}`}</td><td><form class="h-grade" id="${formId}" data-home-grade="${c.id}"><input id="h-grade-${c.id}" name="grade" type="text" inputmode="decimal" maxlength="16" autocomplete="off" aria-label="Nota de ${homeEsc(c.n)}" aria-describedby="h-feedback-${c.id}" placeholder="—" value="${homeEsc(HOME.drafts[c.id]??(has?HOME.grades[c.id]:''))}"${!editing||busy?' disabled':''}><button class="h-save" type="submit" aria-label="Guardar nota de ${homeEsc(c.n)}" title="Guardar nota"${!editing||busy?' disabled':''}>${svg('tick',16)}</button></form></td></tr>`}).join('');
- return `<div class="h-grid"><section class="blk"><div class="h-section-head"><div><h3 class="bt">${svg('trend',18)}Notas por curso</h3><p class="h-muted">Tu rendimiento, curso a curso.</p></div>${homeCyclePicker(m)}</div>${bars}</section><section class="blk"><h3 class="bt">${svg('listc',18)}Distribución de notas</h3><p class="h-muted">Cómo se reparten tus resultados.</p>${distribution}</section><section class="blk h-wide"><h3 class="bt">${svg('cap',18)}Mis notas</h3><p class="h-muted">Guarda con el botón de cada curso. Deja el campo vacío para eliminar una nota.</p>${rows?`<div class="h-table-wrap"><table class="h-table"><caption class="h-muted" style="text-align:left;margin-bottom:8px">${HOME.cycle==='all'?'Todos los ciclos':HOME.cycle==='0'?'Pre-formación':`Ciclo ${HOME.cycle}`} · ${m.eligible.length} cursos llevados o desaprobados</caption><thead><tr><th scope="col">Curso</th><th scope="col">Ciclo</th><th scope="col">Nota / 20</th></tr></thead><tbody>${rows}</tbody></table></div>`:homeEmpty('Sin cursos registrados en este ciclo','Marca tus cursos como llevados en tu malla o registra su estado académico en la ficha del curso. Después podrás ingresar sus notas aquí.',false)}</section></div>`;
+  return `<tr><td>${homeEsc(c.n)}<small>${homeNum(c.cr,2).replace(/,00$/,'')} créditos · ${HOME.statuses[c.id]?.status==='desaprobado'?'Desaprobado':HOME.statuses[c.id]?.status==='convalidado'?'Convalidado':'Llevado'}</small><small id="h-feedback-${c.id}" role="status">${homeEsc(HOME.feedback[c.id]||'')}</small></td><td class="h-numeric">${c.c===0?'Pre':`C${c.c}`}</td><td><form class="h-grade" id="${formId}" data-home-grade="${c.id}"><input id="h-grade-${c.id}" name="grade" type="text" inputmode="decimal" maxlength="16" autocomplete="off" aria-label="Nota de ${homeEsc(c.n)}" aria-describedby="h-feedback-${c.id}" placeholder="—" value="${homeEsc(HOME.drafts[c.id]??(has?formatGrade(HOME.grades[c.id],HOME_SCALE):''))}"${!editing||busy?' disabled':''}><button class="h-save" type="submit" aria-label="Guardar nota de ${homeEsc(c.n)}" title="Guardar nota"${!editing||busy?' disabled':''}>${svg('tick',16)}</button></form></td></tr>`}).join('');
+ return `<div class="h-grid"><section class="blk"><div class="h-section-head"><div><h3 class="bt">${svg('trend',18)}Notas por curso</h3><p class="h-muted">Tu rendimiento, curso a curso.</p></div>${homeCyclePicker(m)}</div>${bars}</section><section class="blk"><h3 class="bt">${svg('listc',18)}Distribución de notas</h3><p class="h-muted">Cómo se reparten tus resultados.</p>${distribution}</section><section class="blk h-wide"><h3 class="bt">${svg('cap',18)}Mis notas</h3><p class="h-muted">Guarda con el botón de cada curso. Deja el campo vacío para eliminar una nota.</p>${rows?`<div class="h-table-wrap"><table class="h-table"><caption class="h-muted" style="text-align:left;margin-bottom:8px">${HOME.cycle==='all'?'Todos los ciclos':HOME.cycle==='0'?'Pre-formación':`Ciclo ${HOME.cycle}`} · ${m.eligible.length} cursos llevados o desaprobados</caption><thead><tr><th scope="col">Curso</th><th scope="col">Ciclo</th><th scope="col">Nota · ${homeEsc(scaleLabel(HOME_SCALE))}</th></tr></thead><tbody>${rows}</tbody></table></div>`:homeEmpty('Sin cursos registrados en este ciclo','Marca tus cursos como llevados en tu malla o registra su estado académico en la ficha del curso. Después podrás ingresar sus notas aquí.',false)}</section></div>`;
 }
 function homeLine(points){
  if(!points.length)return homeEmpty('Tu evolución aparecerá aquí','Registra notas en tus ciclos para comparar los ponderados.',false);
  const w=620,h=245,left=40,right=24,top=24,bottom=32;
- const x=i=>points.length===1?(w+left-right)/2:left+i/(points.length-1)*(w-left-right),y=v=>top+(20-v)/20*(h-top-bottom);
+ const x=i=>points.length===1?(w+left-right)/2:left+i/(points.length-1)*(w-left-right),y=v=>top+(HOME_SCALE.max-v)/(HOME_SCALE.max-HOME_SCALE.min)*(h-top-bottom);
  const coords=points.map((p,i)=>`${x(i)},${y(p.weighted)}`).join(' ');
- return `<svg class="h-line" viewBox="0 0 ${w} ${h}" role="img" aria-label="Ponderado por ciclo: ${points.map(p=>`ciclo ${p.num}, ${homeNum(p.weighted,2)}`).join('; ')}"><title>Evolución del ponderado por ciclo</title>${[0,5,10,15,20].map(n=>`<line class="grid" x1="${left}" x2="${w-right}" y1="${y(n)}" y2="${y(n)}"/><text x="${left-9}" y="${y(n)+4}" text-anchor="end">${n}</text>`).join('')}<line class="pass" x1="${left}" x2="${w-right}" y1="${y(HOME_PASS)}" y2="${y(HOME_PASS)}"/><polyline class="curve" points="${coords}"/>${points.map((p,i)=>`<circle cx="${x(i)}" cy="${y(p.weighted)}" r="4"><title>Ciclo ${p.num}: ${homeNum(p.weighted,2)}</title></circle><text x="${x(i)}" y="${h-7}" text-anchor="middle">C${p.num}</text>`).join('')}</svg><p class="h-foot">La línea discontinua indica la nota aprobatoria: 10,5.</p>`;
+ return `<svg class="h-line" viewBox="0 0 ${w} ${h}" role="img" aria-label="Ponderado por ciclo: ${points.map(p=>`ciclo ${p.num}, ${homeNum(p.weighted,2)}`).join('; ')}"><title>Evolución del ponderado por ciclo</title>${Array.from({length:5},(_,i)=>HOME_SCALE.min+i*(HOME_SCALE.max-HOME_SCALE.min)/4).map(n=>`<line class="grid" x1="${left}" x2="${w-right}" y1="${y(n)}" y2="${y(n)}"/><text x="${left-9}" y="${y(n)+4}" text-anchor="end">${n}</text>`).join('')}<line class="pass" x1="${left}" x2="${w-right}" y1="${y(HOME_PASS)}" y2="${y(HOME_PASS)}"/><polyline class="curve" points="${coords}"/>${points.map((p,i)=>`<circle cx="${x(i)}" cy="${y(p.weighted)}" r="4"><title>Ciclo ${p.num}: ${homeNum(p.weighted,2)}</title></circle><text x="${x(i)}" y="${h-7}" text-anchor="middle">C${p.num}</text>`).join('')}</svg><p class="h-foot">La línea discontinua indica la nota aprobatoria: ${homeEsc(formatGrade(HOME_PASS,HOME_SCALE))}.</p>`;
 }
 function homeWeighted(m){
  const points=m.perCycle.filter(p=>p.weighted!==null);
- return `<div class="h-grid"><section class="blk"><h3 class="bt">${svg('trend',18)}Evolución por ciclo</h3><p class="h-muted">Cada ciclo cuenta su propia historia.</p>${homeLine(points)}</section><section class="blk"><h3 class="bt">${svg('cap',18)}Ponderado general</h3><p class="h-muted">Tus notas, ponderadas por créditos.</p><div class="h-number">${homeNum(m.weighted,2)}<small>/ 20</small></div><dl class="h-kvs"><div><dt>Créditos con nota</dt><dd>${homeNum(m.credits,2)}</dd></div><div><dt>Cursos con nota</dt><dd>${m.items.filter(c=>c.cr>0).length}</dd></div></dl><p class="h-foot">Suma de nota × créditos, dividida entre los créditos con nota. Incluye desaprobados; excluye retiros y cursos sin nota o sin créditos.</p></section><section class="blk h-wide"><h3 class="bt">${svg('cal',18)}Ponderados por ciclo</h3><p class="h-muted">Compara tus resultados sin perder el contexto.</p>${points.length?`<div class="h-table-wrap"><table class="h-table"><thead><tr><th scope="col">Ciclo</th><th scope="col">Cursos con nota</th><th scope="col">Créditos</th><th scope="col">Ponderado</th></tr></thead><tbody>${points.map(p=>`<tr><td>Ciclo ${p.num}</td><td>${p.items.filter(c=>c.cr>0).length}</td><td class="h-numeric">${homeNum(p.credits,2)}</td><td class="h-numeric"><strong>${homeNum(p.weighted,2)}</strong></td></tr>`).join('')}</tbody></table></div>`:homeEmpty('Todavía no hay ponderados','Añade las notas de tus cursos en Gráficos para calcularlos.',false)}</section></div>`;
+ return `<div class="h-grid"><section class="blk"><h3 class="bt">${svg('trend',18)}Evolución por ciclo</h3><p class="h-muted">Cada ciclo cuenta su propia historia.</p>${homeLine(points)}</section><section class="blk"><h3 class="bt">${svg('cap',18)}Ponderado general</h3><p class="h-muted">Promedio según las reglas de tu universidad.</p><div class="h-number">${homeNum(m.weighted,2)}<small>/ ${HOME_SCALE.max}</small></div><dl class="h-kvs"><div><dt>Créditos con nota</dt><dd>${homeNum(m.credits,2)}</dd></div><div><dt>Cursos con nota</dt><dd>${m.items.filter(c=>c.cr>0).length}</dd></div></dl><p class="h-foot">${HOME_SCALE.weighting==='credits'?'Suma de nota × créditos, dividida entre los créditos con nota.':'Promedio de cursos con pesos iguales.'} Incluye desaprobados; excluye retiros y cursos sin nota.</p></section><section class="blk h-wide"><h3 class="bt">${svg('cal',18)}Ponderados por ciclo</h3><p class="h-muted">Compara tus resultados sin perder el contexto.</p>${points.length?`<div class="h-table-wrap"><table class="h-table"><thead><tr><th scope="col">Ciclo</th><th scope="col">Cursos con nota</th><th scope="col">Créditos</th><th scope="col">Ponderado</th></tr></thead><tbody>${points.map(p=>`<tr><td>Ciclo ${p.num}</td><td>${p.items.filter(c=>c.cr>0).length}</td><td class="h-numeric">${homeNum(p.credits,2)}</td><td class="h-numeric"><strong>${homeNum(p.weighted,2)}</strong></td></tr>`).join('')}</tbody></table></div>`:homeEmpty('Todavía no hay ponderados','Añade las notas de tus cursos en Gráficos para calcularlos.',false)}</section></div>`;
 }
 function homeStats(m){
  const ranked=[...m.items].sort((a,b)=>HOME.grades[b.id]-HOME.grades[a.id]),points=m.perCycle.filter(p=>p.weighted!==null);
  const bestCycle=[...points].sort((a,b)=>b.weighted-a.weighted)[0],worstCycle=[...points].sort((a,b)=>a.weighted-b.weighted)[0];
- const tiles=[['Promedio simple',homeNum(m.simple,2),'Cada nota tiene el mismo peso.'],['Mediana',homeNum(m.median,2),'El centro de tus notas ordenadas.'],['Tasa de aprobación',m.grades.length?homeNum(m.passed/m.grades.length*100)+'%':'—','Sobre los cursos con nota registrada.'],['Cursos aprobados',m.passed,'Con nota desde 10,5.'],['Cursos desaprobados',m.grades.length-m.passed,'Con nota menor a 10,5.'],['Créditos completados',homeNum(m.approvedCredits,2),`De ${homeNum(m.total)} créditos de tu malla.`]];
+ const tiles=[['Promedio simple',homeNum(m.simple,2),'Cada nota tiene el mismo peso.'],['Mediana',homeNum(m.median,2),'El centro de tus notas ordenadas.'],['Tasa de aprobación',m.grades.length?homeNum(m.passed/m.grades.length*100)+'%':'—','Sobre los cursos con nota registrada.'],['Cursos aprobados',m.passed,'Con nota desde '+formatGrade(HOME_PASS,HOME_SCALE)+'.'],['Cursos desaprobados',m.grades.length-m.passed,'Con nota menor a '+formatGrade(HOME_PASS,HOME_SCALE)+'.'],['Créditos completados',homeNum(m.approvedCredits,2),`De ${homeNum(m.total)} créditos de tu malla.`]];
  const courseLine=c=>c?`${homeEsc(c.n)} · ${homeNum(HOME.grades[c.id],2)}`:'—';
  return `<div class="h-stats">${tiles.map(([label,value,note])=>`<section class="blk"><h3>${label}</h3><div class="h-number">${value}</div><p class="h-muted">${note}</p></section>`).join('')}</div><div class="h-grid" style="margin-top:14px"><section class="blk"><h3 class="bt">${svg('trend',18)}Resultados destacados</h3><dl class="h-kvs"><div><dt>Mejor nota</dt><dd>${courseLine(ranked[0])}</dd></div><div><dt>Menor nota</dt><dd>${courseLine(ranked.at(-1))}</dd></div><div><dt>Mejor ciclo</dt><dd>${bestCycle?`Ciclo ${bestCycle.num} · ${homeNum(bestCycle.weighted,2)}`:'—'}</dd></div><div><dt>Menor ponderado</dt><dd>${worstCycle?`Ciclo ${worstCycle.num} · ${homeNum(worstCycle.weighted,2)}`:'—'}</dd></div></dl></section><section class="blk"><h3 class="bt">${svg('cap',18)}Avance académico</h3><p class="h-muted">El progreso también se mide en lo que ya completaste.</p><div class="h-number">${homeNum(m.total?m.approvedCredits/m.total*100:0)}<small>%</small></div><div class="bar2"><i style="width:${Math.min(100,m.total?m.approvedCredits/m.total*100:0)}%"></i></div><dl class="h-kvs"><div><dt>Cursos llevados</dt><dd>${m.done.length} / ${m.courses.length}</dd></div><div><dt>Cursos matriculados</dt><dd>${m.active.length}</dd></div><div><dt>Créditos pendientes</dt><dd>${homeNum(Math.max(0,m.total-m.approvedCredits),2)}</dd></div></dl><p class="h-foot">El avance usa los cursos marcados como llevados, incluidos los convalidados. Las estadísticas de notas usan solo cursos con nota vigente.</p></section></div>`;
 }
@@ -381,11 +400,11 @@ async function homeSaveGrade(form){
  if(HOME.saving.has(id))return;
  const course=homeCareer().cursos.find(c=>c.id===id);
  if(!course||(!HOME.done.has(id)&&HOME.statuses[id]?.status!=='desaprobado'))return;
- const text=input.value.trim().replace(',','.'),value=text===''?null:Number(text);
+ const text=input.value.trim(),value=parseGrade(text,HOME_SCALE);
  const feedback=$('h-feedback-'+id);
  HOME.drafts[id]=input.value;
- if(text!==''&&(!/^\d{1,2}(\.\d{1,2})?$/.test(text)||!Number.isFinite(value)||value<0||value>20)){
-  input.setAttribute('aria-invalid','true');feedback.textContent='Ingresa una nota entre 0 y 20, con hasta dos decimales.';input.focus();return;
+ if(text!==''&&!validGrade(value,HOME_SCALE)){
+  input.setAttribute('aria-invalid','true');feedback.textContent='Ingresa una nota de la escala '+scaleLabel(HOME_SCALE)+'.';input.focus();return;
  }
  input.removeAttribute('aria-invalid');
  if(HOME.mode!=='live'||!HOME.user||!homeClient){feedback.textContent='Inicia sesión para guardar tu nota.';return}
@@ -401,7 +420,7 @@ async function homeSaveGrade(form){
   }
   if(revision!==HOME.revision)return;
   if(value===null)delete HOME.grades[id];else HOME.grades[id]=value;
-  delete HOME.drafts[id];HOME.error='';HOME.saving.delete(id);homeRender();
+  void homeSnapshot();delete HOME.drafts[id];HOME.error='';HOME.saving.delete(id);homeRender();
   const message=value===null?'Nota eliminada':'Nota guardada';
   HOME.feedback[id]=message;const status=$('h-feedback-'+id);if(status)status.textContent=message;
   $('h-grade-'+id)?.focus({preventScroll:true});toast(message);
@@ -419,7 +438,7 @@ let curriculumUnmount=null,curriculumRender=0;
 function renderPage(){
  curriculumRender++;curriculumUnmount?.();curriculumUnmount=null;
  const y=$('page').scrollTop;
- const html=HOME.mode==='unsupported'&&!['Buzón de sugerencias'].includes(cur)?unsupportedProfile():cur==='Inicio'?dash():cur==='Mi carrera'?malla():cur==='Mi semestre'?cal2():cur==='Grupos de estudio'?salas():cur==='Mod Focus'?focus():['Planificar','Asistente','Recursos'].includes(cur)?toolSurface(cur==='Planificar'?'Brújula IA':cur==='Asistente'?'Asesor IA':'Recursos'):cur==='Mi IA'?personalAiSurface():cur==='Buzón de sugerencias'?buzon(kid):'';
+ const html=cur==='Mi perfil'?(HOME.profile?'<div id="profile-preferences"></div>':'<section class="blk" role="status">'+(HOME.user?'Cargando tu perfil…':homeEmpty('Mi perfil','Inicia sesión para continuar.'))+'</section>'):HOME.mode==='institution'&&!['Mi IA','Preferencias','Administración','Buzón de sugerencias'].includes(cur)?'<div id="university-setup"></div>':HOME.mode==='unsupported'&&!['Buzón de sugerencias'].includes(cur)?unsupportedProfile():cur==='Inicio'?dash():cur==='Mi carrera'?malla():cur==='Mi semestre'?cal2():cur==='Grupos de estudio'?salas():cur==='Mod Focus'?focus():['Planificar','Asistente','Recursos'].includes(cur)?toolSurface(cur==='Planificar'?'Brújula IA':cur==='Asistente'?'Asesor IA':'Recursos'):['Preferencias','Administración'].includes(cur)?systemSurface():cur==='Mi IA'?personalAiSurface():cur==='Buzón de sugerencias'?buzon(kid):'';
  $('page').innerHTML='<div class="view-surface">'+html+'</div>';$('page').scrollTop=y;
  if($('wh'))kWheels();
  if($('official-curriculum'))mountCurriculum();
@@ -427,6 +446,9 @@ function renderPage(){
  if($('semester-grades'))mountSemesterGrades($('semester-grades'));
  if($('official-tool'))mountTool();
  if($('personal-ai-settings'))mountPersonalAi();
+ if($('system-settings'))mountSystem();
+ if($('profile-preferences'))mountUniversity('profile-preferences','ProfilePreferences','mountProfilePreferences');
+ if($('university-setup'))mountUniversity('university-setup','UniversitySetup','mountUniversitySetup');
  if($('official-mailbox'))mountMailbox();
  if($('official-study-groups'))mountStudyGroups();
  if(cur==='Mod Focus'){if(fx.st==='run')kPaint(fx.left);kLoad()}
@@ -558,6 +580,7 @@ async function kAction(a,D,b){
  if(a==='kpre'&&PRE.some(x=>x[0]===D.v))fx.pre=D.v;
  else if(a==='kst'&&STY.some(x=>x[0]===D.v))fx.style=D.v;
  else if(a==='kpt'&&PN[D.v])fx.pet=D.v;
+ if(['kpre','kst','kpt'].includes(a))systemRuntime?.sync.set('focus',{method:fx.pre,companion:fx.pet,clockStyle:fx.style});
  else if(a==='kq')fx.cq=true;
  else if(a==='kqn')fx.cq=false;
  kRender();$('page').querySelector(selQ(b))?.focus({preventScroll:true});
@@ -684,7 +707,7 @@ async function mountStudyGroups(){
  try{
   const {mountOfficialStudyGroups}=await import('../features/groups/OfficialStudyGroups.jsx');
   if(render!==curriculumRender||revision!==HOME.revision||!container.isConnected)return;
-  curriculumUnmount=mountOfficialStudyGroups(container,{client:homeClient,user:HOME.user,courses:homeCareer().cursos,onBusy:value=>{if(revision===HOME.revision){if(value)HOME.saving.add('groups');else HOME.saving.delete('groups')}}});container.removeAttribute('aria-busy');
+  curriculumUnmount=mountOfficialStudyGroups(container,{nickname:HOME.profile?.alias||'',client:homeClient,user:HOME.user,courses:homeCareer().cursos,onBusy:value=>{if(revision===HOME.revision){if(value)HOME.saving.add('groups');else HOME.saving.delete('groups')}}});container.removeAttribute('aria-busy');
  }catch{if(render===curriculumRender&&container.isConnected)container.innerHTML=homeEmpty('No se pudo abrir Grupos de estudio','Reintenta para consultar las salas.',false)+'<button class="h-btn" data-a="hretry">Reintentar</button>'}
 }
 function buzon(category){return '<div id="official-mailbox" aria-busy="true"><p role="status">Preparando el buzón…</p></div>'}
@@ -693,7 +716,7 @@ async function mountMailbox(){
  try{
   const {mountOfficialMailbox}=await import('../features/support/OfficialMailbox.jsx');
   if(render!==curriculumRender||!container.isConnected)return;
-  curriculumUnmount=mountOfficialMailbox(container,{draftKey:HOME.user?.id||'guest',category:kid||'Aplicativo',career:HOME.career,courses:HOME.mode==='live'?homeCareer().cursos:[],onCategory:name=>go(name,'Buzón de sugerencias')});container.removeAttribute('aria-busy');
+  curriculumUnmount=mountOfficialMailbox(container,{appOnly:HOME.profile?.institution_id!=='esan',draftKey:HOME.user?.id||'guest',category:kid||'Aplicativo',career:HOME.career,courses:HOME.mode==='live'?homeCareer().cursos:[],onCategory:name=>go(name,'Buzón de sugerencias')});container.removeAttribute('aria-busy');
  }catch{if(render===curriculumRender&&container.isConnected)container.innerHTML=homeEmpty('No se pudo abrir el buzón','Reintenta para volver a abrirlo.',false)+'<button class="h-btn" data-a="hretry">Reintentar</button>'}
 }
 function personalAiSurface(){
@@ -738,11 +761,11 @@ async function mountCurriculum(){
   const current=()=>revision===HOME.revision;
   curriculumUnmount=mountOfficialCurriculum(container,{
    career:HOME.career,catalog:homeCareer(),user:HOME.user,client:homeClient,sessionMode:HOME.mode,
-   initialDone:HOME.done,initialPlan:HOME.plan,statuses:HOME.statuses,initialGrades:HOME.grades,currentSemester:SETUP.record?.preferences?.semester,
+   initialDone:HOME.done,initialPlan:HOME.plan,statuses:HOME.statuses,initialGrades:HOME.grades,currentSemester:SETUP.record?.preferences?.semester,gradeScale:HOME_SCALE,onCurriculumUpdated:()=>homeLoad(HOME.user),
    onSemesterChange:semester=>{if(current()){SETUP.record={...(SETUP.record||{}),preferences:{...(SETUP.record?.preferences||{}),semester}};HOME.cycle=String(semester)}},
-   onProgressChange:(done,plan)=>{if(current()){HOME.done=new Set(done);HOME.plan=new Set(plan)}},
+   onProgressChange:(done,plan)=>{if(current()){HOME.done=new Set(done);HOME.plan=new Set(plan);void homeSnapshot()}},
    onStatusChange:(id,row)=>{if(current()){if(row)HOME.statuses[id]=row;else delete HOME.statuses[id]}},
-   onGradeChange:(id,value)=>{if(current()){if(value===null)delete HOME.grades[id];else HOME.grades[id]=value}},
+   onGradeChange:(id,value)=>{if(current()){if(value===null)delete HOME.grades[id];else HOME.grades[id]=value;void homeSnapshot()}},
    onBusy:value=>{if(current()){if(value)HOME.saving.add('curriculum');else HOME.saving.delete('curriculum')}}
   });
   container.removeAttribute('aria-busy');
@@ -798,7 +821,8 @@ const closeOverlay=()=>{if(app.dataset.side==='hidden')setDrawer(false,true)};
 $('dh').onclick=e=>{const b=e.target.closest('button');if(!b)return;
   if(b.id==='bRail'){mode='rail';applySide();$('brand').focus()}
   else if(b.id==='bHide'){if(app.dataset.side==='hidden')setDrawer(false,true);else{mode='rail';applySide();$('brand').focus()}}
-  else if(app.dataset.side==='rail'){mode='full';applySide()}};
+  else if(app.dataset.side==='rail'){mode='full';applySide()}
+ if(!mqM.matches)systemRuntime?.sync.set('sidebar',mode)};
 $('nav').onclick=e=>{const b=e.target.closest('.it');if(!b)return;
   if(b.dataset.k){go(b.dataset.k,b.dataset.p);closeOverlay()}
   else{const x=NAV.find(y=>y.n===b.dataset.n);
@@ -806,7 +830,7 @@ $('nav').onclick=e=>{const b=e.target.closest('.it');if(!b)return;
       syncNavGroup(x.n)}
     else{go(x.n);closeOverlay()}}};
 $('trig').onclick=()=>setDrawer(!app.classList.contains('dopen'),true);
-mqM.addEventListener('change',applySide);
+mqM.addEventListener('change',()=>{applySide();renderProfile();if(mqM.matches&&ARC.open)arcClose()});
 
 
 $('act').innerHTML=svg('user',23);
@@ -815,20 +839,22 @@ const toast=m=>{const t=$('toast');t.textContent=m;t.classList.add('show');clear
 const mq=matchMedia('(prefers-color-scheme: dark)');let ttm;
 const isDark=()=>root.dataset.theme?root.dataset.theme==='dark':mq.matches;
 /* Selector de tema: el indicador se estira hacia la opción elegida (el borde que avanza va primero) */
-function renderProfile(){const d=isDark();
+function renderProfile(){const d=isDark();$('uni').innerHTML=`<div class="um">${svg('landmark',20)}</div><div><b>${homeEsc(HOME.profile?.university_name||((HOME.profile?.institution_id==='esan'||CARRERAS[HOME.profile?.carrera])?'Universidad ESAN':'Lyra'))}</b><span>Tu espacio académico en Lyra</span></div>`;
   $('menu').innerHTML=`<div class="tg" data-s="${d?'dark':'light'}" role="radiogroup" aria-label="Tema"><span class="thm" aria-hidden="true"></span>${[['dark','moon','Oscuro'],['light','sun','Claro']].map(t=>`<button class="tgb ${t[0]}" role="radio" aria-checked="${(t[0]==='dark')===d}" data-t="${t[0]}">${svg(t[1],16)}<span>${t[2]}</span></button>`).join('')}</div>`
-  +[...(HOME.mode==='live'?[['personal-ai','sparkles','Mi IA · claves personales']]:[]),['arcade','gamepad','ARCADE'],...(HOME.mode==='live'&&SETUP.owner===HOME.user?.id&&!SETUP.record?.completed_at?[['setup','wrench','Configuración inicial']]:[]),...(HOME.user?[['export','copy','Exportar registro académico']]:[]),['out','logout','Cerrar sesión']].map(r=>`<button class="it" role="menuitem" data-a="${r[0]}">${ic(r[1])}<span class="l">${r[2]}</span></button>`).join('')}
+  +[...(HOME.user?[['profile','user','Mi perfil']]:[]),...(HOME.mode==='live'?[['preferences','wrench','Preferencias'],...((moderationAccess.admin||moderationAccess.scopes.length)?[['admin','lock','Administración']]:[]),['personal-ai','sparkles','Mi IA · claves personales']]:[]),...(mqM.matches?[]:[['arcade','gamepad','ARCADE']]),...(HOME.mode==='live'&&SETUP.owner===HOME.user?.id&&!SETUP.record?.completed_at?[['setup','wrench','Configuración inicial']]:[]),...(HOME.user?[['export','copy','Exportar registro académico']]:[]),['out','logout','Cerrar sesión']].map(r=>`<button class="it" role="menuitem" data-a="${r[0]}">${ic(r[1])}<span class="l">${r[2]}</span></button>`).join('')}
 function syncTg(){const g=$('menu').querySelector('.tg');if(!g)return;const d=isDark();g.dataset.s=d?'dark':'light';g.querySelectorAll('.tgb').forEach(b=>b.setAttribute('aria-checked',(b.dataset.t==='dark')===d))}
-function setTheme(dark){if(dark===isDark())return;root.classList.add('tt');root.dataset.theme=dark?'dark':'light';syncTg();clearTimeout(ttm);ttm=setTimeout(()=>root.classList.remove('tt'),900)}
-$('menu').onclick=e=>{const t=e.target.closest('.tgb');if(t){setTheme(t.dataset.t==='dark');return}
+function setTheme(dark){try{localStorage.setItem('lyra-theme',dark?'dark':'light')}catch{}if(dark===isDark()){root.dataset.theme=dark?'dark':'light';return;}root.classList.add('tt');root.dataset.theme=dark?'dark':'light';syncTg();clearTimeout(ttm);ttm=setTimeout(()=>root.classList.remove('tt'),900)}
+$('menu').onclick=e=>{const t=e.target.closest('.tgb');if(t){setTheme(t.dataset.t==='dark');systemRuntime?.sync.set('theme',t.dataset.t);return}
   const b=e.target.closest('.it');if(!b)return;const a=b.dataset.a;
+  if(a==='profile'){setMenu(false);go('Mi perfil');return}
+  if(a==='preferences'||a==='admin'){setMenu(false);go(a==='admin'?'Administración':'Preferencias');return}
   if(a==='personal-ai'){setMenu(false);go('Mi IA');return}
   if(a==='arcade'){setMenu(false);arcOpen();return}
   if(a==='setup'){setMenu(false);setupOpen();return}
   if(a==='export'){setMenu(false);void exportAcademicRecord();return}
-  homeSignOut();};
+  if(a==='out')homeSignOut();};
 $('menu').addEventListener('keydown',e=>{const t=e.target.closest&&e.target.closest('.tgb');if(!t||(e.key!=='ArrowLeft'&&e.key!=='ArrowRight'))return;
-  e.preventDefault();const dk=e.key==='ArrowLeft';setTheme(dk);$('menu').querySelector(dk?'.tgb.dark':'.tgb.light').focus({preventScroll:true})});
+  e.preventDefault();const dk=e.key==='ArrowLeft';setTheme(dk);systemRuntime?.sync.set('theme',dk?'dark':'light');$('menu').querySelector(dk?'.tgb.dark':'.tgb.light').focus({preventScroll:true})});
 mq.addEventListener('change',renderProfile);
 let profileCloseTimer=0;
 function setMenu(o,restoreFocus){
@@ -1024,7 +1050,7 @@ function gmArt(id){
  return `<svg viewBox="0 0 280 292" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${p}</svg>`;
 }
 function arcHTML(){return `<div class="gm-ambient" aria-hidden="true">${GAMES.map(g=>`<div class="gm-aura" data-glow="${g.id}" style="--a:${g.a};--b:${g.b}"></div>`).join('')}</div>
- <header class="gm-header"><div class="gm-brand">${svg('gamepad',23)}<span>ESAN<i></i><b>Arcade</b></span></div><div class="gm-top-controls"><button class="gm-icon gm-sound" data-gm="sound" aria-pressed="true" aria-label="Silenciar sonidos" title="Silenciar sonidos">${gmSoundIcon(true)}</button><button class="gm-icon gm-auto" data-gm="auto" aria-pressed="false" aria-label="Activar recorrido automático" title="Recorrido automático">${gmPlayIcon()}</button><button class="gm-icon gm-back" id="arx" data-gm="close" aria-label="Salir de Arcade">${svg('x',18)}<span>Salir</span></button></div></header>
+ <header class="gm-header"><div class="gm-brand">${svg('gamepad',23)}<span>Lyra<i></i><b>Arcade</b></span></div><div class="gm-top-controls"><button class="gm-icon gm-sound" data-gm="sound" aria-pressed="true" aria-label="Silenciar sonidos" title="Silenciar sonidos">${gmSoundIcon(true)}</button><button class="gm-icon gm-auto" data-gm="auto" aria-pressed="false" aria-label="Activar recorrido automático" title="Recorrido automático">${gmPlayIcon()}</button><button class="gm-icon gm-back" id="arx" data-gm="close" aria-label="Salir de Arcade">${svg('x',18)}<span>Salir</span></button></div></header>
  <div class="gm-content" id="gmgallery"><h2 class="gm-heading">Una pausa para jugar.</h2><p class="gm-intro">Encuentra tu próximo reto y cambia de ritmo.</p><div class="gm-filters" role="group" aria-label="Categoría de juegos">${[['all','Todos'],['arcade','Arcade'],['educational','Educativos']].map(([v,t])=>`<button class="gm-filter${ARC.filter===v?' on':''}" data-gm="filter" data-filter="${v}" aria-pressed="${ARC.filter===v}">${t}</button>`).join('')}</div>
  <section class="gm-shelf" id="gmshelf" aria-label="Elegir juego" aria-roledescription="carrusel" tabindex="0"></section>
  <div class="gm-selection" id="gmselection" aria-live="polite" aria-atomic="true"></div><div class="gm-dots" id="gmdots" role="group" aria-label="Seleccionar juego"></div>
@@ -1060,7 +1086,7 @@ function arIntroHTML(){
 <div class="ar-scene">
 <div class="ar-sky"><div class="ar-sun">${arSun()}</div>${arStar(9,8,0)+arStar(90,12,.5)+arStar(78,52,1.1)+arStar(16,58,.7)+arStar(48,3,.3)}${arCloud(30,46,-12,56)+arCloud(14,70,-40,40)+arCloud(44,58,-26,48)}</div>
 <div class="ar-floor"><div class="ar-plane"></div></div>
-<div class="ar-title">${arPix('ESAN',.35)}${arPix('ARCADE',.8)}<p class="ar-tag">JUEGA · APRENDE · GANA</p></div>
+<div class="ar-title">${arPix('LYRA',.35)}${arPix('ARCADE',.8)}<p class="ar-tag">JUEGA · APRENDE · GANA</p></div>
 ${arCoin(8,0)+arCoin(54,.35)+arCoin(8,.7)}
 <div class="ar-hero">${arHero()}</div>
 <div class="ar-gr"><i></i><i></i></div>
@@ -1092,7 +1118,7 @@ function arReady(){
   $('argo').disabled=false;$('argo').focus({preventScroll:true})}
 
 function arcOpen(){
- if(ARC.open)return;
+ if(mqM.matches||ARC.open)return;
  clearTimeout(ARC.closing);ARC.open=true;ARC.stage='intro';ARC.n=-1;ARC.sg=-1;ARC.active=0;
  ARC.returnFocus=document.activeElement;const el=$('arc');
  el.classList.remove('out','rdy','gallery-ready');el.classList.add('arc-intro');
@@ -1204,7 +1230,7 @@ webNavigation=createWebNavigation({
  restore:s=>{HOME.tab=s.tab;setMenu(false);setDrawer(false);go(s.kid||s.page,s.kid?s.page:undefined,{history:false,scroll:s.scroll})}
 });
 const webSession=homeClient?createWebSessionGuard(homeClient,{authKey:webAuthStorageKey(),
- onLock:()=>{document.body.style.visibility='hidden';homeReset();curriculumRender++;curriculumUnmount?.();curriculumUnmount=null},
+ onLock:()=>{document.body.style.visibility='hidden';void systemRuntime?.signOut();homeReset();curriculumRender++;curriculumUnmount?.();curriculumUnmount=null},
  onSuspend:()=>{document.body.style.visibility='hidden'},
  onResume:()=>{document.body.style.visibility=''},
  onExpired:reason=>location.replace(new URL('./login.html?reason='+reason,location.href).href)
@@ -1232,11 +1258,43 @@ document.addEventListener('focusin',syncViewport);document.addEventListener('foc
 mqM.addEventListener('change',()=>{setMenu(false);renderMobileDock();renderProfile();if(!HOME.saving.size&&!SETUP.unmount)renderPage()});
 renderMobileDock();
 
-mountHomeEnhancements({nav_items:NAV,nav:go,icon:svg,courses:()=>homeCareer().cursos,data:homeModel,get st(){return HOME_WIDGETS},get x(){return HOME},get tab(){return HOME.tab}});
+systemRuntime=createSystemRuntime({client:homeClient,getUser:()=>HOME.user,getAgenda:()=>HOME_WIDGETS,apply:applySyncedPreferences});
+mountHomeEnhancements({closeMenu:()=>setMenu(false),get prefs(){return systemRuntime.sync},get scale(){return HOME_SCALE},nav_items:NAV,nav:go,icon:svg,courses:()=>homeCareer().cursos,data:homeModel,get st(){return HOME_WIDGETS},get x(){return HOME},get tab(){return HOME.tab}});
 mountHomeCompanion($('page'));
 homeInit();
 window.addEventListener('focus',()=>{if(HOME.mode==='profile'&&HOME.user&&!HOME.saving.size)homeLoad(HOME.user)});
 if(homeClient)homeClient.auth.onAuthStateChange((event,session)=>{
- if(event==='SIGNED_OUT'){homeReset();homeRender()}
+ if(event==='SIGNED_OUT'){void systemRuntime.signOut();homeReset();homeRender()}
  else if(event==='SIGNED_IN'&&session?.user&&session.user.id!==HOME.user?.id){setTimeout(()=>homeInit(),0)}
 });
+
+function legacyPreferences(id){
+ const values={};try{const layout=JSON.parse(localStorage.getItem('lyra-home-layout-v1:'+id));if(layout)values.homeLayout=layout;const order=JSON.parse(localStorage.getItem('esan-inicio-orden-v1:'+id));if(order)values.homeOrder=order;const diagnosis=JSON.parse(localStorage.getItem('esan-diagnostico-v1:'+id));if(diagnosis)values.diagnosis=diagnosis;const glow=JSON.parse(localStorage.getItem('esan-brillo-v1'));if(glow)values.glow=glow}catch{}return values;
+}
+function applySyncedPreferences(values){
+ if(!HOME.user)return;let changed=false;
+ for(const [key,prefix] of [['homeOrder','esan-inicio-orden-v1:'],['diagnosis','esan-diagnostico-v1:']])if(key in values){const k=prefix+HOME.user.id,v=JSON.stringify(values[key]);if(localStorage.getItem(k)!==v){localStorage.setItem(k,v);changed=true}}
+ if(values.homeLayout){const k='lyra-home-layout-v1:'+HOME.user.id,v=JSON.stringify(values.homeLayout);if(localStorage.getItem(k)!==v){localStorage.setItem(k,v);window.dispatchEvent(new Event('lyra-home-layout-updated'))}}
+ if(values.theme)setTheme(values.theme==='dark');
+ if(values.glow)window.__esanBrillo?.set(values.glow,true);
+ if(values.focus)setupApply(values.focus);
+ if(values.sidebar&&['full','rail'].includes(values.sidebar)&&!mqM.matches){mode=values.sidebar;applySide()}
+ if(changed&&HOME.mode==='live'&&['Inicio','Mi semestre'].includes(cur)&&!HOME.saving.size)homeRender();
+}
+async function homeSnapshot(calendar=false){
+ if(!OFFLINE_ENABLED)return;
+ if(!HOME.user||HOME.mode!=='live')return;
+ const patch={profile:{alias:HOME.profile?.alias},catalog:homeCareer(),done:[...HOME.done],academicAt:new Date().toISOString()};
+ if(calendar){patch.events=HOME_WIDGETS.calendar_events;patch.tasks=HOME_WIDGETS.calendar_tasks;patch.calendarAt=new Date().toISOString()}
+ try{await saveOfflineAccount(HOME.user.id,patch)}catch{/* Device storage may be unavailable. */}
+}
+window.addEventListener('lyra-calendar-updated',e=>{if(e.detail.userId===HOME.user?.id){HOME_WIDGETS.calendar_events=e.detail.events;HOME_WIDGETS.calendar_tasks=e.detail.tasks;void homeSnapshot(true)}});
+function systemSurface(){if(HOME.mode!=='live')return '<section class="blk">'+homeEmpty('Preferencias de tu cuenta','Inicia sesión para continuar.')+'</section>';return '<div id="system-settings" aria-busy="true"><p role="status">Preparando '+(cur==='Administración'?'el panel administrativo':'tus preferencias')+'…</p></div>'}
+async function mountSystem(){
+ const container=$('system-settings'),revision=HOME.revision,render=curriculumRender,admin=cur==='Administración';
+ try{const module=await (admin?import('../features/account/Administration.jsx'):import('../features/account/SystemSettings.jsx'));if(!container.isConnected||revision!==HOME.revision||render!==curriculumRender)return;
+ curriculumUnmount=module[admin?'mountAdministration':'mountSystemSettings'](container,{client:homeClient,user:HOME.user,profile:HOME.profile,scale:HOME_SCALE,sync:systemRuntime.sync,syncStatus:systemRuntime.status,install:systemRuntime.install,access:moderationAccess,onBusy:value=>{if(revision===HOME.revision){if(value)HOME.saving.add('system');else HOME.saving.delete('system')}}});container.removeAttribute('aria-busy');
+ }catch{if(container.isConnected)container.textContent='No se pudo abrir esta sección. Reintenta desde el perfil.'}
+}
+
+async function mountUniversity(id,file,method){const container=$(id),revision=HOME.revision,render=curriculumRender;try{const mod=await ({ProfilePreferences:()=>import('../features/institutions/ProfilePreferences.jsx'),UniversitySetup:()=>import('../features/institutions/UniversitySetup.jsx')})[file]();if(revision!==HOME.revision||render!==curriculumRender||!container.isConnected)return;curriculumUnmount=mod[method](container,{client:homeClient,profile:HOME.profile,onSaved:()=>homeLoad(HOME.user),onCatalogChanged:()=>homeLoad(HOME.user),onBusy:value=>value?HOME.saving.add('university'):HOME.saving.delete('university')})}catch{if(container.isConnected)container.textContent='No pudimos abrir esta sección. Reintenta desde el menú.'}}

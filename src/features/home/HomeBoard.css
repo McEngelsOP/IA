@@ -1,0 +1,60 @@
+/* Tiles follow the existing portal surfaces. Geometry changes, rather than content reloads. */
+#app .h-home>.h-hero{margin-bottom:18px}
+#app .h-home .hw-toolbar{display:flex;align-items:center;justify-content:space-between;gap:18px;margin:22px 0 16px}
+.hw-toolbar strong{font-size:15px}.hw-toolbar p{font-size:12px;font-weight:400;line-height:1.6;margin:3px 0 0;color:color-mix(in srgb,var(--txt) 78%,var(--bg));max-width:65ch}
+.hw-toolbar-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;flex-shrink:0}.hw-toolbar .h-btn{min-height:44px}
+#app .h-home .hw-toolbar [data-home-instructions]{font-size:13px;margin-top:10px}
+#app .hw-grid{display:grid;grid-template-columns:repeat(var(--home-columns,2),minmax(0,1fr));gap:18px;align-items:stretch;isolation:isolate;min-width:0}
+#app .h-home .hw-grid>.hw{position:relative;min-width:0;max-width:100%;padding:0;margin:0;border-radius:24px;scroll-margin-block:100px;display:flex;flex-direction:column;isolation:isolate}
+#app .h-home[data-editing] .hw-grid>.hw{padding-top:0}
+#app .h-home .hw-grid>.hw::before{display:none}
+#app .h-home .hw-grid>.hw .hw-content{min-width:0;flex:1}
+#app .h-home .hw-content>:is(.hoy,.racha,.notas,.h-summary,.h-enrollment){margin:0}
+#app .h-home .hw-content>.h-tabs{margin-top:0}
+#app .hw-grid button{scroll-margin-block:100px}
+#app .h-home .hw-controls{display:none;gap:8px;align-items:center;justify-content:space-between;min-width:0;margin-bottom:6px}
+#app .h-home[data-editing=true] .hw-controls{display:flex}
+#app .h-home .hw-controls button{position:static;translate:none;opacity:1;transform:none;display:grid;place-items:center;width:44px;height:44px;min-height:44px;flex:none;padding:0;border:1px solid var(--bar-b);border-radius:12px;color:var(--ic);background:var(--panel);box-shadow:none;transition:background-color 120ms ease}
+#app .h-home .hw-controls .w-grip{cursor:grab;touch-action:none}
+#app .h-home .hw-controls button:hover{background:var(--tile)}
+#app .h-home .hw-controls button:focus-visible,.hw-options button:focus-visible{outline:2px solid var(--ic);outline-offset:3px}
+#app .hw-grid>.hw:focus-visible{outline:2px solid var(--ic);outline-offset:4px}
+#app .h-home[data-editing=true] .hw-content,#app .h-home[data-editing=true] .hw-preview{outline:1px dashed color-mix(in srgb,var(--ic) 35%,transparent);outline-offset:3px}
+#app .h-home .hw-grid>.hw[data-dragging=true]{opacity:.3;outline:2px dashed var(--hx);outline-offset:4px}
+#app .h-home .hw-preview{flex:1;min-width:0;min-height:220px;box-sizing:border-box;display:flex;flex-direction:column;align-items:stretch;gap:7px;padding:20px;border-radius:24px;margin:0}
+#app .h-home .hw-preview h3{font-size:15px;line-height:1.4;margin:0 0 6px;font-weight:600;overflow-wrap:anywhere}
+#app .h-home .hw-preview .hw-value{font-size:clamp(24px,3cqw,34px);font-weight:650;line-height:1.15;overflow-wrap:anywhere;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+#app .h-home .hw-preview .hw-label{font-size:13px;font-weight:500;line-height:1.4;margin:0}
+#app .h-home .hw-preview .hw-detail{font-size:12px;line-height:1.5;margin:0 0 8px;color:color-mix(in srgb,var(--txt) 78%,var(--bg));overflow-wrap:anywhere}
+#app .h-home .hw-preview .h-btn{margin-top:auto;align-self:flex-start;min-height:44px;font-size:12px}
+#app .h-home .hw[data-size=compact] .hw-preview .hw-detail{display:none}
+#app .h-home .hw[data-w=hoy][data-size=compact] .hw-value{font-size:18px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+#app .h-home .hw[data-size=medium] .hw-preview{min-height:220px}
+#app .h-home .hw[data-size=medium] .hw-preview .hw-value{font-size:32px}
+#app .h-home .hw-empty{grid-column:1/-1;line-height:1.6;padding:24px 0;color:var(--txt)}
+#app .h-home .hw-visitor{display:block}
+#app .h-home .hw[hidden],#app .h-home .hw [hidden],.hw-toolbar [hidden]{display:none!important}
+.hw-options{position:fixed;z-index:35;width:min(324px,calc(100vw - 20px));box-sizing:border-box;border:1px solid var(--bar-b);background:var(--panel);color:var(--txt);padding:18px;border-radius:20px;box-shadow:0 14px 38px var(--sh);font-size:14px}
+.hw-options h3{font-size:16px;line-height:1.4;margin:0 0 14px}.hw-options p{font-size:12px;line-height:1.6;margin:14px 0 0;color:color-mix(in srgb,var(--txt) 78%,var(--bg))}
+.hw-sizes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;padding:4px;border-radius:14px;background:var(--tile)}
+.hw-options button{min-height:44px;min-width:0;font:inherit;line-height:1.4;color:var(--txt);padding:9px 6px;border-radius:10px;transition:background-color 120ms ease}
+.hw-sizes button{font-size:12px}.hw-sizes button[aria-pressed=true]{color:var(--on-t);background:var(--on)}
+.hw-option-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:12px}.hw-option-actions button{background:var(--tile);font-size:13px}.hw-option-actions button:last-child{grid-column:1/-1}
+.hw-options button:hover{filter:brightness(.96)}
+.hw-ghost{position:fixed!important;z-index:34;pointer-events:none!important;box-sizing:border-box;overflow:hidden;max-width:none!important;margin:0!important;padding:0!important;border-radius:24px;will-change:transform;box-shadow:0 18px 38px var(--sh);background:var(--panel);color:var(--txt)}
+.hw-ghost .hw-controls{display:flex;justify-content:space-between;padding:0 6px;min-height:44px}.hw-ghost .hw-controls button{width:44px;height:44px}
+.hw-ghost .hw-preview{display:flex;flex-direction:column;align-items:stretch;gap:7px;min-height:220px;padding:20px;margin:0;border-radius:24px;box-sizing:border-box;background:var(--panel)}
+.hw-ghost .hw-preview h3{font-size:15px;margin:0 0 6px}.hw-ghost .hw-value{font-size:30px;line-height:1.15}.hw-ghost .hw-label,.hw-ghost .hw-detail{font-size:13px;margin:0}.hw-ghost .hw-preview .h-btn{margin-top:auto;align-self:flex-start;min-height:44px}.hw-ghost [hidden]{display:none!important}
+.hw-ghost[data-size=compact] .hw-detail{display:none}
+@media(max-width:600px){
+ #app .h-home .hw-toolbar{align-items:flex-start;gap:12px;flex-wrap:wrap}
+ #app .h-home .hw-toolbar>div:first-child{max-width:none;flex:1;min-width:140px}
+ #app .h-home .hw-toolbar-actions{max-width:100%;flex-shrink:1}
+ #app .h-home .hw-toolbar .h-btn{font-size:12px;padding:8px 12px}
+ #app .hw-grid{gap:12px}
+ #app .h-home .hw-preview{padding:16px 13px;min-height:220px;border-radius:22px}
+ #app .h-home .hw-preview .hw-value{font-size:25px;line-height:1.2}
+ #app .h-home .hw[data-size=medium] .hw-preview .hw-value{font-size:30px}
+ .hw-options{padding:16px}
+}
+@media(prefers-reduced-motion:reduce){.hw-options button,#app .h-home .hw-controls button{transition:none}.hw-ghost{will-change:auto}}

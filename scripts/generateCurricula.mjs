@@ -124,7 +124,7 @@ export function generateCurricula({ check = false } = {}) {
   const focusFunction = focusSource.match(/create or replace function public\.start_focus_session\([\s\S]*?end;\$\$;/)?.[0]
   const logrosFunction = logrosSource.match(/create or replace function public\.reclamar_logros\([\s\S]*?\n\$\$;/)?.[0]
   if (!focusFunction || !logrosFunction) throw new Error('No se encontraron las funciones existentes de Focus/Logros')
-  const versionRows = Object.entries(metadata).map(([key,c]) => `('esan', '${key}', '${c.version}', '${c.sourceHash}', '${c.source.replaceAll("'", "''")}')`).join(',\n')
+  const versionRows = Object.entries(metadata).map(([key,c]) => `('esan', '${key}', '${c.version}', '${c.sourceHash}', '${c.source.replaceAll("'", "''")}', '${JSON.stringify(snapshots[key]).replaceAll("'", "''")}'::jsonb,now())`).join(',\n')
   const versionCase = 'case new.carrera ' + Object.entries(metadata).map(([key,c]) => `when '${key}' then '${c.version}'`).join(' ') + ' end'
   const migration = `-- Generado por scripts/generateCurricula.mjs. Ejecutar una vez en SQL Editor.
 -- Es repetible: conserva perfiles, avances, notas, RLS y el candado de carrera.
@@ -135,12 +135,14 @@ create table if not exists public.curriculum_versions (
   source_hash text not null, source_document text not null,
   primary key (institution_id, career_key, version)
 );
+alter table public.curriculum_versions add column if not exists catalog jsonb;
+alter table public.curriculum_versions add column if not exists published_at timestamptz;
 alter table public.curriculum_versions enable row level security;
 revoke all on public.curriculum_versions from public, anon, authenticated;
 grant select on public.curriculum_versions to authenticated;
 drop policy if exists curriculum_versions_read on public.curriculum_versions;
 create policy curriculum_versions_read on public.curriculum_versions for select to authenticated using (true);
-insert into public.curriculum_versions values
+insert into public.curriculum_versions(institution_id,career_key,version,source_hash,source_document,catalog,published_at) values
 ${versionRows}
 on conflict do nothing;
 alter table public.profiles add column if not exists institution_id text;
@@ -158,7 +160,7 @@ begin
   end if;
   if old.carrera is null and new.carrera in (${values}) then
     new.institution_id := 'esan'; new.curriculum_version := ${versionCase};
-  elsif auth.uid() is not null and (new.institution_id is distinct from old.institution_id or new.curriculum_version is distinct from old.curriculum_version) then
+  elsif auth.uid() is not null and current_user in ('authenticated','anon','authenticator') and (new.institution_id is distinct from old.institution_id or new.curriculum_version is distinct from old.curriculum_version) then
     raise exception 'CURRICULUM_ASSIGNMENT_LOCKED';
   end if;
   return new;

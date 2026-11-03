@@ -1,0 +1,14 @@
+import { useEffect,useRef,useState } from 'react'
+import { createRoot } from 'react-dom/client'
+import './CurriculumImport.css'
+import { CurriculumStatus } from './CurriculumStatus.jsx'
+import { CurriculumModeration } from './CurriculumModeration.jsx'
+function ProfilePreferences({client,profile,onSaved,onBusy,onCatalogChanged}){
+ const [moderator,setModerator]=useState(false),[moderating,setModerating]=useState(false)
+ useEffect(()=>{let alive=true;client.rpc('is_curriculum_moderator').then(r=>{if(alive)setModerator(!r.error&&r.data===true)});return()=>{alive=false}},[client])
+ const [alias,setAlias]=useState(profile.alias||''),[changed,setChanged]=useState(profile.alias_changed_at),[busy,setBusy]=useState(false),[message,setMessage]=useState(''),[error,setError]=useState('')
+ const lock=useRef(false),next=changed?new Date(Date.parse(changed)+7*86400000):null,blocked=next&&next>Date.now()
+ async function save(e){e.preventDefault();if(lock.current||blocked)return;lock.current=true;setBusy(true);onBusy(true);setError('');setMessage('');try{const r=await client.rpc('change_profile_alias',{p_alias:alias.trim()});if(r.error)throw r.error;setAlias(r.data.alias);setChanged(r.data.changed_at);onSaved(r.data);setMessage('Apodo actualizado. Podrás volver a cambiarlo dentro de siete días.')}catch(e){setError(e.code==='23505'?'Ese apodo ya está en uso. Elige otro.':e.message?.includes('ALIAS_WEEK_LIMIT')?'Solo puedes cambiar tu apodo una vez cada siete días.':'No pudimos guardar tu apodo. Reintenta.')}finally{lock.current=false;setBusy(false);onBusy(false)}}
+ return <><section className="blk ci"><h2>Mi perfil</h2><p>{profile.university_name||'Mi universidad'}</p><form onSubmit={save}><label>Apodo público<input autoComplete="nickname" minLength={3} maxLength={24} required value={alias} disabled={busy||blocked} onChange={e=>setAlias(e.target.value)}/></label><p>Se muestra en las salas y en tus aportes. Puedes cambiarlo una vez cada siete días.</p>{blocked&&<p role="status">Próximo cambio: {next.toLocaleString('es-PE',{timeZone:'America/Lima',dateStyle:'long',timeStyle:'short'})} (Lima).</p>}<button className="h-btn primary" disabled={busy||blocked||alias.trim().length<3}>{busy?'Guardando…':'Guardar apodo'}</button>{error&&<p role="alert">{error}</p>}<p role="status">{message}</p></form>{moderator&&<button className="h-btn" disabled={busy} onClick={()=>setModerating(!moderating)}>{moderating?'Cerrar moderación':'Abrir moderación de mallas'}</button>}</section>{moderating?<CurriculumModeration client={client} onBusy={onBusy}/>:profile.custom_curriculum_id&&<CurriculumStatus client={client} profile={profile} onBusy={onBusy} onCatalogChanged={onCatalogChanged}/>}</>
+}
+export function mountProfilePreferences(container,props){const root=createRoot(container);root.render(<ProfilePreferences {...props}/>);return()=>root.unmount()}

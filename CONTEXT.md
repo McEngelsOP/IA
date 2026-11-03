@@ -4,7 +4,7 @@ Actualizado el 20 de octubre de 2026 para la reestructuración en `aea`. El cód
 
 ## Alcance y entradas
 
-Solo ESAN está habilitada, con las 18 carreras del catálogo. Lyra es la marca general. Las diferencias institucionales se separan del motor para permitir expansión futura.
+Oficial prepara el registro de otras universidades con las migraciones 202611020001–005; su activación remota sigue siendo manual. Se conservan las 18 carreras ESAN. Lyra es la marca general. Las diferencias institucionales se separan del motor para permitir expansión futura.
 
 Mecatrónica PUCP se retiró del registro, grafos y asesor. Se conserva la cuenta histórica y sus registros: al entrar se muestra un estado específico con exportación, sin reasignarla a ESAN. El SQL conserva ese valor histórico y rechaza registros o asignaciones nuevos de esa carrera.
 
@@ -41,7 +41,9 @@ La interfaz admite la base anterior: perfiles sin asignación usan el catálogo 
 
 ## Semestre, planificación y asistente
 
-Mi semestre reúne Calendario y tareas, Notas y objetivos y Cursos actuales. El cálculo de objetivos reutiliza Inicio y guarda estimaciones locales por cuenta; no son notas oficiales ni están sincronizadas. Las notas finales usan `grades`.
+La reconciliación de noviembre está descrita en `docs/integration-oficial.md` y `docs/universities-curriculum.md`. El modo offline queda desactivado por defecto.
+
+Mi semestre reúne Calendario y tareas, Notas y objetivos y Cursos actuales. El cálculo de objetivos reutiliza Inicio y guarda estimaciones locales por cuenta; no son notas oficiales; sus preferencias se sincronizan por cuenta. Las notas finales usan `grades`.
 
 Solo Mi semestre ofrece importación de horario `.xlsx`. La propuesta se revisa y edita antes de guardar únicamente clases confirmadas. El onboarding remite allí y conserva clases de borradores anteriores, sin ofrecer CSV ni otro importador.
 
@@ -69,4 +71,8 @@ No crear otra carpeta de descartes: usar Git para recuperar código retirado. An
 
 ## Corrección de fichas y Recursos · 25 de octubre de 2026
 
-La rama de trabajo actual es `main`. La ficha del curso tiene un botón directo y selector de curso; conserva dificultad, profesores, recomendaciones positivas/negativas y etiquetas. Los comentarios históricos de herramientas vuelven a consultarse desde Recursos, separados de `tools.description`, mediante `ResourceComments` con carga al abrir, paginación y columnas públicas explícitas. No se modificaron tablas, permisos ni registros remotos. `courseCommunity.browser.mjs` cubre estos flujos, fallos independientes y vistas de 320/390/1440 px.
+Las correcciones de este apartado se publicaron inicialmente en `main`. La ficha del curso tiene un botón directo y selector de curso; conserva dificultad, profesores, recomendaciones positivas/negativas y etiquetas. Los comentarios históricos de herramientas vuelven a consultarse desde Recursos, separados de `tools.description`, mediante `ResourceComments` con carga al abrir, paginación y columnas públicas explícitas. No se modificaron tablas, permisos ni registros remotos. `courseCommunity.browser.mjs` cubre estos flujos, fallos independientes y vistas de 320/390/1440 px.
+
+## Ampliación del sistema · integración en Oficial el 2 de noviembre de 2026
+
+Rama de esta entrega: `Oficial`, integrada desde `feat/lyra-system-complete`: preferencias por cuenta, escalas institucionales, comparación y actualización de mallas con equivalencias, prevención de calendario, PWA de consulta y panel de servicios/reportes. La implementación y los límites están en `docs/system-complete.md`. La subida del código a `Oficial` está autorizada. La activación remota de la migración amplia y de `study-advisor` sigue pendiente de autorización específica; publicar la rama no ejecuta esos cambios en Supabase. No confundir las pruebas locales y fixtures con un recorrido de cuentas reales.

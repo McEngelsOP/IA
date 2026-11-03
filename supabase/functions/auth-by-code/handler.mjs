@@ -21,7 +21,7 @@ export function createAuthHandler({ admin, auth, log = console.error }) {
       // Compatibilidad con clientes antiguos: sin consultar si existe una cuenta.
       if (action === 'exists') return json({ ok: true, exists: false })
       const { data: profile, error } = await admin.from('profiles')
-        .select('email').eq('student_code', normalized).maybeSingle()
+        .select('email').eq('student_code', normalized).eq('institution_id','esan').maybeSingle()
       if (error) {
         log('[auth-by-code] lookup failed')
         return json({ ok: false, error: 'server_error' })

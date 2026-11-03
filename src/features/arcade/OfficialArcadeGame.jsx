@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
-import DinoGame from './DinoGame.jsx'
-import Galaxia from './Galaxia.jsx'
-import Geoduelo from './Geoduelo.jsx'
+const DinoGame=lazy(()=>import('./DinoGame.jsx'))
+const Galaxia=lazy(()=>import('./Galaxia.jsx'))
+const Geoduelo=lazy(()=>import('./Geoduelo.jsx'))
 export function OfficialArcadeGame({ game, client, user, soundEnabled = true, onSoundChange, onExit, playerName }) {
   const [notice, setNotice] = useState(''), [best, setBest] = useState(null)
   const [pendingScore, setPendingScore] = useState(null)
@@ -39,8 +39,8 @@ export function OfficialArcadeGame({ game, client, user, soundEnabled = true, on
     }
   }
   return <div className={`gm-react-game${game === 'geoduelo' ? ' gm-geoduelo-game' : ''}`}>
-    {game === 'geoduelo' ? <Geoduelo onGameOver={saveScore} soundEnabled={soundEnabled} onSoundChange={onSoundChange} onExit={onExit} playerName={playerName} account={!!user} client={client} user={user}/>
-      : game === 'dino' ? <DinoGame onGameOver={saveScore}/> : <Galaxia onGameOver={saveScore}/>}
+    <Suspense fallback={<p role="status">Preparando el juego…</p>}>{game === 'geoduelo' ? <Geoduelo onGameOver={saveScore} soundEnabled={soundEnabled} onSoundChange={onSoundChange} onExit={onExit} playerName={playerName} account={!!user} client={client} user={user}/>
+      : game === 'dino' ? <DinoGame onGameOver={saveScore}/> : <Galaxia onGameOver={saveScore}/>}</Suspense>
     {(best != null || notice || pendingScore) && <div className="gm-game-status"><p className="gm-result" role="status">{best != null ? `Tu mejor puntaje${game === 'geoduelo' ? ' local · Jugador 1' : ''}: ${best}. ` : ''}{notice}</p>
       {pendingScore != null && <button className="gm-small-button" onClick={() => saveScore(pendingScore, true)}>Reintentar guardado</button>}</div>}
   </div>

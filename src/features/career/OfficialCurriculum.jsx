@@ -1,3 +1,5 @@
+import CurriculumVersions from './CurriculumVersions.jsx'
+import { GRADE_SCALES, parseGrade, validGrade, formatGrade, scaleLabel } from '../../core/academic/grading.js'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { CARRERAS } from '../../institutions/esan/carreras.js'
@@ -36,7 +38,7 @@ function Icon({ name }) {
   return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>
 }
 
-export function OfficialCurriculum({ career, catalog, user, client, sessionMode, initialDone, initialPlan, statuses: initialStatuses, initialGrades, currentSemester, onSemesterChange = () => {}, onProgressChange, onGradeChange, onStatusChange, onBusy }) {
+export function OfficialCurriculum({ career, catalog, user, client, sessionMode, initialDone, initialPlan, statuses: initialStatuses, initialGrades, currentSemester, gradeScale=GRADE_SCALES.twenty, onCurriculumUpdated, onSemesterChange = () => {}, onProgressChange, onGradeChange, onStatusChange, onBusy }) {
   const M = getMalla(career, catalog)
   const [savedSemester, setSavedSemester] = useState(currentSemester || ''), [semester, setSemester] = useState(currentSemester || ''), [onlyRelated, setOnlyRelated] = useState(false)
   const [preferredView, setPreferredView] = useState(null), [cycle, setCycle] = useState('all')
@@ -72,7 +74,7 @@ export function OfficialCurriculum({ career, catalog, user, client, sessionMode,
 
   useEffect(() => { mounted.current = true; return () => { mounted.current = false } }, [])
   useEffect(() => { setStatusDraft(course ? statuses[course.id]?.status || '' : '') }, [course?.id, statuses])
-  useEffect(() => { setGradeDraft(course && Number.isFinite(grades[course.id]) ? String(grades[course.id]) : '') }, [course?.id, grades])
+  useEffect(() => { setGradeDraft(course && Number.isFinite(grades[course.id]) ? formatGrade(grades[course.id],gradeScale) : '') }, [course?.id, grades])
   useEffect(() => {
     const c = matches[matchIndex]
     if (c) scroller.current?.scrollTo({ left: Math.max(0, c.x * zoom - 80), top: Math.max(0, c.y * zoom - 100), behavior: 'auto' })
@@ -171,8 +173,8 @@ export function OfficialCurriculum({ career, catalog, user, client, sessionMode,
   async function saveGrade(e) {
     e.preventDefault()
     if (locked.current || !course || (!done.has(course.id) && statuses[course.id]?.status !== 'desaprobado')) return
-    const raw = gradeDraft.trim(), value = raw === '' ? null : Number(raw.replace(',', '.'))
-    if (value !== null && (!Number.isFinite(value) || value < 0 || value > 20)) { setError('Escribe una nota entre 0 y 20.'); return }
+    const raw = gradeDraft.trim(), value = parseGrade(raw,gradeScale)
+    if (value !== null && !validGrade(value,gradeScale)) { setError('Escribe una nota de la escala '+scaleLabel(gradeScale)+'.'); return }
     begin()
     try {
       if (isLive) {
@@ -345,9 +347,10 @@ export function OfficialCurriculum({ career, catalog, user, client, sessionMode,
       {statuses[course.id]?.times_taken && <p>Veces llevado: {statuses[course.id].times_taken}{statuses[course.id].passed_at ? ` · Fecha registrada: ${new Date(statuses[course.id].passed_at).toLocaleDateString('es-PE')}` : ''}</p>}
       {!done.has(course.id) && <form className="oc-grade" onSubmit={saveStatus}><label>Estado académico<select value={statusDraft} disabled={busy || !isLive} onChange={e => setStatusDraft(e.target.value)}><option value="">Pendiente</option><option value="matriculado">En curso</option><option value="desaprobado">Desaprobado</option>{['aprobado', 'convalidado'].includes(statusDraft) && <option value={statusDraft}>{STATUS[statusDraft]}</option>}</select></label><button type="submit" className="oc-primary" disabled={busy || !isLive}>Guardar estado</button><p>Los cursos matriculados aparecen en Inicio y Mod Focus.</p></form>}
       <div className="oc-actions"><button type="button" disabled={busy} onClick={() => requestDone(course.id)}>{done.has(course.id) ? 'Quitar aprobación' : 'Marcar como aprobado'}</button></div>
-      {done.has(course.id) || statuses[course.id]?.status === 'desaprobado' ? <form className="oc-grade" onSubmit={saveGrade}><label>Nota / 20<input aria-label={`Nota de ${course.n}`} inputMode="decimal" value={gradeDraft} disabled={busy} placeholder="Sin nota" onChange={e => setGradeDraft(e.target.value)}/></label><button type="submit" className="oc-primary" disabled={busy}>{busy ? 'Guardando…' : 'Guardar nota'}</button><p>Deja el campo vacío para eliminar la nota. La nota también aparece en Inicio.</p></form> : <p>Marca el curso como llevado para registrar su nota.</p>}
+      {done.has(course.id) || statuses[course.id]?.status === 'desaprobado' ? <form className="oc-grade" onSubmit={saveGrade}><label>Nota · {scaleLabel(gradeScale)}<input aria-label={`Nota de ${course.n}`} inputMode="decimal" value={gradeDraft} disabled={busy} placeholder="Sin nota" onChange={e => setGradeDraft(e.target.value)}/></label><button type="submit" className="oc-primary" disabled={busy}>{busy ? 'Guardando…' : 'Guardar nota'}</button><p>Deja el campo vacío para eliminar la nota. La nota también aparece en Inicio.</p></form> : <p>Marca el curso como llevado para registrar su nota.</p>}
       <CourseCommunity key={course.id} course={course} client={client} user={isLive ? user : null} onBusy={value => { locked.current = value; setBusy(value); onBusy(value) }}/>
     </section> : <div className="oc-details"><h3>Ficha del curso</h3><p>Elige un curso en el selector o en la malla para consultar su dificultad según otros estudiantes, profesores, requisitos y registro académico.</p></div>)}
+    <CurriculumVersions client={client} user={user} catalog={catalog||M} onUpdated={onCurriculumUpdated} onBusy={onBusy}/>
     <details className="oc-source"><summary>Fuente y revisión de mi malla</summary><p>{M.nombre} · {M.uni}</p><p>Documento: {M.source}</p><p>Revisión del catálogo: {M.version}. Este identificador corresponde al archivo importado; no es una denominación oficial del plan.</p><p>Los requisitos de cada electivo se verifican por separado. La malla describe requisitos académicos; la oferta de secciones depende del periodo.</p></details>
     <p className="oc-foot">{M.foot}</p>
   </section>

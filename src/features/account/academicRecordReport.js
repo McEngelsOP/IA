@@ -1,3 +1,4 @@
+import { GRADE_SCALES, validScale, validGrade, weightedGrade } from '../../core/academic/grading.js'
 export const academicNumber = (value, digits = 0) => Number.isFinite(value) ? value.toLocaleString('es-PE', { minimumFractionDigits: digits, maximumFractionDigits: digits }) : '-'
 export const academicDate = (value, withTime = false) => {
   if (!value) return 'Sin registrar'
@@ -12,6 +13,7 @@ const statuses = { aprobado: 'Aprobado', convalidado: 'Convalidado', matriculado
 
 export function academicRecordModel(record, catalog) {
   const profile = record.profiles?.[0] || {}
+  const scale=validScale(record.gradingRules)?record.gradingRules:GRADE_SCALES.twenty
   // Never attach another career or a newer curriculum to a historical record.
   const matched = catalog?.key === profile.carrera && (!profile.curriculum_version || catalog.version === profile.curriculum_version) ? catalog : null
   const courses = new Map((matched?.cursos || []).map(course => [course.id, course]))
@@ -22,7 +24,7 @@ export function academicRecordModel(record, catalog) {
   const ids = new Set([...done, ...plan, ...grades.keys(), ...states.keys()])
   const rows = [...ids].map(id => {
     const course = courses.get(id), state = states.get(id) || {}, rawGrade = grades.get(id)
-    const grade = rawGrade !== null && rawGrade !== undefined && rawGrade !== '' && Number.isFinite(Number(rawGrade)) && Number(rawGrade) >= 0 && Number(rawGrade) <= 20 ? Number(rawGrade) : null
+    const grade = rawGrade !== null && rawGrade !== undefined && rawGrade !== '' && Number.isFinite(Number(rawGrade)) && validGrade(Number(rawGrade),scale) ? Number(rawGrade) : null
     return { id, name: course?.n || 'Curso sin catálogo disponible', cycle: course?.c, credits: course?.cr,
       completed: done.has(id), planned: plan.has(id), grade, ...state,
       label: statuses[state.status] || (done.has(id) ? 'Llevado' : 'Sin estado registrado') }
@@ -32,9 +34,9 @@ export function academicRecordModel(record, catalog) {
   const weighted = graded.filter(row => row.credits > 0)
   const gradedCredits = weighted.reduce((sum, row) => sum + row.credits, 0)
   const knownCredits = completed.every(row => Number.isFinite(row.credits))
-  return { profile, catalog: matched, courses, rows,
+  return { profile, scale, catalog: matched, courses, rows,
     completedCount: completed.length,
     completedCredits: knownCredits ? completed.reduce((sum, row) => sum + row.credits, 0) : null,
     enrolledCount: rows.filter(row => row.status === 'matriculado' && !row.completed).length,
-    weighted: gradedCredits && graded.every(row => Number.isFinite(row.credits)) ? weighted.reduce((sum, row) => sum + row.grade * row.credits, 0) / gradedCredits : null }
+    weighted: gradedCredits && graded.every(row => Number.isFinite(row.credits)) ? weightedGrade(graded.map(row=>({grade:row.grade,credits:row.credits})),scale) : null }
 }

@@ -7,10 +7,10 @@ const compiled=await build({entryPoints:[new URL('../supabase/functions/study-ad
 const {createAdvisorHandler}=await import('data:text/javascript;base64,'+Buffer.from(compiled.outputFiles[0].text).toString('base64'))
 const catalog=JSON.parse(readFileSync(new URL('../supabase/functions/study-advisor/catalog.json',import.meta.url)))
 let selectedPlan=[],selectedEnrolled=[]
-const client={auth:{getUser:async()=>({data:{user:{id:'fixture'}}})},rpc:async name=>({data:name==='advisor_check_moderation'?{allowed:true}:{canSend:true}}),from(table){
- const query={select(){return this},eq(){return this},limit(){return this},maybeSingle(){return this},then(resolve){return Promise.resolve({data:table==='profiles'?{carrera:'ia',curriculum_version:catalog.ia.version}:table==='progress'?{done:[],plan:selectedPlan}:table==='student_setup'?{preferences:{}}:selectedEnrolled.map(id=>({course_id:id,status:'matriculado'}))}).then(resolve)}};return query
+const client={auth:{getUser:async()=>({data:{user:{id:'fixture'}}})},rpc:async name=>({data:name==='ai_key_read'?{mode:'system',providers:[],access:{sharedEligible:true}}:{allowed:true,canSend:true}}),from(table){
+ const query={select(){return this},eq(){return this},limit(){return this},maybeSingle(){return this},then(resolve){return Promise.resolve({data:table==='profiles'?{institution_id:'esan',carrera:'ia',curriculum_version:catalog.ia.version}:table==='progress'?{done:[],plan:selectedPlan}:table==='student_setup'?{preferences:{}}:selectedEnrolled.map(id=>({course_id:id,status:'matriculado'}))}).then(resolve)}};return query
 }}
-const handler=createAdvisorHandler({createClient:()=>client,catalog,env:key=>({SUPABASE_URL:'https://fixture.invalid',SUPABASE_ANON_KEY:'fixture'})[key],fetch:async()=>{throw new Error('Rules must not call a model')}})
+const handler=createAdvisorHandler({createClient:()=>client,catalog,env:key=>({SUPABASE_URL:'https://fixture.invalid',SUPABASE_ANON_KEY:'fixture',SUPABASE_SERVICE_ROLE_KEY:'server'})[key],fetch:async()=>{throw new Error('Rules must not call a model')}})
 const request=body=>new Request('https://fixture.invalid',{method:'POST',headers:{Authorization:'Bearer fixture'},body:JSON.stringify({careerId:'ia',careerVersion:catalog.ia.version,...body})})
 
 test('advisor reports unknown elective requirements from its server catalog',async()=>{
