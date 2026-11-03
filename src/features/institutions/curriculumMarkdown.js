@@ -11,8 +11,24 @@ export function extractCurriculum(source){
  rows.push({code:get('code'),name:get('name'),credits:get('credits').replace(',','.'),cycle:get('cycle')||cycle,type:/taller/i.test(get('type')||get('name'))?'taller':/electiv/i.test(get('type')||get('name'))?'electivo':'curso',requirements:get('requirements')});if(rows.length>400)throw Error('Máximo 400 cursos y talleres.')
  }return{rows,issues}
 }
-export function validateRows(rows){if(!Array.isArray(rows)||!rows.length||rows.length>400)return'Añade entre 1 y 400 cursos.';const codes=new Set();for(const [i,r]of rows.entries()){const k=fold(r.code);if(!k||clean(r.code).length>40||codes.has(k))return`Fila ${i+1}: confirma un código único.`;codes.add(k);if(clean(r.name).length<2||clean(r.name).length>180||!/^\d+(\.\d+)?$/.test(clean(r.credits))||+r.credits>40||!/^\d{1,2}$/.test(clean(r.cycle))||+r.cycle>20||!['curso','taller','electivo'].includes(r.type)||clean(r.requirements).length>800)return`Fila ${i+1}: revisa nombre, créditos, ciclo y requisitos.`}return''}
-export function curriculumMarkdown({university,career,rows,source=''}){return`# ${cell(career)}\n\nUniversidad: ${cell(university)}\nFuente: ${cell(source)}\n\n| Código | Curso | Créditos | Ciclo | Tipo | Requisitos |\n| --- | --- | --- | --- | --- | --- |\n${rows.map(r=>'| '+[r.code,r.name,r.credits,r.cycle,r.type,r.requirements||'Por verificar'].map(cell).join(' | ')+' |').join('\n')}\n`}
-export function customCatalog(record){const rows=record.rows,key=record.id,courses=rows.map((r,i)=>({id:`u-${key}-${i+1}`,n:r.name,code:r.code,cr:+r.credits,c:+r.cycle,type:r.type,r:[],prerequisitesKnown:false,requirementNote:r.requirements||'Requisitos pendientes de verificar.'}));for(const [i,r]of rows.entries()){const req=clean(r.requirements),parts=req.split(/[,;]+/).map(clean).filter(Boolean),ids=parts.map(k=>courses.find(c=>fold(c.code)===fold(k))?.id);if(/^(ninguno|sin requisitos|no aplica)$/i.test(req)||parts.length&&ids.every(Boolean)){courses[i].r=ids.filter(Boolean);courses[i].prerequisitesKnown=true;delete courses[i].requirementNote}}
- const ciclos=Object.fromEntries([...new Set(courses.map(c=>c.c))].sort((a,b)=>a-b).map(c=>[c,{t:c?`Ciclo ${c}`:'Formación adicional',s:'Malla aportada'}]));return{key,nombre:record.career_name,institutionId:record.institution_id,uni:record.university_name||'Mi universidad',version:key,source:record.source_name||'Malla aportada',sourceHash:key.replace(/-/g,''),cursos:courses,ciclos,total:courses.reduce((s,c)=>s+c.cr,0),foot:'Malla aportada · Confirma la vigencia con tu universidad',ciclosLabel:Object.keys(ciclos).length+' ciclos',reviewed:record.status==='approved'}
+export function validateRows(rows){
+ if(!Array.isArray(rows)||!rows.length||rows.length>400)return'Añade entre 1 y 400 cursos.'
+ const codes=new Set()
+ for(const [i,r]of rows.entries()){
+  const prefix=`Fila ${i+1}: `
+  if(!r||typeof r!=='object')return prefix+'revisa los datos del curso.'
+  const k=fold(r.code)
+  if(clean(r.code).length>40||k&&codes.has(k))return prefix+'el código es opcional; si lo incluyes, debe ser único y tener hasta 40 caracteres.'
+  if(k)codes.add(k)
+  if(clean(r.name).length<2||clean(r.name).length>180)return prefix+'completa el nombre del curso (entre 2 y 180 caracteres).'
+  if(!/^\d+(\.\d+)?$/.test(clean(r.credits))||+r.credits>40)return prefix+'completa los créditos con un número entre 0 y 40.'
+  if(!/^\d{1,2}$/.test(clean(r.cycle))||+r.cycle>20)return prefix+'completa el ciclo con un número entre 1 y 20 (0 solo para formación adicional).'
+  if(clean(r.type)&&!['curso','taller','electivo'].includes(r.type))return prefix+'usa curso, taller o electivo como tipo.'
+  if(clean(r.requirements).length>800)return prefix+'reduce los requisitos a un máximo de 800 caracteres.'
+ }
+ return''
+}
+export function curriculumMarkdown({university,career,rows,source=''}){return`# ${cell(career)}\n\nUniversidad: ${cell(university)}\nFuente: ${cell(source)}\n\n| Código | Curso | Créditos | Ciclo | Tipo | Requisitos |\n| --- | --- | --- | --- | --- | --- |\n${rows.map(r=>'| '+[r.code,r.name,r.credits,r.cycle,r.type,r.requirements].map(cell).join(' | ')+' |').join('\n')}\n`}
+export function customCatalog(record){const rows=record.rows,key=record.id,courses=rows.map((r,i)=>({id:`u-${key}-${i+1}`,n:r.name,code:r.code||'',cr:+r.credits,c:+r.cycle||0,type:r.type||'curso',r:[],prerequisitesKnown:false,requirementNote:r.requirements||'Prerrequisitos no indicados en la fuente.'}));for(const [i,r]of rows.entries()){const req=clean(r.requirements),parts=req.split(/[,;]+/).map(clean).filter(Boolean),ids=parts.map(k=>courses.find(c=>clean(c.code)&&fold(c.code)===fold(k))?.id);if(/^(ninguno|sin requisitos|no aplica)$/i.test(req)||parts.length&&ids.every(Boolean)){courses[i].r=ids.filter(Boolean);courses[i].prerequisitesKnown=true;delete courses[i].requirementNote}}
+ const ciclos=Object.fromEntries([...new Set(courses.map(c=>c.c))].sort((a,b)=>a-b).map(c=>[c,{t:c?`Ciclo ${c}`:rows.some(r=>!clean(r.cycle))?'Sin ciclo indicado':'Formación adicional',s:'Malla aportada'}]));return{key,nombre:record.career_name,institutionId:record.institution_id,uni:record.university_name||'Mi universidad',version:key,source:record.source_name||'Malla aportada',sourceHash:key.replace(/-/g,''),cursos:courses,ciclos,total:courses.reduce((s,c)=>s+c.cr,0),foot:'Malla aportada · Confirma la vigencia con tu universidad',ciclosLabel:Object.keys(ciclos).length+' ciclos',reviewed:record.status==='approved'}
 }

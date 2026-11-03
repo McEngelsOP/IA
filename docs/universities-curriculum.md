@@ -16,6 +16,8 @@ La validación de mallas usa los proveedores integrados para cualquier universid
 
 PDF con texto (hasta 60 páginas), XLSX (hasta 20 hojas), Markdown y texto se procesan en el dispositivo, con límite de 8 MB y 180 000 caracteres. PDF y Excel se cargan al solicitarlos. La extracción de tablas es conservadora: las filas dudosas se revisan o completan antes de guardar. Los PDF escaneados requieren OCR previo; no se contrató un servicio OCR. El texto, la fuente declarada, las filas y un Markdown canónico se guardan por propietario. No se descarga automáticamente el enlace institucional.
 
+El nombre, los créditos y el ciclo de cada curso son obligatorios. Código y prerrequisitos son opcionales. Se aceptan varios códigos vacíos; los códigos que sí aparecen deben ser únicos. Si falta el ciclo, la importación permite revisar las filas pero exige completarlo antes de guardar; no lo infiere. El ciclo 0 se reserva para formación adicional. La verificación presenta cursos contraíbles dentro de una lista con desplazamiento interno, y permite contraer la lista completa para acceder al guardado sin recorrer todos los campos. La ausencia de prerrequisitos en la fuente no impide importar ni aprobar una malla coherente; se conserva como información no indicada, sin inventar relaciones ni afirmar que no existen requisitos.
+
 Una cola con leases, hash e idempotencia coordina solicitudes y reintentos. Dos proveedores independientes analizan la correspondencia entre fuente y filas. El tercero interviene si no hay conclusión. No se necesitan tres claves del alumno ni crear otro servicio de IA; se reutilizan Gemini, Groq y OpenRouter configurados en el servidor.
 
 | Resultado | Comportamiento |
@@ -27,7 +29,7 @@ Una cola con leases, hash e idempotencia coordina solicitudes y reintentos. Dos 
 
 La IA no certifica autenticidad, vigencia ni aprobación oficial de una universidad. Sus respuestas son evidencia: no ejecutan SQL ni deciden permisos. El servidor valida JSON, límites y estructura; mantiene cuotas de tres envíos por alumno/24 h, cinco minutos entre envíos, cien envíos de plataforma/24 h, y límites por proveedor, además de las cuotas compartidas existentes.
 
-Al aprobar se crea el catálogo inicial versionado con IDs estables. El alumno puede adoptar una malla aprobada de su institución, sin leer el texto privado de otro alumno. Las correcciones posteriores conservan códigos y orden si ya hay progreso. Las actualizaciones de versiones usan las equivalencias y confirmaciones existentes.
+Al aprobar se crea el catálogo inicial versionado con IDs estables. El alumno puede adoptar una malla aprobada de su institución, sin leer el texto privado de otro alumno. Las correcciones posteriores conservan el orden y la cantidad de cursos si ya hay progreso, y también sus códigos o, para cursos sin código, sus nombres, para no trasladar el avance a otro curso. Las actualizaciones de versiones usan las equivalencias y confirmaciones existentes.
 
 ## Activación manual de Supabase
 
@@ -40,6 +42,8 @@ Primero comprobar las migraciones ya instaladas y conservar un respaldo. No ejec
 5. Configurar secretos de servidor: `GEMINI_API_KEY`, `GROQ_API_KEY`, `OPENROUTER_API_KEY`, opcionalmente sus variables `_MODEL`, y `CURRICULUM_WORKER_SECRET` aleatorio de al menos 32 caracteres. Supabase proporciona URL, anon y service role a la función. Ningún secreto lleva prefijo `VITE_`.
 6. Para procesar la cola aunque el alumno cierre la app, habilitar pg_cron/pg_net y crear en Vault `lyra_supabase_url` y `lyra_curriculum_worker_secret`; este último debe coincidir con el secreto de la función. Ejecutar `202611020005_curriculum_worker.sql` una vez. Procesa un envío por minuto y recupera leases vencidos. Si no se activa, el botón de análisis puede procesar el envío, pero la cola no tiene recuperación autónoma garantizada.
 7. Desde Administración, un administrador existente asigna permiso `academic` para cada institución. Mi perfil → Abrir moderación de mallas muestra los casos inconclusos; RLS y la RPC vuelven a verificar el alcance institucional. No se creó una segunda tabla de roles.
+
+Para activar los campos opcionales en una instalación existente, ejecutar manualmente `supabase/curriculum_optional_fields.sql` después de las migraciones `202611020002` y `202611020003`, y volver a desplegar `curriculum-analysis` con la política de esta rama. El parche se puede repetir, no modifica mallas guardadas ni catálogos publicados y no reemplaza las reglas de propiedad ni las cuotas. Publicar la interfaz no instala este SQL ni actualiza la función remota.
 
 Consultas de comprobación, desde una sesión administrativa autorizada:
 
