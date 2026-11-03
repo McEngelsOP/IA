@@ -46,7 +46,7 @@
 .official-mailbox .z-fs{flex:1;min-width:170px;font-size:12.5px;opacity:.75}
 .official-mailbox .z-fs.ok{opacity:1;font-weight:500}
 .official-mailbox .z-foot .k-btn{border:1px solid var(--bar-b);background:none;padding:11px 20px}
-.official-mailbox .z-foot .mk{padding:11px 22px}
+.official-mailbox .z-foot .mk{padding:11px 22px;justify-content:center;text-align:center}
 .official-mailbox .mk:disabled{opacity:.4;cursor:default}
 .official-mailbox .z-side{display:flex;flex-direction:column;gap:14px;position:sticky;top:0}
 .official-mailbox .z-ul,.official-mailbox .z-tl{margin:0;padding:0;list-style:none;display:grid;gap:11px}
