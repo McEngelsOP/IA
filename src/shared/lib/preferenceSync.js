@@ -23,17 +23,18 @@ export function normalizePreferences(input) {
   return result
 }
 export function createPreferenceSync({ client, storage = localStorage, onChange = () => {}, onStatus = () => {} }) {
-  let owner = null, generation = 0, values = {}, pending = {}, running = false, timer, disposed = false
+  let owner = null, generation = 0, readVersion = 0, writeVersion = 0, values = {}, pending = {}, running = false, timer, disposed = false
   const cacheKey = id => `lyra-preferences:${id}`
   function persist() { if (owner) try { storage.setItem(cacheKey(owner), JSON.stringify({ values, pending })) } catch { onStatus('No se pudo guardar la copia local.') } }
   function emit() { onChange(structuredClone(values)) }
   async function refresh() {
     if (!owner || disposed) return
-    const id = owner, gen = generation
+    const id = owner, gen = generation, read = ++readVersion, writes = writeVersion
     onStatus(Object.keys(pending).length ? 'Cambios pendientes de sincronizar' : 'Sincronizando…')
     try {
       const result = await client.from('student_preferences').select('values,updated_at').eq('student_id', id).maybeSingle()
-      if (gen !== generation || disposed) return
+      // A delayed snapshot must not undo a newer refresh or a completed save.
+      if (gen !== generation || disposed || read !== readVersion || writes !== writeVersion) return
       if (result.error) throw result.error
       const remote = normalizePreferences(result.data?.values)
       // Only import local legacy keys when that key does not exist in the account.
@@ -41,7 +42,7 @@ export function createPreferenceSync({ client, storage = localStorage, onChange 
       values = { ...remote, ...pending }; persist(); emit()
       if (Object.keys(pending).length) await flush()
       else onStatus('Preferencias sincronizadas')
-    } catch { if (gen === generation) onStatus('Sin conexión o servicio no disponible · cambios conservados en este equipo') }
+    } catch { if (gen === generation && !disposed && read === readVersion && writes === writeVersion) onStatus('Sin conexión o servicio no disponible · cambios conservados en este equipo') }
   }
   async function flush() {
     if (running || !owner || !Object.keys(pending).length || disposed) return
@@ -53,6 +54,7 @@ export function createPreferenceSync({ client, storage = localStorage, onChange 
       const result = await client.rpc('save_lyra_preferences', { p_patch: batch, p_owner: id })
       if (gen !== generation || disposed) return
       if (result.error || !safe(result.data?.values)) throw result.error || new Error('invalid_response')
+      writeVersion++
       for (const key of Object.keys(batch)) if (JSON.stringify(pending[key]) === JSON.stringify(batch[key])) delete pending[key]
       values = { ...normalizePreferences(result.data.values), ...pending }; persist(); emit(); onStatus('Preferencias sincronizadas')
     } catch { if (gen === generation) onStatus('Pendiente de sincronizar · cambios conservados en este equipo') }
@@ -61,6 +63,7 @@ export function createPreferenceSync({ client, storage = localStorage, onChange 
   }
   return {
     async start(id, legacy = {}) {
+      clearTimeout(timer)
       generation++; owner = id; values = {}; pending = {}; disposed = false
       try { const saved = JSON.parse(storage.getItem(cacheKey(id))); values = normalizePreferences(saved?.values); pending = normalizePreferences(saved?.pending) } catch { /* No previous copy. */ }
       values = { ...normalizePreferences(legacy), ...values }; emit(); await refresh()
