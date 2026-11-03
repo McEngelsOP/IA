@@ -76,3 +76,7 @@ Las correcciones de este apartado se publicaron inicialmente en `main`. La ficha
 ## Ampliación del sistema · integración en Oficial el 2 de noviembre de 2026
 
 Rama de esta entrega: `Oficial`, integrada desde `feat/lyra-system-complete`: preferencias por cuenta, escalas institucionales, comparación y actualización de mallas con equivalencias, prevención de calendario, PWA de consulta y panel de servicios/reportes. La implementación y los límites están en `docs/system-complete.md`. La subida del código a `Oficial` está autorizada. La activación remota de la migración amplia y de `study-advisor` sigue pendiente de autorización específica; publicar la rama no ejecuta esos cambios en Supabase. No confundir las pruebas locales y fixtures con un recorrido de cuentas reales.
+
+## Comunicaciones individuales · noviembre de 2026
+
+Administración incorpora búsqueda de destinatarios registrados mediante `admin_get_users`, copia y CSV de una sola persona, borrador editable y revisión previa. `/api/communications` valida sesión y administrador, resuelve el correo confirmado en Auth Admin y llama a Brevo solo con un destinatario. La activación requiere las variables privadas documentadas en `docs/communications.md`. Sin ellas funcionan selección y exportación; el envío permanece deshabilitado. No se ejecuta SQL ni se cambian correos de acceso. No hay campañas automáticas, sincronización masiva de contactos ni historial permanente en Supabase. Brevo conserva los registros de entrega; la respuesta de la API indica aceptación, no entrega.

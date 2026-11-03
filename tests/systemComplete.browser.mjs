@@ -10,7 +10,7 @@ const now=Date.now(),id='11111111-1111-4111-8111-111111111111',authKey='sb-setup
 const user={id,email:'fixture@example.invalid',aud:'authenticated',role:'authenticated',app_metadata:{provider:'email'},user_metadata:{},created_at:new Date(now).toISOString()}
 const encode=v=>Buffer.from(JSON.stringify(v)).toString('base64url')
 const session={access_token:`${encode({alg:'HS256',typ:'JWT'})}.${encode({sub:id,session_id:sessionId,exp:Math.floor(now/1000)+86400,role:'authenticated'})}.fixture`,refresh_token:'fixture',expires_at:Math.floor(now/1000)+86400,expires_in:86400,token_type:'bearer',user}
-let preferences={},reports=[],providerReads=0,aiCalls=0;const errors=[]
+let preferences={},reports=[],providerReads=0,aiCalls=0,mailSends=0;const errors=[]
 const date=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Lima',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date())
 const events=[{id:'a',student_id:id,title:'Física',date,start_time:'08:00',end_time:'09:00',event_type:'clase'},{id:'b',student_id:id,title:'Biología',date,start_time:'08:30',end_time:'09:30',event_type:'clase'}]
 async function fixture(width=1440,admin=false){
@@ -21,6 +21,7 @@ async function fixture(width=1440,admin=false){
   if(path.startsWith('/functions/v1/')){aiCalls++;status=429;data={error:'rate_limited'}}
   else if(path==='/auth/v1/user')data=user
   else if(path.endsWith('/rpc/is_app_admin'))data=admin
+  else if(path.endsWith('/rpc/admin_get_users'))data=admin?[{id,email:'fixture@example.invalid',alias:'Engels',created_at:new Date(now).toISOString()},{id:'22222222-2222-4222-8222-222222222222',email:'other@example.invalid',alias:'Otra persona',created_at:new Date(now).toISOString()}]:[]
   else if(path.endsWith('/profiles'))data=[{id,carrera:'ia',alias:'Engels',institution_id:'esan',curriculum_version:CARRERAS.ia.version}]
   else if(path.endsWith('/progress'))data=[{done:['calc1'],plan:[]}]
   else if(path.endsWith('/grades'))data=[{course_id:'calc1',grade:16}]
@@ -39,6 +40,7 @@ async function fixture(width=1440,admin=false){
   if(route.request().headers()['accept']?.includes('application/vnd.pgrst.object'))data=Array.isArray(data)?data[0]||null:data
   await route.fulfill({status,contentType:'application/json',body:JSON.stringify(data)})
  })
+ await context.route('**/api/communications',async route=>{if(route.request().method()==='POST'){mailSends++;const body=route.request().postDataJSON();assert.equal(body.userId,id);assert.equal(body.expectedEmail,'fixture@example.invalid');assert(!('to' in body));await route.fulfill({json:{accepted:true,messageId:'fixture-brevo-id'}})}else await route.fulfill({json:{ready:true,sender:'lyra@example.invalid'}})})
  const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));await page.goto(base+'/pagina.html');await page.locator('.hoy').waitFor();return{context,page}
 }
 try{
@@ -55,6 +57,34 @@ try{
  if(shots)await second.page.screenshot({path:shots+'/mobile.png',fullPage:true})
  await first.page.locator('#nav .it[data-n="Mi semestre"]').click();await first.page.getByRole('heading',{name:'Tu semana, con tiempo'}).waitFor();await first.page.getByText('Revisar las próximas 4 semanas').click();await first.page.getByText(/Física coincide con Biología/).waitFor()
  const admin=await fixture(1440,true);await admin.page.locator('#act').click();await admin.page.locator('[data-a="admin"]').click();await admin.page.getByRole('heading',{name:'Administración de Lyra'}).waitFor();await admin.page.getByText('calendar_load').waitFor()
+ const communications=admin.page.locator('.communications')
+ await communications.getByLabel('Buscar por nombre o correo').fill('fixture@')
+ assert.equal(await communications.locator('.communications-users li').count(),1)
+ assert.equal(mailSends,0)
+ await communications.getByRole('button',{name:'Seleccionar a fixture@example.invalid',exact:true}).click()
+ const downloadPromise=admin.page.waitForEvent('download')
+ await communications.getByRole('button',{name:'Exportar contacto para Brevo'}).click()
+ const download=await downloadPromise
+ const stream=await download.createReadStream();const chunks=[];for await(const chunk of stream)chunks.push(chunk)
+ const csv=Buffer.concat(chunks).toString('utf8');assert(csv.includes('fixture@example.invalid'));assert(!csv.includes('other@example.invalid'))
+ await communications.getByRole('button',{name:'Revisar mensaje',exact:true}).click()
+ await communications.getByRole('heading',{name:'Vista previa del mensaje'}).waitFor()
+ assert.equal(mailSends,0,'Searching, selecting, exporting and previewing must not send mail')
+ for(const theme of ['light','dark'])for(const width of [1440,390]){
+  await admin.page.evaluate(value=>document.documentElement.dataset.theme=value,theme)
+  await admin.page.setViewportSize({width,height:1000})
+  await admin.page.waitForTimeout(700)
+  await communications.getByLabel('Buscar por nombre o correo').fill('fixture@')
+  await communications.getByRole('button',{name:/Selecciona.*a fixture@example.invalid/}).click()
+  await communications.getByRole('button',{name:'Revisar mensaje',exact:true}).click()
+  await communications.getByRole('heading',{name:'Vista previa del mensaje'}).scrollIntoViewIfNeeded()
+  assert(await admin.page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1))
+  if(shots)await admin.page.screenshot({path:shots+`/communications-${theme}-${width}.png`,fullPage:true})
+ }
+ await communications.getByRole('button',{name:'Enviar a esta persona',exact:true}).click()
+ await communications.getByRole('status').filter({hasText:'Brevo aceptó el mensaje'}).waitFor()
+ assert.equal(mailSends,1)
+ await admin.page.setViewportSize({width:1440,height:1000})
  if(shots)await admin.page.screenshot({path:shots+'/desktop.png',fullPage:true})
  const publication=admin.page.locator('.lyra-system>section').filter({has:admin.page.getByRole('heading',{name:'Publicar una versión de malla'})})
  await publication.locator('input[type=file]').setInputFiles({name:'malla-prueba.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(CARRERAS.ia))})
