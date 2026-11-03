@@ -16,9 +16,18 @@
     "test:worker": "node --test workers/geoduelo/test/*.test.mjs",
     "test:repository": "node scripts/checkRepositorySafety.mjs",
     "check": "npm run test:repository && npm run test:catalog && npm test && npm run test:worker && npm run build",
-    "test:offline": "node scripts/checkOffline.mjs"
+    "test:offline": "node scripts/checkOffline.mjs",
+    "build:android:web": "node scripts/buildAndroid.mjs",
+    "android:sync": "npm run build:android:web && cap sync android",
+    "android:apk": "npm run android:sync && node scripts/buildAndroidApk.mjs"
   },
   "dependencies": {
+    "@capacitor/android": "8.6.0",
+    "@capacitor/app": "8.1.2",
+    "@capacitor/browser": "8.0.5",
+    "@capacitor/core": "8.6.0",
+    "@capacitor/filesystem": "8.1.5",
+    "@capacitor/share": "8.0.3",
     "@supabase/supabase-js": "^2.38.0",
     "jspdf": "4.2.1",
     "jspdf-autotable": "5.0.9",
@@ -28,6 +37,7 @@
     "read-excel-file": "6.0.1"
   },
   "devDependencies": {
+    "@capacitor/cli": "8.6.0",
     "@electric-sql/pglite": "0.5.10",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",

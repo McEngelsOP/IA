@@ -803,7 +803,10 @@ a{text-underline-offset:3px}.page button:not(.ck){min-height:36px}
  .mobile-dock #mobile-tabs button{min-height:54px;border:0;border-radius:25px;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11px;color:var(--txt)}
  .mobile-dock #mobile-tabs button[aria-current=page],.mobile-dock #mobile-tabs button[aria-expanded=true]{background:var(--ind)}
  .mobile-dock #mobile-tabs button:active{background:var(--tile-p)}
- #app .page{padding-top:calc(88px + env(safe-area-inset-top));padding-bottom:calc(104px + env(safe-area-inset-bottom));scroll-padding-bottom:104px;overscroll-behavior:contain}
+ #app{--mobile-header-height:calc(72px + env(safe-area-inset-top,0px))}
+ #app[data-side=hidden] .top{inset:0 0 auto;height:var(--mobile-header-height);box-sizing:border-box;padding:env(safe-area-inset-top,0px) max(14px,env(safe-area-inset-right)) 0 max(14px,env(safe-area-inset-left));background:var(--bg)}
+ #app[data-side=hidden] .top::before{display:none}
+ #app .page{top:var(--mobile-header-height);padding-top:12px;padding-bottom:calc(104px + env(safe-area-inset-bottom));scroll-padding-bottom:104px;overscroll-behavior:contain}
  #app .side{bottom:calc(92px + env(safe-area-inset-bottom));max-width:calc(100% - 24px)}
  #app.dopen .scrim{background:rgba(0,0,0,.24)}
  .top .title{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -893,7 +896,7 @@ a{text-underline-offset:3px}.page button:not(.ck){min-height:36px}
  #app .focus-web{width:100%;min-width:0}
  #app .focus-web .k-grid{display:flex;flex-direction:column;gap:14px;width:100%;min-width:0}
  #app .focus-web .k-grid>section{width:100%;min-width:0}
- #app .focus-web .k-pv{order:2;position:static}
+ #app .focus-web .k-pv{position:static}
  #app .focus-web .k-settings{width:100%;min-width:0}
  #app .focus-web .k-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
  #app .focus-web .k-chip{min-height:48px;padding:10px 8px;font-size:13px;line-height:1.4}
@@ -938,19 +941,19 @@ a{text-underline-offset:3px}.page button:not(.ck){min-height:36px}
 /* Barra móvil: las tres zonas e indicador tienen exactamente la misma altura. */
 @media(max-width:860px){
  #app #mobile-dock{height:56px;gap:8px;align-items:stretch;bottom:calc(12px + env(safe-area-inset-bottom));isolation:isolate}
- #app #mobile-dock .mobile-bar{height:56px;box-sizing:border-box;overflow:hidden;border-radius:28px;transition:opacity 160ms ease,transform 180ms cubic-bezier(.22,.7,.25,1)}
+ #app #mobile-dock .mobile-bar{height:56px;box-sizing:border-box;overflow:hidden;border-radius:28px;transition:opacity 300ms ease,transform 400ms cubic-bezier(.22,.61,.36,1)}
  #app #mobile-dock #mobile-tabs{height:100%;padding:4px;align-items:stretch;box-sizing:border-box;gap:0}
- #app #mobile-dock #mobile-tabs button{min-height:0;height:100%;min-width:0;width:100%;padding:0;border-radius:24px;display:grid;place-items:center;background:transparent;transform:none;transition:background-color 140ms ease}
+ #app #mobile-dock #mobile-tabs button{min-height:0;height:100%;min-width:0;width:100%;padding:0;border-radius:24px;display:grid;place-items:center;background:transparent;transform:none;transition:background-color 140ms ease,color 200ms ease}
  #app #mobile-dock #mobile-tabs button svg{width:23px;height:23px;transform:none;transition:opacity 140ms ease}
  #app #mobile-dock #mobile-tabs button:active{background:var(--tile)}
  #app #mobile-dock .mobile-ind{top:4px;bottom:4px;left:4px;width:calc((100% - 8px)/3);border-radius:24px;transition:transform 200ms cubic-bezier(.22,.7,.25,1);transform:translateX(calc(var(--mobile-index)*100%))}
  #app #mobile-dock .pf{height:56px;flex-basis:56px}
  #app #mobile-dock .act{height:56px;width:56px;min-height:56px;min-width:56px;transform:none;transition:background-color 140ms ease}
  #app #mobile-dock .act:active{transform:none;background:var(--tile-p)}
- #app #mobile-dock .act svg{transition:transform 180ms cubic-bezier(.22,.7,.25,1)}
- #app #mobile-dock .menu{right:64px;transition:opacity 160ms ease,transform 180ms cubic-bezier(.22,.7,.25,1);filter:none;transform:translateY(4px)}
- #app.open #mobile-dock .menu{transform:none}
- #app.open #mobile-dock .mobile-bar{opacity:0;transform:translateY(3px);filter:none}
+ #app #mobile-dock .act svg{transition:transform 400ms cubic-bezier(.22,.61,.36,1)}
+ #app #mobile-dock .menu{right:64px;visibility:hidden;transition:opacity 260ms ease,transform 300ms cubic-bezier(.22,.61,.36,1),visibility 0s 300ms;filter:none;transform:translateY(10px) scale(.98)}
+ #app.open #mobile-dock .menu{visibility:visible;transform:none;transition-duration:340ms,420ms,0s;transition-delay:0s}
+ #app.open #mobile-dock .mobile-bar{opacity:0;transform:translateY(8px) scale(.98);filter:none}
  #app .page{padding-bottom:calc(100px + env(safe-area-inset-bottom));scroll-padding-bottom:calc(100px + env(safe-area-inset-bottom))}
  #app .focus-web .k-clock-stage{min-width:0}
  #app .focus-web .k-pv{scroll-margin-top:90px}

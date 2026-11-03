@@ -1,6 +1,6 @@
 import CurriculumVersions from './CurriculumVersions.jsx'
 import { GRADE_SCALES, parseGrade, validGrade, formatGrade, scaleLabel } from '../../core/academic/grading.js'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { CARRERAS } from '../../institutions/esan/carreras.js'
 import { AREAS } from '../../shared/data/areas.js'
@@ -25,6 +25,17 @@ const STATUS = { aprobado: 'Aprobado', convalidado: 'Convalidado', matriculado: 
 const norm = text => text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
 const number = n => n.toLocaleString('es-PE', { maximumFractionDigits: 2 })
 const MALLAS = new Map()
+const MIN_ZOOM = 0.6, MAX_ZOOM = 1.8
+const clampZoom = value => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, value))
+
+function pinchGeometry(node, touches) {
+  const [a, b] = touches, rect = node.getBoundingClientRect()
+  return {
+    distance: Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY),
+    x: (a.clientX + b.clientX) / 2 - rect.left,
+    y: (a.clientY + b.clientY) / 2 - rect.top
+  }
+}
 let semesterSessionDraft = null
 function getMalla(key, catalog) {
   const career = catalog || CARRERAS[key] || CARRERAS.ia
@@ -48,7 +59,8 @@ export function OfficialCurriculum({ career, catalog, user, client, sessionMode,
   const [mode, setMode] = useState(cachedSemester?.mode || 'open'), [selected, setSelected] = useState(null)
   const [done, setDone] = useState(() => new Set(initialDone)), [plan, setPlan] = useState(() => validPlan(M, new Set(initialPlan), new Set(initialDone), initialStatuses))
   const [grades, setGrades] = useState(initialGrades), [area, setArea] = useState(null)
-  const [query, setQuery] = useState(''), [matchIndex, setMatchIndex] = useState(0), [zoom, setZoom] = useState(1)
+  const [query, setQuery] = useState(''), [matchIndex, setMatchIndex] = useState(0), [graphZoom, setGraphZoom] = useState({ scale: 1 })
+  const zoom = graphZoom.scale, currentZoom = useRef(zoom)
   const [pending, setPending] = useState(null), [busy, setBusy] = useState(false), [message, setMessage] = useState(''), [error, setError] = useState('')
   const [gradeDraft, setGradeDraft] = useState('')
   const [statuses, setStatuses] = useState(initialStatuses), [statusDraft, setStatusDraft] = useState('')
@@ -75,10 +87,46 @@ export function OfficialCurriculum({ career, catalog, user, client, sessionMode,
   useEffect(() => { mounted.current = true; return () => { mounted.current = false } }, [])
   useEffect(() => { setStatusDraft(course ? statuses[course.id]?.status || '' : '') }, [course?.id, statuses])
   useEffect(() => { setGradeDraft(course && Number.isFinite(grades[course.id]) ? formatGrade(grades[course.id],gradeScale) : '') }, [course?.id, grades])
+  useLayoutEffect(() => {
+    currentZoom.current = graphZoom.scale
+    if (graphZoom.left === undefined) return
+    scroller.current?.scrollTo({ left: graphZoom.left, top: graphZoom.top, behavior: 'instant' })
+  }, [graphZoom])
   useEffect(() => {
-    const c = matches[matchIndex]
-    if (c) scroller.current?.scrollTo({ left: Math.max(0, c.x * zoom - 80), top: Math.max(0, c.y * zoom - 100), behavior: 'auto' })
-  }, [matches, matchIndex, zoom, view])
+    const c = matches[matchIndex], scale = currentZoom.current
+    if (c) scroller.current?.scrollTo({ left: Math.max(0, c.x * scale - 80), top: Math.max(0, c.y * scale - 100), behavior: 'auto' })
+  }, [matches, matchIndex, view])
+  useEffect(() => {
+    const node = scroller.current
+    if (!node) return
+    let pinch = null
+    function start(event) {
+      if (event.touches.length !== 2) { pinch = null; return }
+      if (event.cancelable) event.preventDefault()
+      const { distance, x, y } = pinchGeometry(node, event.touches), scale = currentZoom.current
+      if (!distance) return
+      pinch = { distance, scale, x: (node.scrollLeft + x) / scale, y: (node.scrollTop + y) / scale }
+    }
+    function move(event) {
+      if (event.touches.length !== 2) return
+      if (!pinch) { start(event); return }
+      if (event.cancelable) event.preventDefault()
+      const { distance, x, y } = pinchGeometry(node, event.touches)
+      const scale = clampZoom(pinch.scale * distance / pinch.distance)
+      setGraphZoom({ scale, left: pinch.x * scale - x, top: pinch.y * scale - y })
+    }
+    function end() { pinch = null }
+    node.addEventListener('touchstart', start, { passive: false })
+    node.addEventListener('touchmove', move, { passive: false })
+    node.addEventListener('touchend', end)
+    node.addEventListener('touchcancel', end)
+    return () => {
+      node.removeEventListener('touchstart', start)
+      node.removeEventListener('touchmove', move)
+      node.removeEventListener('touchend', end)
+      node.removeEventListener('touchcancel', end)
+    }
+  }, [view])
   useEffect(() => {
     if (mode === 'ficha' && course) {
       detail.current?.scrollIntoView({ behavior: 'auto', block: 'nearest' })
@@ -224,12 +272,10 @@ export function OfficialCurriculum({ career, catalog, user, client, sessionMode,
     finally { finish() }
   }
   function adjustZoom(next) {
-    const z = Math.min(1.8, Math.max(0.6, Math.round(next * 100) / 100)), node = scroller.current
+    const scale = clampZoom(Math.round(next * 100) / 100), node = scroller.current
     if (!node) return
-    const left = (node.scrollLeft + node.clientWidth / 2) * z / zoom - node.clientWidth / 2
-    const top = (node.scrollTop + node.clientHeight / 2) * z / zoom - node.clientHeight / 2
-    setZoom(z)
-    requestAnimationFrame(() => { if (node.isConnected) { node.scrollLeft = left; node.scrollTop = top } })
+    const x = node.clientWidth / 2, y = node.clientHeight / 2
+    setGraphZoom({ scale, left: (node.scrollLeft + x) * scale / zoom - x, top: (node.scrollTop + y) * scale / zoom - y })
   }
   function nodeClass(c) {
     const classes = ['oc-node']
@@ -284,7 +330,7 @@ export function OfficialCurriculum({ career, catalog, user, client, sessionMode,
         if (e.key === 'Enter' && view === 'graph' && matches.length) { e.preventDefault(); setMatchIndex(i => (i + 1) % matches.length) }
         if (e.key === 'Escape') { e.stopPropagation(); setQuery('') }
       }}/>{query && <>{view === 'graph' && <span>{matches.length ? `${matchIndex + 1}/${matches.length}` : '0'}</span>}<button type="button" aria-label="Limpiar búsqueda de cursos" onClick={() => { setQuery(''); search.current?.focus() }}><Icon name="close"/></button></>}</label>
-      {view === 'graph' && <div className="oc-zoom" role="group" aria-label="Tamaño del grafo"><button type="button" onClick={() => adjustZoom(zoom - 0.15)} disabled={zoom <= 0.6} aria-label="Alejar grafo">−</button><button type="button" onClick={() => adjustZoom(1)} aria-label="Restablecer tamaño del grafo">{Math.round(zoom * 100)}%</button><button type="button" onClick={() => adjustZoom(zoom + 0.15)} disabled={zoom >= 1.8} aria-label="Acercar grafo">+</button></div>}
+      {view === 'graph' && <div className="oc-zoom" role="group" aria-label="Tamaño del grafo"><button type="button" onClick={() => adjustZoom(zoom - 0.15)} disabled={zoom <= MIN_ZOOM} aria-label="Alejar grafo">−</button><button type="button" onClick={() => adjustZoom(1)} aria-label="Restablecer tamaño del grafo">{Math.round(zoom * 100)}%</button><button type="button" onClick={() => adjustZoom(zoom + 0.15)} disabled={zoom >= MAX_ZOOM} aria-label="Acercar grafo">+</button></div>}
     </div>
     <div className="oc-area-row"><span>Áreas</span><button type="button" className="oc-arrow" aria-label="Áreas anteriores" onClick={() => areas.current.scrollBy({ left: -240, behavior: 'auto' })}><Icon name="left"/></button><div className="oc-areas" ref={areas} role="group" aria-label="Áreas de Matemáticas a Electivos"><button type="button" aria-pressed={!area} onClick={() => setArea(null)}>Todas</button>{Object.entries(AREAS).filter(([key]) => M.cursos.some(c => c.a === key)).map(([key, a]) => <button key={key} type="button" aria-pressed={area === key} onClick={() => setArea(area === key ? null : key)}><i style={{ background: a.color }} aria-hidden="true"/>{a.label}</button>)}</div><button type="button" className="oc-arrow" aria-label="Áreas siguientes" onClick={() => areas.current.scrollBy({ left: 240, behavior: 'auto' })}><Icon name="right"/></button></div>
     <div className="oc-legend" aria-label="Estados de cursos"><span className="passed">Aprobado</span><span className="enrolled">En curso</span><span className="planned">Plan futuro</span><label><input type="checkbox" checked={onlyRelated && hasFilter} disabled={!hasFilter || busy} onChange={e => setOnlyRelated(e.target.checked)}/>Ocultar cursos fuera del filtro</label></div>
@@ -316,7 +362,7 @@ export function OfficialCurriculum({ career, catalog, user, client, sessionMode,
       if (Math.abs(dx) + Math.abs(dy) > 4) d.moved = true
       e.currentTarget.scrollLeft = d.left - dx; e.currentTarget.scrollTop = d.top - dy
     }} onPointerUp={() => { drag.current = null }} onPointerCancel={() => { drag.current = null }}>
-      <div style={{ width: M.W * zoom, height: M.H * zoom }}><div className="oc-canvas" style={{ width: M.W, height: M.H, transform: `scale(${zoom})` }}>
+      <div className="oc-zoom-frame" style={{ width: M.W * zoom, height: M.H * zoom }}><div className="oc-canvas" style={{ width: M.W, height: M.H, transform: `scale(${zoom})` }}>
         <svg className="oc-edges" width={M.W} height={M.H} viewBox={`0 0 ${M.W} ${M.H}`} aria-hidden="true">{M.edges.map(e => <path key={`${e.from}-${e.to}`} className={lineClass(e)} hidden={!graphVisible(M.byId[e.from]) || !graphVisible(M.byId[e.to])} d={edgePath(e, M.byId)} style={{ '--area-color': AREAS[M.byId[e.to].a]?.color || 'var(--ic)' }}/>)}</svg>
         {Object.entries(M.ciclos).map(([num, info]) => <div key={num} className="oc-column" style={{ left: LEFT + (num - M.minC) * COL_W }}>{info.t}<span>{info.s}</span></div>)}
         {M.cursos.map(c => <button type="button" data-course={c.id} key={c.id} className={nodeClass(c)} hidden={!graphVisible(c)} style={{ left: c.x, top: c.y }} title={`${c.n} · ${c.cr} créditos${c.rc ? ` · Requiere ${c.rc} créditos previos` : ''}`} aria-pressed={mode === 'done' ? done.has(c.id) : mode === 'plan' ? plan.has(c.id) : mode === 'semester' ? semesterDraft.has(c.id) : selected === c.id} disabled={busy || (mode === 'plan' && !canPlan(M, c, done, statuses))} onClick={() => selectCourse(c.id)}>
@@ -337,7 +383,7 @@ export function OfficialCurriculum({ career, catalog, user, client, sessionMode,
       </section>)}
       {!displayedCourses.length && <p className="oc-list-empty">No hay cursos con estos filtros. Cambia el ciclo, el área o la búsqueda.</p>}
     </div>}
-    <div className="oc-bottom"><span>{view === 'graph' ? 'Desliza o arrastra para explorar todos los ciclos.' : 'Toca un curso para usar la acción seleccionada.'}</span><span>{area ? AREAS[area].label : 'Todas las áreas'}{view === 'graph' && ` · ${Math.round(zoom * 100)}%`}</span></div>
+    <div className="oc-bottom"><span>{view === 'graph' ? 'Desliza o arrastra para explorar. Usa dos dedos o los controles para ajustar el zoom.' : 'Toca un curso para usar la acción seleccionada.'}</span><span>{area ? AREAS[area].label : 'Todas las áreas'}{view === 'graph' && ` · ${Math.round(zoom * 100)}%`}</span></div>
     {mode === 'plan' && <section className="oc-details" aria-label="Plan del próximo ciclo"><h3>Tu próximo ciclo</h3>{planned.length ? <><p>{planned.length} cursos · {number(planCredits)} créditos. Al aprobarlos, tendrías {opensAfter.length} cursos adicionales disponibles.</p><ul className="oc-plan-list">{planned.map(c => <li key={c.id}><span>{c.n}<small>{number(c.cr)} créditos · {M.ciclos[c.c].t}</small></span><button type="button" disabled={busy} aria-label={`Quitar ${c.n} del plan`} onClick={() => togglePlan(c.id)}><Icon name="close"/></button></li>)}</ul><button type="button" disabled={busy} onClick={() => saveProgress(done, new Set())}>Vaciar plan</button></> : <p>Tu plan está vacío. Selecciona cursos disponibles para agregarlos.</p>}</section>}
     {mode === 'ficha' && (course ? <section className="oc-details" ref={detail} tabIndex="-1" aria-label={`Ficha de ${course.n}`}>
       <div className="oc-detail-head"><h3>{course.n}</h3><button type="button" disabled={busy} aria-label="Cerrar ficha del curso" onClick={() => { const id = selected; setSelected(null); focusCourse(id) }}><Icon name="close"/></button></div>

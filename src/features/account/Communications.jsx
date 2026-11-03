@@ -1,3 +1,5 @@
+import { prepareDownload } from '../../native/files.js'
+import { apiFetch } from '../../native/android.js'
 import { useEffect, useRef, useState } from 'react'
 
 const INITIAL = {
@@ -47,7 +49,7 @@ export function Communications({ client, user, onBusy = () => {}, disabled = fal
       setUsers(result.data.filter(p=>p.email).map(({id,email,alias,created_at})=>({id,email,alias,created_at})));setState('ready')
       try {
         const token=await sessionToken()
-        const status=await fetch('/api/communications',{headers:{Authorization:`Bearer ${token}`},cache:'no-store',signal:AbortSignal.timeout(10000)})
+        const status=await apiFetch('/api/communications',{headers:{Authorization:`Bearer ${token}`},cache:'no-store',signal:AbortSignal.timeout(10000)})
         const value=await status.json()
         if(alive.current && revision.current===version)setConnection(status.ok && typeof value?.ready==='boolean'?value:{ready:false,error:value?.error||'configuration_unavailable'})
       } catch { if(alive.current && revision.current===version)setConnection({ready:false,error:'configuration_unavailable'}) }
@@ -56,14 +58,14 @@ export function Communications({ client, user, onBusy = () => {}, disabled = fal
   const found=users.filter(p=>`${p.alias||''} ${p.email}`.toLocaleLowerCase().includes(query.toLocaleLowerCase().trim()))
   function change(field,value){setDraft(v=>({...v,[field]:value}));setReview(false);setSent(false);setNotice('');setError('')}
   async function copy(){try{await navigator.clipboard.writeText(selected.email);setNotice('Correo copiado.')}catch{setError('No se pudo copiar. Selecciona el correo visible y cópialo manualmente.')}}
-  function exportContact(){const blob=new Blob(['\ufeffEMAIL,FIRSTNAME\r\n'+csvCell(selected.email)+','+csvCell(selected.alias)+'\r\n'],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download='Lyra_destinatario_Brevo.csv';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);setNotice('CSV descargado con una sola persona. En Brevo, importa EMAIL como correo y FIRSTNAME como nombre. La importación no envía mensajes.')}
+  async function exportContact(){try{const file=await prepareDownload(new Blob(['\ufeffEMAIL,FIRSTNAME\r\n'+csvCell(selected.email)+','+csvCell(selected.alias)+'\r\n'],{type:'text/csv;charset=utf-8'}),'Lyra_destinatario_Brevo.csv');if(file.share)await file.share();setNotice('CSV preparado con una sola persona. En Brevo, importa EMAIL como correo y FIRSTNAME como nombre. La importación no envía mensajes.')}catch{setNotice('No pudimos preparar el CSV. Reintenta.')}}
   async function send(){
     if(lock.current||disabled||!review||!selected||sent)return
     const version=revision.current
     lock.current=true;setBusy(true);onBusy(true);setError('');setNotice('')
     try{
       const token=await sessionToken()
-      const response=await fetch('/api/communications',{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({userId:selected.id,expectedEmail:selected.email,...draft}),signal:AbortSignal.timeout(30000)})
+      const response=await apiFetch('/api/communications',{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({userId:selected.id,expectedEmail:selected.email,...draft}),signal:AbortSignal.timeout(30000)})
       const result=await response.json().catch(()=>({error:'delivery_unknown'}))
       if(!response.ok||!result.accepted)throw new Error(result.error||'delivery_unknown')
       if(alive.current && revision.current===version){setSent(true);setReview(false);setNotice(`Brevo aceptó el mensaje para ${selected.email}. Esto no confirma su entrega en la bandeja. Referencia: ${result.messageId}`)}

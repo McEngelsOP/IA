@@ -1,3 +1,4 @@
+import { authCallback, initializeAndroid, isAndroid, setAndroidSystemBars } from '../../native/android.js'
 import { isEsanStudentCode } from '../../institutions/esan/config.js'
 import { initializeAccessBackground } from './accessBackground.js'
 import { getSupabaseClient } from '../../shared/lib/getSupabaseClient.js'
@@ -9,7 +10,7 @@ const panel = document.querySelector('.panel')
 const screens = ['loginScreen', 'registerScreen', 'forgotScreen', 'mailScreen', 'resetScreen'].map($)
 const reduce = matchMedia('(prefers-reduced-motion: reduce)')
 const destination = new URL('./pagina.html', location.href).href
-const callback = new URL('./login.html', location.href).href
+const callback = authCallback()
 const params = new URLSearchParams(location.hash.slice(1))
 const query = new URLSearchParams(location.search)
 const support = 'solopcional16@gmail.com'
@@ -26,25 +27,47 @@ try {
 
 const webSession = client ? createWebSessionGuard(client, {
   authKey: webAuthStorageKey(),
+  expireOnIdle: !isAndroid(),
   onLock: () => { checkingSession = true; acceptedSession = false; clearPasswords(); setBusy(false) },
   onExpired: reason => location.replace(new URL('./login.html?reason=' + reason, location.href).href),
 }) : null
 
-let fitFrame = 0
+const mobileAccess = matchMedia('(max-width: 860px)')
+const stage = document.querySelector('.stage')
+let fitFrame = 0, layoutHeight = window.innerHeight, layoutWidth = window.innerWidth
+let keyboardOpen = false
 function scheduleFit() {
   if (!fitFrame) fitFrame = requestAnimationFrame(() => { fitFrame = 0; fitViewport() })
 }
 function fitViewport() {
   const viewport = window.visualViewport
   const height = Math.min(window.innerHeight, viewport?.height || window.innerHeight)
-  document.documentElement.style.setProperty('--access-height', `${height}px`)
-  document.documentElement.style.setProperty('--access-top', `${viewport?.offsetTop || 0}px`)
-  const extreme = height < 520 || height < window.innerHeight - 100
-  document.body.dataset.extreme = String(extreme)
-  // CSS determines the panel and controls before the first paint. Only the
-  // visual viewport (virtual keyboard / zoom) needs runtime geometry.
+  const focused = document.activeElement
+  const editing = focused?.matches('input:not([readonly]), textarea:not([readonly])')
+  const viewportReduced = (viewport?.scale ?? 1) === 1 && height < window.innerHeight - 100
+  if (layoutWidth !== window.innerWidth || (!editing && !keyboardOpen && !viewportReduced)) {
+    layoutWidth = window.innerWidth
+    layoutHeight = window.innerHeight
+  } else {
+    layoutHeight = Math.max(layoutHeight, window.innerHeight)
+  }
+  keyboardOpen = mobileAccess.matches && (viewportReduced || ((editing || keyboardOpen) && height < layoutHeight - 100))
+  const rootStyle = document.documentElement.style
+  rootStyle.setProperty('--access-height', `${height}px`)
+  rootStyle.setProperty('--access-layout-height', `${layoutHeight}px`)
+  rootStyle.setProperty('--access-top', `${viewport?.offsetTop || 0}px`)
+  document.body.dataset.extreme = String(height < 520 || viewportReduced)
+  document.body.dataset.accessDensity = layoutHeight <= 520 ? 'short' : layoutHeight <= 700 ? 'compact' : 'regular'
+  document.body.dataset.accessKeyboard = String(keyboardOpen)
+
+  if (keyboardOpen && editing && stage.contains(focused)) {
+    const field = focused.getBoundingClientRect(), area = stage.getBoundingClientRect()
+    if (field.bottom > area.bottom - 12) stage.scrollTop += field.bottom - area.bottom + 12
+    else if (field.top < area.top + 12) stage.scrollTop += field.top - area.top - 12
+  }
 }
 window.addEventListener('resize', scheduleFit)
+document.addEventListener('focusin', scheduleFit)
 window.visualViewport?.addEventListener('resize', scheduleFit)
 window.visualViewport?.addEventListener('scroll', scheduleFit)
 fitViewport()
@@ -81,7 +104,7 @@ async function show(id, animate = true) {
   document.body.dataset.state = id; foot(); panel.classList.remove('has-message')
   if (id === 'registerScreen') void loadUniversities()
   feedback('', 'info', false)
-  document.querySelector('.stage').scrollTop = 0
+  stage.scrollTop = 0
   fitViewport()
   if (shouldAnimate) {
     next.classList.add('entrance')
@@ -139,14 +162,18 @@ async function enterHome() {
   acceptedSession = true; clearPasswords(); cleanCallback()
   $('accessStatus').textContent = 'Sesión iniciada. Ya puedes consultar tu avance académico.'
   await new Promise(resolve => requestAnimationFrame(resolve))
-  history.replaceState({ ...history.state, esanLoginEntry: true }, '')
-  location.assign(destination)
+  if (isAndroid()) location.replace(destination)
+  else {
+    history.replaceState({ ...history.state, esanLoginEntry: true }, '')
+    location.assign(destination)
+  }
 }
 async function mailScreen(kind, code, masked) {
   mailKind = kind; mailCode = code; resendAt = Date.now() + 45000
   $('mailCopy').textContent = kind === 'confirmation'
     ? `Cuenta creada. Confirma tu correo con el enlace que enviamos${masked ? ' a ' + masked : ''} antes de iniciar sesión.`
     : masked ? `Te enviamos un enlace de recuperación a ${masked}.` : 'Si el código está registrado, recibirás un enlace para recuperar tu contraseña.'
+  if (isAndroid() && authCallback().startsWith('https:')) $('mailCopy').textContent += ' Abre el enlace en tu navegador y después vuelve a Lyra.'
   feedback('', 'info'); await show('mailScreen'); updateResend()
 }
 async function sendRecovery(code) {
@@ -339,7 +366,7 @@ async function initialize() {
     if (!webSession.check()) return
     cleanCallback()
     if (recovering) { clearPasswords(); await show('resetScreen', false) }
-    else if (!history.state?.esanLoginEntry) await enterHome()
+    else if (isAndroid() || !history.state?.esanLoginEntry) await enterHome()
   } catch { recovering = false; feedback('No pudimos comprobar tu sesión. Reintenta el acceso o solicita un nuevo enlace.', 'error') }
   finally { checkingSession = false; if (!acceptedSession) setBusy(false) }
 }
@@ -348,6 +375,8 @@ window.addEventListener('pageshow', event => {
   acceptedSession = false; checkingSession = false; busy = false
   clearPasswords(); setBusy(false); void show('loginScreen', false)
 })
+setAndroidSystemBars(true)
+void initializeAndroid().catch(() => {})
 foot(); initialize()
 
 

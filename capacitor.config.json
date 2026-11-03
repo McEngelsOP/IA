@@ -1,0 +1,19 @@
+{
+  "appId": "app.lyra.campus",
+  "appName": "Lyra",
+  "webDir": "dist-android",
+  "android": {
+    "backgroundColor": "#18110f",
+    "allowMixedContent": false
+  },
+  "server": {
+    "androidScheme": "https",
+    "hostname": "localhost"
+  },
+  "plugins": {
+    "SystemBars": {
+      "insetsHandling": "native",
+      "initialViewportFitValueHint": "cover"
+    }
+  }
+}

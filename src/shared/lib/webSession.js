@@ -8,11 +8,11 @@ function identity(session) {
   } catch { return session?.user?.id || null }
 }
 
-// Only the Official web entry points install this guard. Token refreshes and
-// background requests are deliberately not evidence of user activity.
+// Web sessions expire after inactivity. Android keeps the Supabase session
+// across launches while sharing the same sign-out and visibility handling.
 export function createWebSessionGuard(client, {
   authKey, storage = window.localStorage, win = window, doc = document,
-  now = Date.now, schedule = setTimeout, cancel = clearTimeout,
+  now = Date.now, schedule = setTimeout, cancel = clearTimeout, expireOnIdle = true,
   onLock = () => {}, onExpired = () => {}, onSuspend = () => {}, onResume = () => {},
 } = {}) {
   let active = null, timer = null, closing = false, expiry = Promise.resolve(), lastWrite = 0
@@ -46,7 +46,7 @@ export function createWebSessionGuard(client, {
   }
   function check() {
     if (closing) return false
-    if (!active) return true
+    if (!active || !expireOnIdle) return true
     const record = read(), time = now()
     if (!record || !Number.isFinite(record.at) || record.at > time || time - record.at >= WEB_IDLE_MS) {
       expire(); return false
@@ -63,6 +63,7 @@ export function createWebSessionGuard(client, {
   function begin(session) {
     active = identity(session); closing = false; lastWrite = 0
     if (!active) { expire(); return false }
+    if (!expireOnIdle) return true
     try { storage.setItem(activityKey(active), JSON.stringify({ at: now() })) }
     catch { expire(); return false }
     return check()
@@ -86,8 +87,10 @@ export function createWebSessionGuard(client, {
     target.addEventListener(name, fn, options)
     listeners.push(() => target.removeEventListener(name, fn, options))
   }
-  for (const name of ['pointerdown', 'pointermove', 'keydown', 'input', 'scroll', 'touchstart']) {
-    listen(doc, name, activity, { capture: true })
+  if (expireOnIdle) {
+    for (const name of ['pointerdown', 'pointermove', 'keydown', 'input', 'scroll', 'touchstart']) {
+      listen(doc, name, activity, { capture: true })
+    }
   }
   const resume = event => { if (check()) onResume(); else event.stopImmediatePropagation() }
   listen(win, 'focus', resume, true)

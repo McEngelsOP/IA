@@ -1,3 +1,4 @@
+import { prepareDownload } from '../../native/files.js'
 import { createAcademicRecordPdf } from './academicRecordPdf.js'
 
 // Read only the fields used by the report, including on profiles with private columns.
@@ -31,16 +32,8 @@ export async function readAcademicRecord(client, userId, signal) {
   return { product: 'Lyra', formatVersion: 1, exportedAt: new Date().toISOString(), ...Object.fromEntries(entries) }
 }
 
-export function downloadAcademicRecord(record, catalog = null, { keepAvailable = false } = {}) {
+export async function downloadAcademicRecord(record, catalog = null, { keepAvailable = false } = {}) {
   const pdf = createAcademicRecordPdf(record, catalog)
-  const url = URL.createObjectURL(pdf.output('blob'))
-  const link = document.createElement('a')
   const exportedDate = new Date(record.exportedAt).toLocaleDateString('sv-SE', { timeZone: 'America/Lima' })
-  link.href = url; link.download = `lyra-registro-academico-${exportedDate}.pdf`
-  document.body.appendChild(link); link.click(); link.remove()
-  // Delayed downloads on mobile must retain their Blob until the browser reads it.
-  let disposed = false
-  const dispose = () => { if (!disposed) { disposed = true; URL.revokeObjectURL(url) } }
-  if (!keepAvailable) setTimeout(dispose, 60000)
-  return { url, filename: link.download, dispose }
+  return prepareDownload(pdf.output('blob'), `lyra-registro-academico-${exportedDate}.pdf`, { keepAvailable })
 }

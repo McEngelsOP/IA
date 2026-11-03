@@ -6,7 +6,7 @@ const failures = []
 for (const path of paths) {
   if (!existsSync(path)) continue
   if ((/(^|\/)(?:\.env(?:\..*)?|\.dev\.vars(?:\..*)?)$/.test(path) && !path.endsWith('.example')) ||
-      /\.(?:pem|key|dump|backup|bak)$/.test(path) ||
+      /\.(?:pem|key|jks|keystore|dump|backup|bak)$/.test(path) ||
       /(^|\/)(?:\.vercel|\.supabase|\.impeccable|backups|private)\//.test(path) ||
       /^(?:ADMIN\.md|docs\/backend-activation\.md|supabase\/history\/)/.test(path)) {
     failures.push(`${path}: archivo restringido`)

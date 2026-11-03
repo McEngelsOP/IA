@@ -1,3 +1,5 @@
+import { initializeAndroid, isAndroid, setAndroidSystemBars } from '../native/android.js';
+void initializeAndroid().catch(() => {});
 import { GRADE_SCALES, validScale, validGrade, parseGrade, formatGrade, scaleLabel, weightedGrade } from '../core/academic/grading.js';
 import { createSystemRuntime } from '../features/account/systemRuntime.js';
 import { OFFLINE_ENABLED } from '../features/account/offlineEnabled.js';
@@ -280,7 +282,9 @@ async function exportAcademicRecord(){
   if(revision!==HOME.revision||HOME.user?.id!==userId)return;
   if(controller.signal.aborted)throw new Error('EXPORT_TIMEOUT');
   record.gradingRules=HOME_SCALE;
-  academicExportDownload=downloadAcademicRecord(record,catalog,{keepAvailable:true});
+  academicExportDownload=await downloadAcademicRecord(record,catalog,{keepAvailable:true});
+  if(revision!==HOME.revision||HOME.user?.id!==userId||!panel.isConnected){clearAcademicExport();return;}
+  if(isAndroid()){status.innerHTML='<strong>Tu informe PDF está listo</strong><p>Guarda tu informe en Archivos o compártelo con otra aplicación.</p>';const share=document.createElement('button');share.className='h-btn primary';share.textContent='Guardar o compartir PDF';share.onclick=()=>void academicExportDownload?.share().catch(()=>{status.textContent='No se pudo abrir el menú. Reintenta guardar el PDF.'});actions.appendChild(share);closeButton();await academicExportDownload.share();return;}
   status.innerHTML='<strong>Tu informe PDF está listo</strong><p>Si la descarga no comenzó, usa el botón para descargarlo.</p>';
   const link=document.createElement('a');link.className='h-btn primary';link.href=academicExportDownload.url;link.download=academicExportDownload.filename;link.textContent='Descargar PDF';actions.appendChild(link);closeButton();
  }catch(issue){if(revision===HOME.revision&&panel.isConnected){
@@ -846,12 +850,13 @@ let tt;
 const toast=m=>{const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),1400)};
 const mq=matchMedia('(prefers-color-scheme: dark)');let ttm;
 const isDark=()=>root.dataset.theme?root.dataset.theme==='dark':mq.matches;
+setAndroidSystemBars(isDark());
 /* Selector de tema: el indicador se estira hacia la opción elegida (el borde que avanza va primero) */
 function renderProfile(){const d=isDark();$('uni').innerHTML=`<div class="um">${svg('landmark',20)}</div><div><b>${homeEsc(HOME.profile?.university_name||((HOME.profile?.institution_id==='esan'||CARRERAS[HOME.profile?.carrera])?'Universidad ESAN':'Lyra'))}</b><span>Tu espacio académico en Lyra</span></div>`;
   $('menu').innerHTML=`<div class="tg" data-s="${d?'dark':'light'}" role="radiogroup" aria-label="Tema"><span class="thm" aria-hidden="true"></span>${[['dark','moon','Oscuro'],['light','sun','Claro']].map(t=>`<button class="tgb ${t[0]}" role="radio" aria-checked="${(t[0]==='dark')===d}" data-t="${t[0]}">${svg(t[1],16)}<span>${t[2]}</span></button>`).join('')}</div>`
   +[...(HOME.user?[['profile','user','Mi perfil']]:[]),...(HOME.mode==='live'?[['preferences','wrench','Preferencias'],...((moderationAccess.admin||moderationAccess.scopes.length)?[['admin','lock','Administración']]:[]),['personal-ai','sparkles','Mi IA · claves personales']]:[]),...(mqM.matches?[]:[['arcade','gamepad','ARCADE']]),...(HOME.mode==='live'&&SETUP.owner===HOME.user?.id&&!SETUP.record?.completed_at?[['setup','wrench','Configuración inicial']]:[]),...(HOME.user?[['export','copy','Exportar registro académico']]:[]),['out','logout','Cerrar sesión']].map(r=>`<button class="it" role="menuitem" data-a="${r[0]}"${r[0]==='export'&&HOME.saving.has('export')?' disabled':''}>${ic(r[1])}<span class="l">${r[0]==='export'&&HOME.saving.has('export')?'Preparando PDF…':r[2]}</span></button>`).join('')}
 function syncTg(){const g=$('menu').querySelector('.tg');if(!g)return;const d=isDark();g.dataset.s=d?'dark':'light';g.querySelectorAll('.tgb').forEach(b=>b.setAttribute('aria-checked',(b.dataset.t==='dark')===d))}
-function setTheme(dark){try{localStorage.setItem('lyra-theme',dark?'dark':'light')}catch{}if(dark===isDark()){root.dataset.theme=dark?'dark':'light';return;}root.classList.add('tt');root.dataset.theme=dark?'dark':'light';syncTg();clearTimeout(ttm);ttm=setTimeout(()=>root.classList.remove('tt'),900)}
+function setTheme(dark){setAndroidSystemBars(dark);try{localStorage.setItem('lyra-theme',dark?'dark':'light')}catch{}if(dark===isDark()){root.dataset.theme=dark?'dark':'light';return;}root.classList.add('tt');root.dataset.theme=dark?'dark':'light';syncTg();clearTimeout(ttm);ttm=setTimeout(()=>root.classList.remove('tt'),900)}
 $('menu').onclick=e=>{const t=e.target.closest('.tgb');if(t){setTheme(t.dataset.t==='dark');systemRuntime?.sync.set('theme',t.dataset.t);return}
   const b=e.target.closest('.it');if(!b)return;const a=b.dataset.a;
   if(a==='profile'){setMenu(false);go('Mi perfil');return}
@@ -863,7 +868,7 @@ $('menu').onclick=e=>{const t=e.target.closest('.tgb');if(t){setTheme(t.dataset.
   if(a==='out')homeSignOut();};
 $('menu').addEventListener('keydown',e=>{const t=e.target.closest&&e.target.closest('.tgb');if(!t||(e.key!=='ArrowLeft'&&e.key!=='ArrowRight'))return;
   e.preventDefault();const dk=e.key==='ArrowLeft';setTheme(dk);systemRuntime?.sync.set('theme',dk?'dark':'light');$('menu').querySelector(dk?'.tgb.dark':'.tgb.light').focus({preventScroll:true})});
-mq.addEventListener('change',renderProfile);
+mq.addEventListener('change',()=>{setAndroidSystemBars(isDark());renderProfile()});
 let profileCloseTimer=0;
 function setMenu(o,restoreFocus){
   const menu=$('menu');clearTimeout(profileCloseTimer);
@@ -873,14 +878,14 @@ function setMenu(o,restoreFocus){
   $('act').setAttribute('aria-label',o?'Cerrar perfil':'Abrir perfil');
   if(o){
     menu.hidden=false;app.classList.add('open');renderMobileDock();
-    if(menu.animate)menu.animate(navReduced()?[{opacity:.75},{opacity:1}]:[
+    if(!mqM.matches&&menu.animate)menu.animate(navReduced()?[{opacity:.75},{opacity:1}]:[
       {opacity:0,transform:'translateY(-6px) scale(.96)'},
       {opacity:1,transform:'none'}
     ],{duration:navReduced()?140:480,easing:'cubic-bezier(.22,.7,.25,1)'});
     setTimeout(()=>{if(app.classList.contains('open'))menu.querySelector('.tgb[aria-checked="true"],.it')?.focus({preventScroll:true})},60);
   }else{
     app.classList.remove('open');renderMobileDock();
-    profileCloseTimer=setTimeout(()=>{if(!app.classList.contains('open'))menu.hidden=true},navReduced()?0:240);
+    if(!mqM.matches)profileCloseTimer=setTimeout(()=>{if(!app.classList.contains('open'))menu.hidden=true},navReduced()?0:240);
     if(restoreFocus)$('act').focus({preventScroll:true});
   }
 }
@@ -1237,7 +1242,7 @@ webNavigation=createWebNavigation({
  valid:s=>validRoute(s)&&HOME_TABS.some(t=>t[0]===s.tab),
  restore:s=>{HOME.tab=s.tab;setMenu(false);setDrawer(false);go(s.kid||s.page,s.kid?s.page:undefined,{history:false,scroll:s.scroll})}
 });
-const webSession=homeClient?createWebSessionGuard(homeClient,{authKey:webAuthStorageKey(),
+const webSession=homeClient?createWebSessionGuard(homeClient,{authKey:webAuthStorageKey(),expireOnIdle:!isAndroid(),
  onLock:()=>{document.body.style.visibility='hidden';void systemRuntime?.signOut();homeReset();curriculumRender++;curriculumUnmount?.();curriculumUnmount=null},
  onSuspend:()=>{document.body.style.visibility='hidden'},
  onResume:()=>{document.body.style.visibility=''},
@@ -1247,8 +1252,12 @@ const webSession=homeClient?createWebSessionGuard(homeClient,{authKey:webAuthSto
 /* La plataforma es informativa; el diseño responde al espacio y al tipo de entrada. */
 function renderMobileDock(){
  const dock=$('mobile-dock'),tabs=$('mobile-tabs');if(!dock||!tabs)return;
- const profile=$('act').closest('.pf'),host=mqM.matches?dock:$('top');if(profile.parentElement!==host)host.append(profile);
- $('act').innerHTML=svg(mqM.matches?'plus':'user',mqM.matches?26:23);
+ const act=$('act'),profile=act.closest('.pf'),host=mqM.matches?dock:$('top');
+ if(profile.parentElement!==host){
+  host.append(profile);
+  $('menu').hidden=!mqM.matches&&!app.classList.contains('open');
+  act.innerHTML=svg(mqM.matches?'plus':'user',mqM.matches?26:23);
+ }
  const names=TABS.map(t=>t[2]);
  if(!tabs.children.length)tabs.innerHTML=TABS.map(([label,icon,name])=>`<button type="button" data-mobile-page="${name}" aria-label="${name}" title="${name}">${svg(icon,24)}</button>`).join('');
  [...tabs.children].forEach(b=>{if(b.dataset.mobilePage===cur)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')});
