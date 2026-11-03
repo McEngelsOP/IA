@@ -16,14 +16,14 @@ function surface() {
     },
   }
 }
-function fixture({ stored = new Map(), logout = async () => ({ error: null }) } = {}) {
+function fixture({ stored = new Map(), logout = async () => ({ error: null }), expireOnIdle = true } = {}) {
   let time = 100000, next = 0, callback, locks = 0, expired = [], calls = []
   const timers = new Map(), win = surface(), doc = surface()
   const storage = { getItem: key => stored.get(key) || null, setItem: (key, value) => stored.set(key, value), removeItem: key => stored.delete(key) }
   const schedule = (fn, ms) => { const id = ++next; timers.set(id, { fn, at: time + ms }); return id }
   const cancel = id => timers.delete(id)
   const client = { auth: { stopAutoRefresh() {}, signOut(options) { calls.push(options); return logout() }, onAuthStateChange(fn) { callback = fn; return { data: { subscription: { unsubscribe() {} } } } } } }
-  const guard = createWebSessionGuard(client, { authKey: 'auth', storage, win, doc, now: () => time, schedule, cancel, onLock: () => locks++, onExpired: reason => expired.push(reason) })
+  const guard = createWebSessionGuard(client, { authKey: 'auth', expireOnIdle, storage, win, doc, now: () => time, schedule, cancel, onLock: () => locks++, onExpired: reason => expired.push(reason) })
   return { guard, win, doc, stored, calls, get locks() { return locks }, expired,
     jump(ms, run = true) { time += ms; if (run) { for (const [id, timer] of [...timers]) if (timer.at <= time) { timers.delete(id); timer.fn() } } },
     event(name, value) { callback(name, value) },
@@ -87,4 +87,26 @@ test('a fresh sign-in establishes a new session; an old deadline and clock rollb
   const f = fixture(); f.stored.set('auth:web-activity:v1:old', JSON.stringify({ at: 1 }))
   assert(f.guard.begin(session('new'))); f.jump(-1000, false)
   assert.equal(f.guard.check(), false); await f.guard.settled
+})
+
+
+test('Android restores an existing Supabase session without an activity record and still honors sign-out', async () => {
+  const f = fixture({ expireOnIdle: false })
+  f.stored.set('auth', 'token')
+  assert(f.guard.restore(session('one')))
+  f.doc.hidden = true
+  f.doc.fire('visibilitychange')
+  f.jump(7 * 3600000)
+  f.doc.hidden = false
+  f.doc.fire('visibilitychange')
+  f.event('TOKEN_REFRESHED', session('one'))
+  f.jump(0)
+  assert(f.guard.check())
+  assert.equal(f.locks, 0)
+  assert.deepEqual([...f.stored.keys()], ['auth'])
+  f.event('SIGNED_OUT', null)
+  f.jump(0)
+  await f.guard.settled
+  assert.deepEqual(f.expired, ['signed-out'])
+  assert.equal(f.stored.has('auth'), false)
 })

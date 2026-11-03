@@ -13,7 +13,7 @@
   "plugins": {
     "SystemBars": {
       "insetsHandling": "native",
-      "initialViewportFitValueHint": "contain"
+      "initialViewportFitValueHint": "cover"
     }
   }
 }

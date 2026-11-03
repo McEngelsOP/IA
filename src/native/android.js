@@ -1,5 +1,8 @@
-import { Capacitor, CapacitorHttp } from '@capacitor/core'
+import { Capacitor, CapacitorHttp, SystemBars, SystemBarsStyle } from '@capacitor/core'
 export const isAndroid = () => Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android'
+export function setAndroidSystemBars(dark) {
+  if (isAndroid()) void SystemBars.setStyle({ style: dark ? SystemBarsStyle.Dark : SystemBarsStyle.Light }).catch(() => {})
+}
 export const WEB_ORIGIN = 'https://l-esan.vercel.app'
 // HTTPS fallback works with the existing Supabase redirect allowlist. A native
 // callback can be enabled after adding app.lyra.campus://auth/callback there.
