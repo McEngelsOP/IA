@@ -15,6 +15,8 @@ En el proyecto de Lyra, Settings → Environment Variables, configurar para Prod
 
 No cambiar las credenciales SMTP de Supabase. Volver a desplegar tras configurar variables. Ninguna clave se incorpora al repositorio. Sin credenciales, la búsqueda, copia y exportación siguen disponibles, pero enviar queda deshabilitado. El estado comprueba presencia y formato de configuración, no valida credenciales con Brevo.
 
+Se recortan los espacios y saltos externos al copiar valores. El panel distingue variables ausentes de formatos inválidos y una consulta fallida del estado. Los rechazos de Brevo indican si afectan a la clave API, permisos o restricciones de IP, remitente, crédito o límite de solicitudes. Las respuestas ambiguas y los errores del proveedor de tipo 5xx requieren revisar el registro antes de repetir; no hay reintentos automáticos ni exposición de mensajes privados del proveedor.
+
 No requiere SQL nuevo. Deben estar instaladas las RPC del panel y su endurecimiento existentes; los errores de lectura no se presentan como una lista vacía. Una cuenta sin `profiles.is_admin = true` no puede utilizar el endpoint ni acceder al componente desde el panel. Moderadores de soporte o mallas no reciben este permiso.
 
 ## Verificación y límites

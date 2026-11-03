@@ -2,7 +2,7 @@
 
 Lyra ayuda a estudiantes de Universidad ESAN a entender su avance, planificar sus cursos y organizar el semestre. El catálogo activo incluye las 18 carreras ESAN presentes en las fuentes del proyecto. Es una herramienta independiente de apoyo; no confirma matrícula ni sustituye información institucional.
 
-La rama de trabajo de esta entrega es **`Oficial`**. Incluye las correcciones de la ficha del curso y los comentarios de Recursos, junto a la ampliación del sistema.
+La rama de trabajo es **`main`**. Incluye la integración de Oficial y la revisión general de noviembre. Los cambios de interfaz se publican mediante Git; las migraciones y Edge Functions tienen su propio proceso de activación.
 
 ## Recorrido del estudiante
 
@@ -77,6 +77,7 @@ Vite genera `dist/`. Las entradas y rutas de publicación permanecen en `vite.co
 - [Piloto y expansión](docs/esan-pilot.md)
 - [Limpieza](docs/cleanup.md)
 - [Configuración inicial](docs/initial-setup.md)
+- [Revisión de noviembre y pasos manuales de IA](docs/revision-main-2026-11-03.md)
 - [Matrícula y tareas](docs/text-tasks-semester.md)
 - [Geoduelo](docs/geoduelo.md) y [partidas en línea](docs/geoduelo-online.md)
 - [Mantenimiento SQL](supabase/SQL_MAINTENANCE.md)
@@ -102,3 +103,5 @@ La ampliación integrada en `Oficial` añade sincronización de preferencias, es
 La política independiente del asistente exige claves propias a cuentas externas o sin afiliación ESAN verificada, unifica las cuotas y añade modos de respuesta y contexto consultado. [Acceso de IA, instalación y pruebas](docs/ai-access-policy.md).
 
 La comparación de los últimos commits de Oficial y la recuperación del borrador se documentan en [la reconciliación de noviembre](docs/integration-oficial.md). La ampliación de universidades requiere [activación manual de SQL y funciones](docs/universities-curriculum.md). El modo sin conexión permanece pendiente y desactivado.
+
+Inicio permite cambiar tamaños con los botones o arrastrando la esquina de cada bloque, con adaptación en vivo, teclado, cancelación, deshacer y recuperación del diseño. La paloma permanece fija. Los tamaños personalizados se conservan por cuenta y usan la sincronización existente. El acceso mantiene su tema oscuro aunque el portal se utilice en modo claro.

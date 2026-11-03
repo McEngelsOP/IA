@@ -1,6 +1,6 @@
 # Contexto técnico de Lyra Campus
 
-Actualizado el 20 de octubre de 2026 para la reestructuración en `aea`. El código y las pruebas son la referencia de implementación. El catálogo ESAN y `study-advisor` v15 están activados en Lyra; los informes operativos se conservan fuera del repositorio.
+Actualizado el 3 de noviembre de 2026. La rama de trabajo es `main`. El código y las pruebas son la referencia de implementación. La comprobación de noviembre encontró el SQL de acceso IA instalado y cuatro Edge Functions con el enrutamiento anterior; no asumir que publicar Git actualiza esos servicios. Ver `docs/revision-main-2026-11-03.md`.
 
 ## Alcance y entradas
 
@@ -80,3 +80,11 @@ Rama de esta entrega: `Oficial`, integrada desde `feat/lyra-system-complete`: pr
 ## Comunicaciones individuales · noviembre de 2026
 
 Administración incorpora búsqueda de destinatarios registrados mediante `admin_get_users`, copia y CSV de una sola persona, borrador editable y revisión previa. `/api/communications` valida sesión y administrador, resuelve el correo confirmado en Auth Admin y llama a Brevo solo con un destinatario. La activación requiere las variables privadas documentadas en `docs/communications.md`. Sin ellas funcionan selección y exportación; el envío permanece deshabilitado. No se ejecuta SQL ni se cambian correos de acceso. No hay campañas automáticas, sincronización masiva de contactos ni historial permanente en Supabase. Brevo conserva los registros de entrega; la respuesta de la API indica aceptación, no entrega.
+
+## Revisión general y personalización · 3 de noviembre de 2026
+
+Las preferencias descartan lecturas anteriores a otra lectura o a un guardado completado. Inicio usa layout v3, compatible con v1/v2: `sizes` conserva los presets y admite `custom`; `frames` guarda ancho en doce unidades y alto de 180–900 px. La esquina permite ajustar en vivo con mouse, tacto y teclado; Escape cancela, y Deshacer y Restablecer diseño son reversibles. Los gestos guardan solo al terminar y se cancelan al cambiar de cuenta o pantalla. La sincronización existente admite el objeto sin SQL adicional.
+
+El acceso fija `data-theme=dark` antes de pintar y conserva la preferencia del portal. Mi IA distingue afiliación pendiente, vencida y revocada; el administrador puede completar el UUID de su propia sesión con «Usar mi cuenta», manteniendo la confirmación institucional y la autorización del servidor. Esta revisión no verifica cuentas automáticamente.
+
+La exportación respeta el promedio con pesos iguales y rechaza respuestas de tabla que no sean arrays. Los grupos vuelven a paginar mensajes antiguos sin una referencia inexistente. Brevo recibe configuración normalizada y comunica errores de autenticación, permisos, remitente, crédito y cuota sin revelar respuestas privadas. Se retiraron imports, constantes y una implementación duplicada de Focus sin referencias.

@@ -5,7 +5,7 @@ La política se resuelve en Supabase a partir del perfil protegido y de una veri
 - ESAN con afiliación verificada y vigente: puede elegir el servicio compartido o claves propias.
 - Otra universidad, institución desconocida o ESAN pendiente, revocada o vencida: clave propia obligatoria.
 - Sin claves propias activas, las funciones de IA se bloquean con una explicación y acceso a Mi IA. Nunca se mezclan claves personales con claves de Lyra ni se usa Lyra como respaldo.
-- Esta política no abre el registro a otras universidades; prepara los servicios para esa ampliación.
+- La habilitación del registro de otras universidades pertenece a las migraciones de universidades; esta política controla el acceso a IA de esas cuentas.
 
 ## Cuotas
 
@@ -24,7 +24,7 @@ Una reserva atómica bloquea la fila del perfil, comprueba de nuevo la afiliaci�
 
 ## Verificación administrativa
 
-Mi IA muestra «Verificar afiliación ESAN» solo para administradores. Requiere el UUID de la cuenta y confirmar la revisión de una prueba institucional. La verificación dura 180 días y puede revocarse. La RPC vuelve a comprobar el permiso administrativo y que el perfil pertenezca a ESAN. No se verifica automáticamente a cuentas existentes. Cada alumno puede consultar su UUID en Mi IA → Identificador de cuenta para soporte.
+Mi IA muestra «Verificar afiliación ESAN» solo para administradores. Requiere el UUID de la cuenta y confirmar la revisión de una prueba institucional. «Usar mi cuenta» completa el identificador de la sesión actual sin conceder acceso por sí mismo. La verificación dura 180 días y puede revocarse. La RPC vuelve a comprobar el permiso administrativo y que el perfil pertenezca a ESAN. No se verifica automáticamente a cuentas existentes. Cada alumno puede consultar su UUID en Mi IA → Identificador de cuenta para soporte.
 
 ## Asistente
 
@@ -34,7 +34,7 @@ Los modos Breve, Paso a paso y Modo estudio controlan las instrucciones y la lon
 
 Aplicar `supabase/ai_access_policy.sql` después de los esquemas existentes de asesor y `personal_ai_keys.sql`. Es independiente de `system_complete.sql`. Después desplegar conjuntamente `study-advisor`, `text-to-tasks`, `excel-schedule` y `personal-ai`, conservando `verify_jwt=true`. Publicar el frontend de Oficial para habilitar los controles visuales. Sin el esquema de política, las nuevas funciones rechazan las consultas; no vuelven a la política anterior.
 
-Estado de esta entrega: todo el código y los SQL se suben a Oficial. Por indicación del usuario, los SQL se ejecutarán manualmente y no se aplican desde las herramientas del asistente. La política nueva sigue pendiente de esa ejecución. Los cuatro servicios están listos en el repositorio; su despliegue requiere primero ai_access_policy.sql para evitar bloquear las consultas de IA. El frontend debe publicarse con los servicios de la misma revisión. No se han verificado automáticamente cuentas ESAN.
+Estado comprobado el 3 de noviembre de 2026: el código está en `main` y las funciones SQL de política y verificación existen en Lyra. Los cuatro servicios desplegados conservan el enrutamiento anterior; requieren actualización desde la misma revisión de `main`. No se consultó el estado individual ni se verificaron automáticamente cuentas ESAN. La ejecución de SQL sigue siendo manual cuando haga falta en otro entorno. Pasos y límites de esta comprobación: [revisión de main](revision-main-2026-11-03.md).
 
 ## Pruebas
 
