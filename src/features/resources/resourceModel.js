@@ -1,7 +1,9 @@
 export const wordCount = value => value.trim() ? value.trim().split(/\s+/u).length : 0
 export function resourceUrl(value) {
   const raw = value.trim()
-  const url = new URL(/^[a-z][a-z\d+.-]*:/i.test(raw) ? raw : `https://${raw}`)
+  let url
+  try { url = new URL(/^[a-z][a-z\d+.-]*:/i.test(raw) ? raw : `https://${raw}`) }
+  catch { throw new Error('INVALID_RESOURCE_URL') }
   if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password || url.href.length > 2048) throw new Error('INVALID_RESOURCE_URL')
   url.hash = ''
   return url.href

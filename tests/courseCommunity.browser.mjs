@@ -142,6 +142,13 @@ try {
     await page.getByText('Consejo de estudio 20', { exact: true }).waitFor()
     assert.equal(await page.locator('.rc-comment-list li').count(), 1)
     if (width === 1440) {
+      await page.getByLabel('Nombre', { exact: true }).fill('Recurso de prueba')
+      await page.getByLabel('Enlace', { exact: true }).fill('https://')
+      await page.getByRole('button', { name: 'Publicar', exact: true }).click()
+      await page.getByText('Escribe un enlace válido de un sitio web, sin usuario ni contraseña.', { exact: true }).waitFor()
+      assert.equal(await page.getByLabel('Nombre', { exact: true }).inputValue(), 'Recurso de prueba')
+      assert.equal(await page.getByLabel('Enlace', { exact: true }).inputValue(), 'https://')
+      assert.equal(f.requests.some(request => request.path.endsWith('/rpc/publish_resource')), false)
       f.failComments = true
       await page.getByRole('button', { name: 'Comentarios anteriores', exact: true }).click()
       await page.getByText('No se pudieron cargar los comentarios. Reintenta.', { exact: true }).waitFor()
