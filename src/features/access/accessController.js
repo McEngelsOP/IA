@@ -1,3 +1,4 @@
+import { authCallback, initializeAndroid, isAndroid } from '../../native/android.js'
 import { isEsanStudentCode } from '../../institutions/esan/config.js'
 import { initializeAccessBackground } from './accessBackground.js'
 import { getSupabaseClient } from '../../shared/lib/getSupabaseClient.js'
@@ -9,7 +10,7 @@ const panel = document.querySelector('.panel')
 const screens = ['loginScreen', 'registerScreen', 'forgotScreen', 'mailScreen', 'resetScreen'].map($)
 const reduce = matchMedia('(prefers-reduced-motion: reduce)')
 const destination = new URL('./pagina.html', location.href).href
-const callback = new URL('./login.html', location.href).href
+const callback = authCallback()
 const params = new URLSearchParams(location.hash.slice(1))
 const query = new URLSearchParams(location.search)
 const support = 'solopcional16@gmail.com'
@@ -147,6 +148,7 @@ async function mailScreen(kind, code, masked) {
   $('mailCopy').textContent = kind === 'confirmation'
     ? `Cuenta creada. Confirma tu correo con el enlace que enviamos${masked ? ' a ' + masked : ''} antes de iniciar sesión.`
     : masked ? `Te enviamos un enlace de recuperación a ${masked}.` : 'Si el código está registrado, recibirás un enlace para recuperar tu contraseña.'
+  if (isAndroid() && authCallback().startsWith('https:')) $('mailCopy').textContent += ' Abre el enlace en tu navegador y después vuelve a Lyra.'
   feedback('', 'info'); await show('mailScreen'); updateResend()
 }
 async function sendRecovery(code) {
@@ -348,6 +350,7 @@ window.addEventListener('pageshow', event => {
   acceptedSession = false; checkingSession = false; busy = false
   clearPasswords(); setBusy(false); void show('loginScreen', false)
 })
+void initializeAndroid().catch(() => {})
 foot(); initialize()
 
 

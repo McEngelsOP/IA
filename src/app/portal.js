@@ -1,3 +1,5 @@
+import { initializeAndroid, isAndroid } from '../native/android.js';
+void initializeAndroid().catch(() => {});
 import { GRADE_SCALES, validScale, validGrade, parseGrade, formatGrade, scaleLabel, weightedGrade } from '../core/academic/grading.js';
 import { createSystemRuntime } from '../features/account/systemRuntime.js';
 import { OFFLINE_ENABLED } from '../features/account/offlineEnabled.js';
@@ -280,7 +282,9 @@ async function exportAcademicRecord(){
   if(revision!==HOME.revision||HOME.user?.id!==userId)return;
   if(controller.signal.aborted)throw new Error('EXPORT_TIMEOUT');
   record.gradingRules=HOME_SCALE;
-  academicExportDownload=downloadAcademicRecord(record,catalog,{keepAvailable:true});
+  academicExportDownload=await downloadAcademicRecord(record,catalog,{keepAvailable:true});
+  if(revision!==HOME.revision||HOME.user?.id!==userId||!panel.isConnected){clearAcademicExport();return;}
+  if(isAndroid()){status.innerHTML='<strong>Tu informe PDF está listo</strong><p>Guarda tu informe en Archivos o compártelo con otra aplicación.</p>';const share=document.createElement('button');share.className='h-btn primary';share.textContent='Guardar o compartir PDF';share.onclick=()=>void academicExportDownload?.share().catch(()=>{status.textContent='No se pudo abrir el menú. Reintenta guardar el PDF.'});actions.appendChild(share);closeButton();await academicExportDownload.share();return;}
   status.innerHTML='<strong>Tu informe PDF está listo</strong><p>Si la descarga no comenzó, usa el botón para descargarlo.</p>';
   const link=document.createElement('a');link.className='h-btn primary';link.href=academicExportDownload.url;link.download=academicExportDownload.filename;link.textContent='Descargar PDF';actions.appendChild(link);closeButton();
  }catch(issue){if(revision===HOME.revision&&panel.isConnected){

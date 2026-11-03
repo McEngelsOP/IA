@@ -1,3 +1,4 @@
+import { apiFetch } from '../../native/android.js'
 import { useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import OfficialIcon from '../../shared/components/OfficialIcon.jsx'
@@ -29,7 +30,7 @@ function OfficialMailbox({ appOnly=false,category = 'Aplicativo', career = 'ia',
       const session = await client?.auth.getSession()
       const token = session?.data?.session?.access_token
       if (!token) { setStatus('Inicia sesión para enviar tu mensaje. Conservamos tu borrador.'); return }
-      const response = await fetch('/api/mailbox', {
+      const response = await apiFetch('/api/mailbox', {
         method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ categoria: category, tipo: config.tipos[draft.type][0],
           carrera: career, mensaje: draft.text.trim(),

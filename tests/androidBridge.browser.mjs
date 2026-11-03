@@ -1,0 +1,16 @@
+import {chromium} from 'playwright'
+import assert from 'node:assert/strict'
+const base=process.env.SETUP_BASE_URL||'http://127.0.0.1:5181'
+const browser=await chromium.launch({executablePath:process.env.SETUP_BROWSER,headless:true,args:['--no-sandbox']})
+try{
+const context=await browser.newContext();await context.addInitScript(()=>{
+ window.androidBridge={};window.__nativeCalls=[];window.__listeners={}
+ window.Capacitor={PluginHeaders:Object.entries({App:['addListener','removeListener','getLaunchUrl','minimizeApp'],Filesystem:['writeFile'],Share:['share'],CapacitorHttp:['request'],Browser:['open']}).map(([name,methods])=>({name,methods:methods.map(name=>({name,rtype:name==='addListener'?'callback':'promise'}))})),
+ nativeCallback:(plugin,method,options,callback)=>{window.__listeners[options.eventName]=callback;return 'fixture-callback'},
+ nativePromise:async(plugin,method,options)=>{window.__nativeCalls.push({plugin,method,options});if(plugin==='CapacitorHttp')return{status:200,data:{ok:true},headers:{'Content-Type':'application/json'}};if(plugin==='Filesystem')return{uri:'file:///data/user/0/app.lyra.campus/cache/'+options.path};return{}}}
+})
+const page=await context.newPage();await page.route('**/native-test.html',r=>r.fulfill({body:'<html><body><a id="external" href="https://example.invalid">Abrir</a></body></html>',contentType:'text/html'}));await page.goto(base+'/native-test.html')
+const result=await page.evaluate(async()=>{const native=await import('/src/native/android.js');const files=await import('/src/native/files.js');await native.initializeAndroid();const api=await native.apiFetch('/api/mailbox',{method:'POST',headers:{Authorization:'Bearer fixture','Content-Type':'application/json'},body:'{"mensaje":"fixture"}'});const file=await files.prepareDownload(new Blob(['PDF fixture'],{type:'application/pdf'}),'test.pdf');await file.share();let forbidden=false;try{await native.apiFetch('https://evil.invalid')}catch{forbidden=true}return{android:native.isAndroid(),callback:native.authCallback(),api:await api.json(),file:{filename:file.filename,url:file.url},forbidden,calls:window.__nativeCalls,back:!!window.__listeners.backButton}})
+assert(result.android&&result.forbidden&&result.back);assert.equal(result.callback,'https://l-esan.vercel.app/login.html');assert.deepEqual(result.api,{ok:true});const request=result.calls.find(c=>c.plugin==='CapacitorHttp');assert.equal(request.options.url,'https://l-esan.vercel.app/api/mailbox');assert.equal(request.options.headers.authorization,'Bearer fixture');assert.deepEqual(request.options.data,{mensaje:'fixture'});const written=result.calls.find(c=>c.plugin==='Filesystem');assert.equal(written.options.path,'exports/test.pdf');assert.equal(Buffer.from(written.options.data,'base64').toString(),'PDF fixture');assert(result.calls.some(c=>c.plugin==='Share'));console.log('PASS Android bridge: native HTTPS API, restricted endpoints, private file/share, back handler, HTTPS email fallback')
+await page.click('#external');await page.waitForTimeout(100);assert(await page.evaluate(()=>window.__nativeCalls.some(c=>c.plugin==='Browser')));console.log('PASS external browser route');await context.close()
+}finally{await browser.close()}

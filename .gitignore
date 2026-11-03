@@ -48,3 +48,13 @@ Thumbs.db
 .vite/
 
 /supabase/.temp/
+
+# Android outputs and private signing material
+/dist-android/
+/android/.gradle/
+/android/local.properties
+/android/app/src/main/assets/
+/android/capacitor-cordova-android-plugins/
+*.jks
+*.keystore
+/android/.kotlin/
