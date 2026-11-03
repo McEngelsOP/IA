@@ -134,7 +134,7 @@ function OfficialStudyGroups({ client, user, courses, nickname, onBusy }) {
     try {
       const incoming = await rpc('read_study_messages', { rid: id, before_time: first.created_at, before_id: first.id })
       if (!alive.current || revision !== chatRevision.current) return
-      setMessages(previous => mergeMessages(previous, incoming || []));if(!result.error&&result.data?.some(m=>m.member_key))void refreshDeleted(id,revision); setOlder((incoming || []).length === MESSAGE_PAGE_SIZE)
+      setMessages(previous => mergeMessages(previous, incoming || [])); setOlder((incoming || []).length === MESSAGE_PAGE_SIZE)
       requestAnimationFrame(() => { if (node?.isConnected) node.scrollTop = node.scrollHeight - previousHeight + previousTop })
     } catch (e) { if (alive.current && revision === chatRevision.current) setError(studyError(e)) }
     finally { if (olderLoading.current === revision) olderLoading.current = null; if (alive.current && revision === chatRevision.current) setLoadingOlder(false) }

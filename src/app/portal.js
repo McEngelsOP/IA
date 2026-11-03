@@ -4,7 +4,7 @@ import { OFFLINE_ENABLED } from '../features/account/offlineEnabled.js';
 import { saveOfflineAccount, activateOfflineAccount } from '../shared/lib/offlineStore.js';
 import { NAV, TABS, resolveRoute, validRoute } from './navigation.js';
 import { ESAN } from '../institutions/esan/config.js';
-import { loadCurriculum,loadAssignedCurriculum } from '../institutions/registry.js';
+import { loadAssignedCurriculum } from '../institutions/registry.js';
 import { FOCUS_PRESETS, enrolledFocusCourses, focusRemaining, focusDuration, focusMotivation, focusError, todayLima } from '../features/focus/focusModel.js';
 import { getSupabaseClient } from '../shared/lib/getSupabaseClient.js';
 import { createWebSessionGuard, webAuthStorageKey } from '../shared/lib/webSession.js';
@@ -616,15 +616,6 @@ const wheel=(id,vals,sel,lb)=>`<div class="k-w"><div class="k-wh" id="${id}" rol
 function kWheels(){$('wh').scrollTop=fx.h*40;$('wm').scrollTop=fx.m/5*40}
 function prevHTML(){const p=PN[fx.pet];return `${webClock(fx.style,kSecs(),true)}<p class="k-hint">${p[1]} te acompañará${fx.course?' mientras estudias '+esc(kCourseName(fx.course)):''}.</p>`}
 function kPrev(){const p=$('kprev');if(p)p.innerHTML=prevHTML()}
-function kSetup(){
-  if(fx.course&&!focusCourses().some(c=>c.id===fx.course))fx.course='';
-  const disabled=fx.busy||(HOME.user&&fx.load!=='ready');
-  return `<div class="k-grid"><section class="blk"><h2 class="bt">${svg('target',18)}Vista previa</h2><div class="k-prev" id="kprev">${prevHTML()}</div><p class="k-stat">${HOME.user?'Tu tiempo de estudio se guarda en tu cuenta.':'Puedes usar el reloj sin cuenta; el historial requiere iniciar sesión.'}</p></section>
-  <section class="blk"><fieldset class="k-settings"${fx.busy?' disabled':''}><div class="k-sec"><h3>Método</h3><div class="k-row">${PRE.map(p=>`<button class="k-chip${fx.pre===p[0]?' on':''}" aria-pressed="${fx.pre===p[0]}" data-a="kpre" data-v="${p[0]}">${p[1]}${p[0]==='p45'?'<em>Sugerido</em>':''}</button>`).join('')}</div><p class="k-hint">${HINT[fx.pre]}</p>${fx.pre==='custom'?`${mqM.matches?`<div class="k-duration"><label>Horas<select id="k-hours">${[0,1,2,3].map(n=>`<option value="${n}"${fx.h===n?' selected':''}>${n}</option>`).join('')}</select></label><label>Minutos<select id="k-minutes">${Array.from({length:12},(_,i)=>i*5).map(n=>`<option value="${n}"${fx.m===n?' selected':''}>${n}</option>`).join('')}</select></label></div>`:`<div class="k-ws">${wheel('wh',[0,1,2,3],fx.h,'Horas')}${wheel('wm',Array.from({length:12},(_,i)=>i*5),fx.m,'Minutos')}</div>`}`:''}</div>
-  <div class="k-sec"><h3>Estilo de reloj</h3><div class="k-row">${STY.map(x=>`<button class="k-opt${fx.style===x[0]?' on':''}" aria-pressed="${fx.style===x[0]}" data-a="kst" data-v="${x[0]}">${MI[x[0]]}${x[1]}</button>`).join('')}</div></div>
-  <div class="k-sec"><h3>Tu compañero</h3><div class="k-row">${Object.keys(PN).map(k=>`<button class="k-opt${fx.pet===k?' on':''}" aria-pressed="${fx.pet===k}" data-a="kpt" data-v="${k}">${pet(k,'idle')}${PN[k][0]}</button>`).join('')}</div></div>
-  <div class="k-sec"><label for="kcs" class="k-course-label">Curso (opcional)</label><select class="k-sel" id="kcs" aria-describedby="k-course-help"><option value="">Sin curso</option>${focusCourses().map(c=>`<option value="${esc(c.id)}"${fx.course===c.id?' selected':''}>${esc(c.n)}</option>`).join('')}</select><p class="k-hint" id="k-course-help">${focusCourses().length?'Solo los cursos marcados como Matriculado en tu carrera, en orden alfabético.':HOME.user?'Aún no tienes cursos marcados como Matriculado. Actualízalos en la ficha del curso; mientras tanto puedes estudiar sin elegir uno.':'Inicia sesión para elegir tus cursos matriculados.'}</p></div>
-  ${kFeedback()}${fx.load==='error'?'<button class="h-btn" data-a="kretry">Reintentar carga</button>':''}<button class="k-go" data-a="kgo"${disabled?' disabled':''}>${fx.busy?'Guardando…':fx.load==='loading'?'Recuperando tu sesión…':'Comenzar'}</button></fieldset></section></div>${kHistory()}`}
 function webSetup(){
   if(fx.course&&!focusCourses().some(c=>c.id===fx.course))fx.course='';
   const disabled=fx.busy||(HOME.user&&fx.load!=='ready');
@@ -664,7 +655,7 @@ owl:{
  ec:PL(4,['...###....###...','..#####..#####..','..#####..#####..','..#####..#####..']),
  eh:PL(4,['...###....###...','..#####..#####..','..##o##..##o##..','..#o#o#..#o#o#..','...###....###...']),
  ed:PL(7,['....##....##....','....##....##....'])}};
-const SPC={},PC={};
+const PC={};
 function spr(rows,dot){
   const m={},R=.46;
   rows.forEach((r,y)=>{let x=0;while(x<r.length){const c=r[x];if(c==='.'){x++;continue}

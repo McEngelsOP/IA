@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { projectSemesters } from '../../core/academic/semesterProjection.js'
-import { canTake, canPlan, buildMalla, completedCredits } from '../../core/academic/curriculumGraph.js'
+import { canTake, canPlan, buildMalla } from '../../core/academic/curriculumGraph.js'
 import OfficialIcon from '../../shared/components/OfficialIcon.jsx'
 
 export default function OfficialRoadmap({ courses, completedIds, plan, inProgressIds = [], currentSemester, habitualCredits, onAddFirstSemester, onEditPlan, busy }) {
