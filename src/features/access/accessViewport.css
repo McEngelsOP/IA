@@ -254,6 +254,11 @@ body[data-state="registerScreen"] .register-group select { padding-right: 32px; 
 
 /* Let the shell settle before revealing the next form. Real dimensions keep
    text and controls crisp; native transitions can retarget on another action. */
+@media (min-width: 861px) {
+  /* The width clamp already bounds the compact shell. A separate max-width
+     would snap the expanded panel to 560px before its return can animate. */
+  body[data-state] .panel { max-width: none; }
+}
 @media (prefers-reduced-motion: no-preference) {
   body[data-state] .panel {
     transition: width 640ms cubic-bezier(.22, .61, .36, 1),
