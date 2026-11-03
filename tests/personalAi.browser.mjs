@@ -1,6 +1,6 @@
 const { createServer } = await import('vite')
 process.env.VITE_SUPABASE_URL='https://setup-fixture.supabase.co';process.env.VITE_SUPABASE_ANON_KEY='fixture'
-const server = await createServer({server:{host:'127.0.0.1',port:5181,open:false}});await server.listen()
+const server = process.env.SETUP_BASE_URL ? null : await createServer({server:{host:'127.0.0.1',port:5181,open:false}});await server?.listen()
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright')
 import assert from 'node:assert/strict'
 import { mkdir } from 'node:fs/promises'
@@ -11,15 +11,15 @@ const session = { access_token: encode({ alg: 'HS256', typ: 'JWT' }) + '.' + enc
 let affiliationWrites=[]
 let statuses = [{ course_id: 'calc1', status: 'matriculado' }, { course_id: 'com1', status: 'matriculado' }], rating = null, teachers = []
 let resources = [{ id: '22222222-2222-4222-8222-222222222222', name: 'Notion', url: 'https://notion.so/', description: 'Organiza apuntes y tareas.', is_owner: false, hearts: 2, liked: false }]
-let failPublish = false, failAI = false, failTasks = false, tasks = [], config={mode:'system',keys:[],access:{sharedEligible:true,isAdmin:true},usage:{source:'system',remaining:5,limit:5,dailyRemaining:20,dailyLimit:20}},failKey=false
-const browser = await chromium.launch({ headless: true, executablePath: process.env.REVIEW_BROWSER || undefined, args: ['--no-sandbox', '--disable-dev-shm-usage', '--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] })
+let failPublish = false, failAI = false, failTasks = false, tasks = [], config={mode:'personal',keys:[],access:{sharedEligible:false,personalRequired:true,verificationStatus:'pending',isAdmin:true},usage:{source:'personal',remaining:10,limit:10,dailyRemaining:200,dailyLimit:200}},failKey=false
+const browser = await chromium.launch({ headless: true, executablePath: process.env.REVIEW_BROWSER || process.env.SETUP_BROWSER, args: ['--no-sandbox', '--disable-dev-shm-usage', '--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] })
 const context = await browser.newContext({ viewport: { width: 1366, height: 768 }, reducedMotion: 'reduce' })
 await context.addInitScript(session => { localStorage.setItem('sb-setup-fixture-auth-token', JSON.stringify(session)); localStorage.setItem('sb-setup-fixture-auth-token:web-activity:v1:' + session.user.id, JSON.stringify({ at: Date.now() })) }, session)
 await context.route('https://setup-fixture.supabase.co/**', async route => {
   const req = route.request(), url = new URL(req.url()), path = url.pathname, payload = req.method() === 'POST' || req.method() === 'PATCH' ? req.postDataJSON() : null
   let data = [], status = 200
   if (path.endsWith('/functions/v1/personal-ai')) { if(failKey&&payload.action==='save'){status=503;data={message:'No se pudo guardar. Reintenta.'}} else {if(payload.action==='save'){config.mode='personal';config.keys=[{provider:payload.provider,hint:'••••'+payload.key.slice(-4),enabled:true,lastStatus:null}]} if(payload.action==='mode')config.mode=payload.mode;if(payload.action==='toggle')config.keys[0].enabled=payload.enabled;if(payload.action==='delete')config.keys=[];config.usage={source:config.mode,remaining:config.mode==='system'?5:10,limit:config.mode==='system'?5:10,dailyRemaining:config.mode==='system'?20:200,dailyLimit:config.mode==='system'?20:200};data=payload.action==='test'?{status:'ok',message:'Tu clave respondió correctamente.'}:config} }
-  else if(path.endsWith('/rpc/admin_set_ai_affiliation')){affiliationWrites.push(payload);data=null}
+  else if(path.endsWith('/rpc/admin_set_ai_affiliation')){affiliationWrites.push(payload);config.access={sharedEligible:true,personalRequired:false,verificationStatus:'verified',isAdmin:true};config.mode='system';data=null}
   else if (path.endsWith('/functions/v1/text-to-tasks')) { if(failAI) { status=503; data={message:'IA no disponible. Reintenta.'} } else data={tasks:[{title:'Entregar informe',due_date:null,course_id:'calc1'},{title:'Preparar exposición',due_date:'2026-10-19',course_id:''}]} }
   else if(path.endsWith('/rpc/set_semester_courses')) { statuses=payload.p_courses.map(course_id=>({course_id,status:'matriculado'})); data=statuses }
   else if(path.endsWith('/calendar_tasks')) { if(payload) { if(failTasks) {status=500;data={message:'fixture failure'}} else { tasks=payload;data=tasks } } else data=tasks }
@@ -45,18 +45,22 @@ await context.route('https://setup-fixture.supabase.co/**', async route => {
 })
 await context.route('**/favicon.ico', route => route.abort())
 const page = await context.newPage(), errors = []; const capture = async options => { await page.locator('#page').evaluate(el=>el.scrollTop=0);return page.screenshot({...options,fullPage:true}) }; page.on('pageerror', e => errors.push(e.stack))
-await page.goto((process.env.REVIEW_BASE_URL || 'http://127.0.0.1:5181') + '/pagina.html')
+await page.goto((process.env.REVIEW_BASE_URL || process.env.SETUP_BASE_URL || 'http://127.0.0.1:5181') + '/pagina.html')
 
 
 await page.locator('.h-enrollment-list').waitFor()
 await page.getByRole('button',{name:'Abrir perfil',exact:true}).click()
 await page.getByRole('menuitem',{name:'Mi IA · claves personales',exact:true}).click()
 await page.getByRole('heading',{name:'Tu conexión de IA',exact:true}).waitFor()
-await page.getByLabel('UUID de la cuenta',{exact:true}).fill(user.id)
+await page.getByText('Tu cuenta está registrada en ESAN y su afiliación aún está pendiente de verificación.',{exact:false}).waitFor()
+assert.equal(await page.getByRole('radio',{name:'Servicio de la app',exact:true}).isEnabled(),false)
+await page.getByRole('button',{name:'Usar mi cuenta',exact:true}).click()
+assert.equal(await page.getByLabel('UUID de la cuenta',{exact:true}).inputValue(),user.id)
 assert.equal(await page.getByRole('button',{name:'Verificar por 180 días'}).isEnabled(),false)
 await page.getByLabel('Revisé una prueba de afiliación ESAN vigente.').check()
 await page.getByRole('button',{name:'Verificar por 180 días'}).click()
-await page.getByText('Afiliación verificada durante 180 días.',{exact:false}).waitFor()
+await page.getByText('Afiliación actualizada. Revisa el acceso de tu cuenta y el servicio seleccionado.',{exact:true}).waitFor()
+assert.equal(await page.getByRole('radio',{name:'Servicio de la app',exact:true}).isEnabled(),true)
 assert.equal(affiliationWrites[0].p_user_id,user.id)
 await page.getByLabel('Proveedor',{exact:true}).selectOption('groq')
 await page.getByLabel('Clave de API de Groq',{exact:true}).fill('fixture-personal-not-real-key-5678')
@@ -109,4 +113,4 @@ await page.getByText('Clave eliminada de la app.',{exact:true}).waitFor()
 assert.equal(config.keys.length,0)
 assert.deepEqual(errors,[])
 console.log('PASS desktop/mobile 390/320: profile/+ → Mi IA; save error/retry; secret masked/cleared; test; activate/deactivate; modes; delete/cancel; no overflow or JS errors.')
-await browser.close();await server.close()
+await browser.close();await server?.close()

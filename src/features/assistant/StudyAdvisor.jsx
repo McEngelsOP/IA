@@ -7,7 +7,7 @@ import OfficialBot from './OfficialBot.jsx'
 import { useLocalChats } from './useLocalChats.js'
 import { selectHistory } from './localChats.mjs'
 import AdvisorDraft from './AdvisorDraft.jsx'
-import { usageDescription } from './aiPolicy.js'
+import { accessDescription, usageDescription } from './aiPolicy.js'
 import { normalizeAdvisorAnswer } from './advisorFormatting.mjs'
 
 const INITIAL_MESSAGE = {
@@ -175,7 +175,7 @@ export default function StudyAdvisor({ userId, planCourses, careerId, careerVers
     }
   }
 
-  const policyStatus=<div className="advisor-ai-policy"><p>{policy?usageDescription(policy.usage):'Tu acceso y cuota se comprueban antes de consultar.'}</p>{policy?.access?.personalRequired&&<p>Añade tu API key en Mi IA para continuar. La validación de mallas usa el servicio integrado de Lyra.</p>}{onConfigure&&<button type="button" disabled={sending} onClick={onConfigure}>Configurar Mi IA</button>}</div>
+  const policyStatus=<div className="advisor-ai-policy"><p>{policy?usageDescription(policy.usage):'Tu acceso y cuota se comprueban antes de consultar.'}</p>{policy?.access?.personalRequired&&<p>{accessDescription(policy.access)}</p>}{policy?.access?.sharedEligible&&policy?.usage?.source==='personal'&&<p>Has seleccionado tus claves personales. Puedes elegir el servicio de Lyra en Mi IA.</p>}{onConfigure&&<button type="button" disabled={sending} onClick={onConfigure}>Configurar Mi IA</button>}</div>
   const styleControl=<label className="advisor-response-style">Respuesta<select aria-label="Respuesta" value={responseStyle} onChange={e=>setResponseStyle(e.target.value)} disabled={sending}><option value="brief">Breve</option><option value="step_by_step">Paso a paso</option><option value="study">Modo estudio</option></select></label>
   const renderEvidence = item => item.evidence?.sources?.length ? <details className="advisor-evidence"><summary>Contexto consultado</summary><p>{item.evidence.sources.map(s=>({courses:'Cursos y avance',tasks:'Tareas',agenda:'Agenda'}[s]||s)).join(' · ')}</p>{item.evidence.version&&<p>Malla: {item.evidence.version}</p>}{item.evidence.window&&<p>Ventana de agenda: {typeof item.evidence.window==='string'?item.evidence.window:`${item.evidence.window.from} a ${item.evidence.window.to}`}</p>}{item.evidence.at&&<p>Consulta: {new Date(item.evidence.at).toLocaleString('es-PE')}</p>}<p>Este contexto no certifica decisiones de matrícula. Revisa los datos antes de actuar.</p></details>:null
   const renderDraft = index => {

@@ -73,7 +73,7 @@ function PersonalAISettings({ client, user, onClose, onBusy }) {
         <button className="h-btn primary" type="submit">{busy?'Procesando…':'Guardar clave'}</button>
       </fieldset></form>
       <details className="pai-support"><summary>Identificador de cuenta para soporte</summary><p>{user.id}</p></details>
-      {config.access.isAdmin&&<AIAffiliationAdmin client={client} onBusy={active=>{setBusy(active);onBusy(active)}}/>}
+      {config.access.isAdmin&&<AIAffiliationAdmin client={client} currentUserId={user.id} onUpdated={async()=>{await read();setMessage('Afiliación actualizada. Revisa el acceso de tu cuenta y el servicio seleccionado.')}} onBusy={active=>{setBusy(active);onBusy(active)}}/>}
       {busy&&<p role="status">Procesando tu solicitud…</p>}{error&&<p className="pai-error" role="alert">{error}</p>}<p role="status" aria-live="polite">{message}</p>
     </>}
   </section>
