@@ -285,3 +285,38 @@
 .advisor-history-panel>summary:focus-visible {outline:2px solid var(--ic,#345f43);outline-offset:3px;}
 
 .advisor-ai-policy{display:flex;align-items:center;flex-wrap:wrap;gap:8px 16px;font-size:13px;padding:12px 0;color:var(--txt)}.advisor-ai-policy p{margin:0}.advisor-ai-policy button{background:var(--tile);color:var(--txt);border:1px solid var(--bar-b);border-radius:8px;padding:8px 12px;cursor:pointer}.advisor-response-style{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--txt);flex-wrap:wrap}.advisor-response-style select{font:inherit;background:var(--tile);color:var(--txt);border:1px solid var(--bar-b);padding:7px;border-radius:8px;max-width:100%}.advisor-evidence{font-size:12px;margin-top:14px;color:var(--txt);max-width:65ch;overflow-wrap:anywhere}.advisor-evidence summary{cursor:pointer}.advisor-evidence p{margin:8px 0}.advisor-ai-policy button:focus-visible,.advisor-response-style select:focus-visible,.advisor-evidence summary:focus-visible{outline:2px solid var(--ic);outline-offset:3px}@media(max-width:600px){.a-cb{flex-wrap:wrap}.advisor-response-style select,.advisor-ai-policy button{min-height:44px;font-size:16px}}
+
+/* Composer: one writing surface, with grouped controls and a clear send action. */
+.official-tools .official-advisor .a-cmp{padding:18px 20px 14px;border-radius:18px;background:var(--cut);box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;transition:border-color .2s}
+.official-tools .official-advisor .a-cmp:focus-within{border-color:var(--ic);box-shadow:none}
+.official-tools .official-advisor .a-cmp textarea{color:var(--txt);min-height:72px;padding:0 0 12px}
+.official-tools .official-advisor .a-cmp textarea::placeholder{color:color-mix(in srgb,var(--txt) 65%,var(--cut));opacity:1}
+.official-tools .official-advisor .a-cb{justify-content:space-between;flex-wrap:wrap;gap:12px;padding-top:12px;border-top:1px solid var(--bar-b);margin-top:0}
+.a-compose-tools,.a-compose-send{display:flex;align-items:center;gap:10px;min-width:0}
+.a-compose-tools{flex-wrap:wrap}
+.a-compose-send{margin-left:auto;flex:none}
+.official-tools .official-advisor .a-chip{height:44px;padding-inline:12px;font:inherit;font-size:13px;color:var(--txt);border-radius:10px}
+.official-tools .official-advisor .a-chip.on{background:var(--sel);border-color:var(--ic);box-shadow:none}
+.official-tools .official-advisor .advisor-response-style{gap:8px;font-size:13px}
+.official-tools .official-advisor .advisor-response-style select{min-height:44px;padding:8px 10px;background:var(--cut);border-color:var(--tile-p);border-radius:10px}
+.official-tools .official-advisor .a-cnt{display:inline;opacity:1;min-width:0;font-size:12px;color:color-mix(in srgb,var(--txt) 75%,var(--cut))}
+.official-tools .official-advisor .a-go{display:flex;justify-content:center;gap:8px;width:auto;min-width:100px;height:44px;padding:0 16px;border-radius:10px;box-shadow:none;font-size:14px;font-weight:600}
+.official-tools .official-advisor .a-go:disabled{opacity:1;color:color-mix(in srgb,var(--txt) 55%,var(--cut));background:var(--tile);cursor:not-allowed}
+.official-tools .official-advisor .a-go:hover:not(:disabled) svg{transform:translateX(2px)}
+.official-tools .official-advisor .a-privacy{margin:0;font-size:12px;line-height:1.5;color:color-mix(in srgb,var(--txt) 76%,var(--bg));text-align:center}
+.a-privacy summary{display:flex;align-items:center;justify-content:center;gap:7px;min-height:32px;cursor:pointer;list-style:none}
+.a-privacy summary::-webkit-details-marker{display:none}
+.a-privacy summary::after{content:'+';margin-left:2px}
+.a-privacy[open] summary::after{content:'−'}
+.a-privacy p{max-width:65ch;margin:4px auto 8px}
+.a-privacy summary:focus-visible{outline:2px solid var(--ic);outline-offset:2px;border-radius:6px}
+@media(max-width:600px){
+ .official-tools .official-advisor .a-cmp{padding:16px 14px 12px;border-radius:16px}
+ .official-tools .official-advisor .a-compose-tools{width:100%;justify-content:space-between;gap:8px}
+ .official-tools .official-advisor .advisor-response-style{font-size:12px}
+ .official-tools .official-advisor .advisor-response-style select{font-size:16px;max-width:135px}
+ .official-tools .official-advisor .a-chip{padding-inline:9px;font-size:12px;gap:5px}
+ .official-tools .official-advisor .a-compose-send{width:100%;justify-content:space-between}
+ .official-tools .official-advisor .a-go{min-width:112px}
+ .a-privacy p{text-align:left;padding-inline:8px}
+}

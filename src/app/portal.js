@@ -73,7 +73,8 @@ const HOME={tab:'graficos',cycle:'all',mode:'loading',user:null,career:'ia',care
 const HOME_WIDGETS={calendar_events:[],calendar_tasks:[],focus:[],calendarLoading:false,focusLoading:false,calendarError:false,focusError:false};
 const SEMESTER={tab:'calendar'};
 const SETUP={record:null,error:'',unmount:null,opening:false,owner:null,deferred:false,focus:null,background:[]};
-let homeClient=null;
+let homeClient=null,academicExportDownload=null,academicExportRequest=null;
+function clearAcademicExport(){academicExportRequest?.abort();academicExportRequest=null;academicExportDownload?.dispose();academicExportDownload=null;$('academic-export')?.remove()}
 try{
  homeClient=getSupabaseClient();
 }catch{ /* La vista visitante sigue disponible sin configuración. */ }
@@ -98,6 +99,7 @@ function homeModel(){
  return {career,courses,total,approvedCredits,done,cycles,perCycle,active,...all,grades,median,simple,passed,eligible,selected:homeCounts(selected)};
 }
 function homeReset(mode='guest',clearFocus=true){
+ clearAcademicExport();
  systemRuntime?.stop();moderationAccess={admin:false,scopes:[]};
  setupClose(false);SETUP.record=null;SETUP.error='';SETUP.owner=null;
  if(clearFocus)SETUP.deferred=false;
@@ -261,18 +263,33 @@ function homeEmpty(title,message,action=true){return `<div class="h-state"><h3>$
 function unsupportedProfile(){return '<section class="blk"><h2 class="bt">Tu registro académico se conserva</h2><p>La carrera de esta cuenta ya no forma parte del catálogo activo. Tu registro académico se conserva y puedes descargarlo. Tu cuenta no se ha reasignado a otra carrera.</p><button class="h-btn primary" data-a="hexport">Exportar registro académico</button><p class="h-muted" role="status" id="export-status"></p></section>'}
 async function exportAcademicRecord(){
  if(!HOME.user||HOME.saving.has('export'))return;
- const userId=HOME.user.id,revision=HOME.revision;HOME.saving.add('export');
- const status=$('export-status');if(status)status.textContent='Preparando tu registro…';
+ clearAcademicExport();
+ const userId=HOME.user.id,revision=HOME.revision;HOME.saving.add('export');renderProfile();
+ const controller=new AbortController();academicExportRequest=controller;
+ const timer=setTimeout(()=>controller.abort(),45000);
+ const panel=document.createElement('section');panel.id='academic-export';panel.className='academic-export';panel.setAttribute('aria-label','Exportar registro académico');
+ panel.innerHTML='<div role="status" aria-live="polite"><strong>Preparando tu informe PDF…</strong><p>Consultando tu información guardada.</p></div><div class="academic-export-actions"></div>';
+ document.body.appendChild(panel);
+ const status=panel.querySelector('[role="status"]'),actions=panel.querySelector('.academic-export-actions');
+ function closeButton(){const close=document.createElement('button');close.type='button';close.className='h-btn';close.textContent='Cerrar';close.onclick=clearAcademicExport;actions.appendChild(close)}
  try{
   const {readAcademicRecord,downloadAcademicRecord}=await import('../features/account/exportAcademicRecord.js');
-  const record=await readAcademicRecord(homeClient,userId);
+  const record=await readAcademicRecord(homeClient,userId,controller.signal);
   const profile=record.profiles?.[0];let catalog=null;
-  if(profile&&(profile.custom_curriculum_id||CARRERAS[profile.carrera])){try{catalog=await loadAssignedCurriculum(profile,homeClient)}catch{/* El informe conserva los ids si la versión de la malla no está disponible. */}}
+  if(profile&&(profile.custom_curriculum_id||CARRERAS[profile.carrera])){try{catalog=await loadAssignedCurriculum(profile,homeClient)}catch{/* Preserve original identifiers if this curriculum is unavailable. */}}
   if(revision!==HOME.revision||HOME.user?.id!==userId)return;
-  record.gradingRules=HOME_SCALE;downloadAcademicRecord(record,catalog);if(status)status.textContent='Informe académico descargado en PDF.';toast('Informe académico PDF descargado');
- }catch{if(revision===HOME.revision){if(status)status.textContent='No se pudo preparar el archivo. Reintenta; tus datos se conservan.';toast('No se pudo exportar. Reintenta.')}}
- finally{if(revision===HOME.revision)HOME.saving.delete('export')}
+  if(controller.signal.aborted)throw new Error('EXPORT_TIMEOUT');
+  record.gradingRules=HOME_SCALE;
+  academicExportDownload=downloadAcademicRecord(record,catalog,{keepAvailable:true});
+  status.innerHTML='<strong>Tu informe PDF está listo</strong><p>Si la descarga no comenzó, usa el botón para descargarlo.</p>';
+  const link=document.createElement('a');link.className='h-btn primary';link.href=academicExportDownload.url;link.download=academicExportDownload.filename;link.textContent='Descargar PDF';actions.appendChild(link);closeButton();
+ }catch(issue){if(revision===HOME.revision&&panel.isConnected){
+  status.replaceChildren();const title=document.createElement('strong');title.textContent='No se pudo exportar el registro';const message=document.createElement('p');
+  message.textContent=controller.signal.aborted?'La consulta tardó demasiado. Reintenta con conexión; tus datos se conservan.':issue.message==='SESSION_CHANGED'?'Tu sesión cambió. Vuelve a iniciar sesión para descargar tu registro.':issue.section?`No pudimos consultar ${issue.section}. Reintenta; tus datos se conservan.`:'No pudimos preparar el PDF. Reintenta; tus datos se conservan.';
+  status.append(title,message);const retry=document.createElement('button');retry.type='button';retry.className='h-btn primary';retry.textContent='Reintentar exportación';retry.onclick=()=>void exportAcademicRecord();actions.appendChild(retry);closeButton();
+ }}finally{clearTimeout(timer);if(academicExportRequest===controller)academicExportRequest=null;if(revision===HOME.revision){HOME.saving.delete('export');renderProfile()}}
 }
+
 function homeReady(m){
  if(HOME.mode==='loading')return `<div class="h-state" role="status"><h3>Cargando tu avance…</h3><p>Estamos consultando tus notas y tu progreso académico.</p></div>`;
  if(HOME.mode==='error')return homeEmpty('Tu información no está disponible','Tus notas y tu progreso se conservan. Reintenta la carga para verlos.',false);
@@ -841,7 +858,7 @@ const isDark=()=>root.dataset.theme?root.dataset.theme==='dark':mq.matches;
 /* Selector de tema: el indicador se estira hacia la opción elegida (el borde que avanza va primero) */
 function renderProfile(){const d=isDark();$('uni').innerHTML=`<div class="um">${svg('landmark',20)}</div><div><b>${homeEsc(HOME.profile?.university_name||((HOME.profile?.institution_id==='esan'||CARRERAS[HOME.profile?.carrera])?'Universidad ESAN':'Lyra'))}</b><span>Tu espacio académico en Lyra</span></div>`;
   $('menu').innerHTML=`<div class="tg" data-s="${d?'dark':'light'}" role="radiogroup" aria-label="Tema"><span class="thm" aria-hidden="true"></span>${[['dark','moon','Oscuro'],['light','sun','Claro']].map(t=>`<button class="tgb ${t[0]}" role="radio" aria-checked="${(t[0]==='dark')===d}" data-t="${t[0]}">${svg(t[1],16)}<span>${t[2]}</span></button>`).join('')}</div>`
-  +[...(HOME.user?[['profile','user','Mi perfil']]:[]),...(HOME.mode==='live'?[['preferences','wrench','Preferencias'],...((moderationAccess.admin||moderationAccess.scopes.length)?[['admin','lock','Administración']]:[]),['personal-ai','sparkles','Mi IA · claves personales']]:[]),...(mqM.matches?[]:[['arcade','gamepad','ARCADE']]),...(HOME.mode==='live'&&SETUP.owner===HOME.user?.id&&!SETUP.record?.completed_at?[['setup','wrench','Configuración inicial']]:[]),...(HOME.user?[['export','copy','Exportar registro académico']]:[]),['out','logout','Cerrar sesión']].map(r=>`<button class="it" role="menuitem" data-a="${r[0]}">${ic(r[1])}<span class="l">${r[2]}</span></button>`).join('')}
+  +[...(HOME.user?[['profile','user','Mi perfil']]:[]),...(HOME.mode==='live'?[['preferences','wrench','Preferencias'],...((moderationAccess.admin||moderationAccess.scopes.length)?[['admin','lock','Administración']]:[]),['personal-ai','sparkles','Mi IA · claves personales']]:[]),...(mqM.matches?[]:[['arcade','gamepad','ARCADE']]),...(HOME.mode==='live'&&SETUP.owner===HOME.user?.id&&!SETUP.record?.completed_at?[['setup','wrench','Configuración inicial']]:[]),...(HOME.user?[['export','copy','Exportar registro académico']]:[]),['out','logout','Cerrar sesión']].map(r=>`<button class="it" role="menuitem" data-a="${r[0]}"${r[0]==='export'&&HOME.saving.has('export')?' disabled':''}>${ic(r[1])}<span class="l">${r[0]==='export'&&HOME.saving.has('export')?'Preparando PDF…':r[2]}</span></button>`).join('')}
 function syncTg(){const g=$('menu').querySelector('.tg');if(!g)return;const d=isDark();g.dataset.s=d?'dark':'light';g.querySelectorAll('.tgb').forEach(b=>b.setAttribute('aria-checked',(b.dataset.t==='dark')===d))}
 function setTheme(dark){try{localStorage.setItem('lyra-theme',dark?'dark':'light')}catch{}if(dark===isDark()){root.dataset.theme=dark?'dark':'light';return;}root.classList.add('tt');root.dataset.theme=dark?'dark':'light';syncTg();clearTimeout(ttm);ttm=setTimeout(()=>root.classList.remove('tt'),900)}
 $('menu').onclick=e=>{const t=e.target.closest('.tgb');if(t){setTheme(t.dataset.t==='dark');systemRuntime?.sync.set('theme',t.dataset.t);return}

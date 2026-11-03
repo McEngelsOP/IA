@@ -6,24 +6,30 @@ export default function TextToTasks({ client, user, courses, onSaved, onBusy, di
   const cached = sessionDraft?.owner === user.id ? sessionDraft : null
   const [open, setOpen] = useState(cached?.open || false), [text, setText] = useState(cached?.text || ''), [rows, setRows] = useState(cached?.rows || null)
   const [busy, setBusy] = useState(false), [error, setError] = useState(''), [message, setMessage] = useState('')
-  const [admin, setAdmin] = useState(false), [health, setHealth] = useState(null)
-  const alive = useRef(true), lock = useRef(false), input = useRef(null), request = useRef(null)
-  useEffect(() => { alive.current = true; return () => { alive.current = false; request.current?.abort() } }, [])
+  const [admin, setAdmin] = useState(false), [health, setHealth] = useState(null), [healthBusy, setHealthBusy] = useState(false), [healthError, setHealthError] = useState('')
+  const alive = useRef(true), lock = useRef(false), input = useRef(null), request = useRef(null), healthRequest = useRef(null), healthLock = useRef(false)
+  useEffect(() => { alive.current = true; return () => { alive.current = false; request.current?.abort(); healthRequest.current?.abort() } }, [])
   useEffect(() => { client.rpc('is_app_admin').then(r => { if (alive.current) setAdmin(!r.error && r.data === true) }).catch(() => {}) }, [client, user.id])
   useEffect(() => { sessionDraft = { owner: user.id, open, text, rows } }, [user.id, open, text, rows])
   useEffect(() => { if (open) input.current?.focus() }, [open])
   const update = (index, name, value) => setRows(old => old.map((r, i) => i === index ? { ...r, [name]: value } : r))
   async function checkProviders() {
-    if (lock.current) return
-    lock.current = true; setBusy(true); onBusy(true); setError('')
-    request.current = new AbortController()
-    const timeout = setTimeout(() => request.current?.abort(), 60000)
+    if (healthLock.current) return
+    healthLock.current = true; setHealthBusy(true); setHealthError('')
+    const controller = new AbortController(); healthRequest.current = controller
+    const timeout = setTimeout(() => controller.abort(), 15000)
     try {
-      const result = await client.functions.invoke('text-to-tasks', { body: { action: 'provider-health' }, signal: request.current.signal })
-      if (result.error || !Array.isArray(result.data?.results)) throw new Error('health')
-      if (alive.current) setHealth(result.data.results)
-    } catch { if (alive.current) setError('No pudimos comprobar los proveedores. Reintenta más tarde.') }
-    finally { clearTimeout(timeout); lock.current = false; onBusy(false); if (alive.current) setBusy(false) }
+      // Read recorded health without spending a chat request or calling AI providers.
+      const result = await client.rpc('service_dashboard').abortSignal(controller.signal)
+      if (result.error || !Array.isArray(result.data?.providers)) throw result.error || new Error('health')
+      if (alive.current) setHealth(result.data.providers)
+    } catch (issue) {
+      if (alive.current) setHealthError(controller.signal.aborted
+        ? 'La consulta tardó demasiado. Reintenta; no se consumió cuota de IA.'
+        : issue?.code === '42501'
+          ? 'Tu cuenta ya no tiene permiso para consultar este estado. Actualiza la página.'
+          : 'No se pudo actualizar el estado registrado. Reintenta; puedes seguir creando tareas.')
+    } finally { clearTimeout(timeout); healthLock.current = false; if (alive.current) setHealthBusy(false) }
   }
   async function generate(e) {
     e.preventDefault(); if (lock.current) return
@@ -84,6 +90,7 @@ export default function TextToTasks({ client, user, courses, onSaved, onBusy, di
       </fieldset></form>}
     </>}
     {error && <p role="alert">{error}</p>}<p role="status" aria-live="polite">{message}</p>
-    {admin && open && <div className="sc-provider-health"><button type="button" className="h-btn" disabled={busy || disabled} onClick={checkProviders}>{busy ? 'Procesando…' : 'Comprobar proveedores de IA'}</button><small>Solo administrador · realiza una prueba por proveedor y consume cuota.</small>{health && <ul aria-live="polite">{health.map(p => <li key={p.provider}>{p.provider}: {p.status === 'ok' ? 'Disponible' : p.status === 'not_configured' ? 'Sin configurar' : p.status === 'rate_limited' ? 'Cuota agotada o pausa temporal' : 'No disponible'}{p.model && ` · ${p.model}`}</li>)}</ul>}</div>}
+    {admin && open && <details className="sc-provider-health"><summary>Estado de los servicios de IA</summary><p>Solo administrador · consulta el último estado registrado sin consumir cuota de IA. No realiza una prueba de disponibilidad actual.</p><button type="button" className="h-btn" disabled={healthBusy || disabled} onClick={checkProviders}>{healthBusy ? 'Consultando estado…' : 'Actualizar estado de IA'}</button>{healthError && <p role="alert">{healthError}</p>}{health && <div role="status" aria-live="polite">{health.length ? <ul>{health.map(p => <li key={p.provider}><strong>{p.provider}</strong>: {new Date(p.retry_until) > new Date() ? 'En pausa temporal' : ({ ok: 'Última respuesta correcta', not_configured: 'Sin configurar', rate_limited: 'Cuota agotada o pausa temporal', provider_configuration: 'Revisar configuración', provider_timeout: 'Última consulta sin respuesta a tiempo', provider_unavailable: 'Última consulta no disponible' }[p.last_status] || 'Sin actividad registrada')}{p.last_model && ` · ${p.last_model}`}{p.updated_at && <small>Registrado el {new Date(p.updated_at).toLocaleString('es-PE', { timeZone: 'America/Lima' })} · hora de Lima</small>}</li>)}</ul> : <p>Aún no hay actividad registrada de proveedores.</p>}</div>}</details>}
+
   </section>
 }

@@ -992,3 +992,10 @@ a{text-underline-offset:3px}.page button:not(.ck){min-height:36px}
 #app .h-tabs.semester-tabs button[aria-selected=true]{background:var(--on);color:var(--on-t)}
 #app .h-tabs.semester-tabs button:focus-visible{outline:2px solid var(--txt);outline-offset:3px}
 @media(max-width:600px){#app .h-tabs.semester-tabs{gap:6px}#app .h-tabs.semester-tabs button{padding:10px 8px;font-size:13px}}
+
+/* Persistent export feedback keeps a direct download available after async work. */
+.academic-export{position:fixed;z-index:90;right:24px;bottom:24px;box-sizing:border-box;width:min(420px,calc(100vw - 32px));padding:20px;color:var(--txt);background:var(--cut);border:1px solid var(--tile-p);border-radius:16px}
+.academic-export strong{font-size:16px}.academic-export p{margin:8px 0 16px;font-size:14px;line-height:1.5}
+.academic-export-actions{display:flex;flex-wrap:wrap;gap:10px}.academic-export-actions:empty{display:none}
+.academic-export .h-btn{min-height:44px}.academic-export :focus-visible{outline:2px solid var(--ic);outline-offset:3px}
+@media(max-width:860px){.academic-export{right:16px;bottom:calc(84px + env(safe-area-inset-bottom,0px));max-height:60dvh;overflow:auto}}

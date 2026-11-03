@@ -56,12 +56,12 @@ test('academic export paginates only the signed-in user and rejects partial expo
   const reads=[]
   const client={auth:{getUser:async()=>({data:{user:{id:'owner'}}})},from(table){
     let offset=0
-    const query={select(){return query},eq(column,id){reads.push({table,column,id});return query},order(){return query},async range(start){offset=start;return {data:table==='grades'&&offset===0?Array.from({length:500},(_,i)=>({course_id:String(i)})):[]}}}
+    const query={select(fields){assert.notEqual(fields,'*');if(table==='profiles')assert(!fields.includes('is_admin'));if(table==='student_setup')assert(!fields.includes('draft'));return query},eq(column,id){reads.push({table,column,id});return query},order(){return query},async range(start){offset=start;return {data:table==='grades'&&offset===0?Array.from({length:500},(_,i)=>({course_id:String(i)})):[]}}}
     return query
   }}
   const result=await readAcademicRecord(client,'owner')
   assert.equal(result.grades.length,500);assert(reads.every(r=>r.id==='owner'))
   await assert.rejects(()=>readAcademicRecord(client,'other'),/SESSION_CHANGED/)
   const broken={...client,from(){const q={select(){return q},eq(){return q},order(){return q},range:async()=>({error:new Error('offline')})};return q}}
-  await assert.rejects(()=>readAcademicRecord(broken,'owner'),/offline/)
+  await assert.rejects(()=>readAcademicRecord(broken,'owner'),issue=>issue.message==='EXPORT_READ_FAILED'&&issue.cause.message==='offline'&&!!issue.section)
 })

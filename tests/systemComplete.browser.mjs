@@ -10,7 +10,7 @@ const now=Date.now(),id='11111111-1111-4111-8111-111111111111',authKey='sb-setup
 const user={id,email:'fixture@example.invalid',aud:'authenticated',role:'authenticated',app_metadata:{provider:'email'},user_metadata:{},created_at:new Date(now).toISOString()}
 const encode=v=>Buffer.from(JSON.stringify(v)).toString('base64url')
 const session={access_token:`${encode({alg:'HS256',typ:'JWT'})}.${encode({sub:id,session_id:sessionId,exp:Math.floor(now/1000)+86400,role:'authenticated'})}.fixture`,refresh_token:'fixture',expires_at:Math.floor(now/1000)+86400,expires_in:86400,token_type:'bearer',user}
-let preferences={},reports=[];const errors=[]
+let preferences={},reports=[],providerReads=0,aiCalls=0;const errors=[]
 const date=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Lima',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date())
 const events=[{id:'a',student_id:id,title:'Física',date,start_time:'08:00',end_time:'09:00',event_type:'clase'},{id:'b',student_id:id,title:'Biología',date,start_time:'08:30',end_time:'09:30',event_type:'clase'}]
 async function fixture(width=1440,admin=false){
@@ -18,7 +18,9 @@ async function fixture(width=1440,admin=false){
  await context.addInitScript(({authKey,session,sessionId,now})=>{localStorage.setItem(authKey,JSON.stringify(session));localStorage.setItem(`${authKey}:web-activity:v1:${sessionId}`,JSON.stringify({at:now}))},{authKey,session,sessionId,now})
  await context.route('https://setup-fixture.supabase.co/**',async route=>{
   const path=new URL(route.request().url()).pathname,method=route.request().method(),body=route.request().postDataJSON();let data=[],status=200
-  if(path==='/auth/v1/user')data=user
+  if(path.startsWith('/functions/v1/')){aiCalls++;status=429;data={error:'rate_limited'}}
+  else if(path==='/auth/v1/user')data=user
+  else if(path.endsWith('/rpc/is_app_admin'))data=admin
   else if(path.endsWith('/profiles'))data=[{id,carrera:'ia',alias:'Engels',institution_id:'esan',curriculum_version:CARRERAS.ia.version}]
   else if(path.endsWith('/progress'))data=[{done:['calc1'],plan:[]}]
   else if(path.endsWith('/grades'))data=[{course_id:'calc1',grade:16}]
@@ -29,7 +31,7 @@ async function fixture(width=1440,admin=false){
   else if(path.endsWith('/rpc/save_lyra_preferences')){preferences={...preferences,...body.p_patch};data={values:preferences}}
   else if(path.endsWith('/rpc/publish_curriculum')){status=400;data={code:'P0001',message:'CYCLIC_CURRICULUM'}}
   else if(path.endsWith('/rpc/moderation_access'))data={admin,scopes:[]}
-  else if(path.endsWith('/rpc/service_dashboard'))data={errors:[{code:'calendar_load',total:2,last_at:new Date().toISOString()}],providers:[{provider:'groq',last_status:'ok',requests_24h:5,daily_limit:100,last_duration_ms:150}],reports:reports.length}
+  else if(path.endsWith('/rpc/service_dashboard')){providerReads++;data={errors:[{code:'calendar_load',total:2,last_at:new Date().toISOString()}],providers:[{provider:'groq',last_status:'ok',requests_24h:5,daily_limit:100,last_duration_ms:150}],reports:reports.length}}
   else if(path.endsWith('/incident_reports')){if(method==='POST'){data={...body,id:crypto.randomUUID(),status:'open',created_at:new Date().toISOString()};reports.push(data)}else data=reports}
   else if(path.endsWith('/calendar_events'))data=events
   else if(path.endsWith('/calendar_tasks'))data=[{id:'task',title:'Informe de Física',due_date:date,completed:false}]
@@ -47,6 +49,9 @@ try{
  await second.page.getByLabel('Qué ocurrió').fill('No puedo encontrar un curso dentro de mi malla.');await second.page.getByRole('button',{name:'Enviar reporte'}).click();await second.page.getByText('Reporte enviado al panel de atención.').waitFor();assert.equal(reports.length,1)
  assert.equal(await second.page.locator('[data-a="admin"]').count(),0)
  await second.page.locator('#page').evaluate(el=>el.scrollTop=0);
+ await second.page.addStyleTag({content:'*,*::before,*::after{transition:none!important;animation:none!important}'})
+ await second.page.evaluate(()=>document.documentElement.dataset.theme='dark')
+ assert(await second.page.locator('.lyra-system').evaluate(el=>{const probe=document.createElement('span');probe.style.color='var(--txt)';el.appendChild(probe);const matches=getComputedStyle(el).color===getComputedStyle(probe).color;probe.remove();return matches}))
  if(shots)await second.page.screenshot({path:shots+'/mobile.png',fullPage:true})
  await first.page.locator('#nav .it[data-n="Mi semestre"]').click();await first.page.getByRole('heading',{name:'Tu semana, con tiempo'}).waitFor();await first.page.getByText('Revisar las próximas 4 semanas').click();await first.page.getByText(/Física coincide con Biología/).waitFor()
  const admin=await fixture(1440,true);await admin.page.locator('#act').click();await admin.page.locator('[data-a="admin"]').click();await admin.page.getByRole('heading',{name:'Administración de Lyra'}).waitFor();await admin.page.getByText('calendar_load').waitFor()
@@ -58,6 +63,28 @@ try{
  await publication.getByRole('alert').scrollIntoViewIfNeeded()
  if(shots)await admin.page.screenshot({path:shots+'/admin-feedback.png',fullPage:true})
 
+ await admin.page.evaluate(()=>document.documentElement.dataset.theme='dark')
+ if(shots)await admin.page.screenshot({path:shots+'/admin-dark.png',fullPage:true})
+ await admin.page.locator('#nav .it[data-n="Mi semestre"]').click()
+ await admin.page.getByRole('button',{name:'Texto → tareas',exact:true}).click()
+ await admin.page.getByText('Estado de los servicios de IA',{exact:true}).click()
+ const previousReads=providerReads
+ await admin.page.getByRole('button',{name:'Actualizar estado de IA',exact:true}).click()
+ await admin.page.getByText('Última respuesta correcta',{exact:false}).waitFor()
+ assert.equal(providerReads,previousReads+1)
+ assert.equal(aiCalls,0,'Checking recorded provider health must never call a quota-consuming AI endpoint')
+ if(shots)await admin.page.screenshot({path:shots+'/provider-dark.png',fullPage:true})
+
+ await admin.page.locator('#nav .it[data-n="Asistente"]').click()
+ await admin.page.getByLabel('Pregunta para el asesor académico').waitFor()
+ for(const theme of ['dark','light']){
+  await admin.page.evaluate(value=>document.documentElement.dataset.theme=value,theme)
+  for(const width of [1440,390,320]){
+   await admin.page.setViewportSize({width,height:900})
+   assert(await admin.page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1))
+   if(shots)await admin.page.screenshot({path:shots+`/portal-assistant-${theme}-${width}.png`,fullPage:true})
+  }
+ }
  await first.page.goto(base+'/offline.html');await first.page.getByRole('heading',{name:'Consulta sin conexión pendiente'}).waitFor()
  assert.deepEqual(errors,[])
  await Promise.all([first.context.close(),second.context.close(),admin.context.close()])
