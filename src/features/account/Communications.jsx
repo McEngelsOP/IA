@@ -15,14 +15,21 @@ const ERRORS = {
   recipient_unavailable:'Esta cuenta no está disponible para recibir el mensaje o aún no ha confirmado su correo.',
   duplicate:'Brevo ya procesó este mismo mensaje recientemente. Revisa su registro antes de volver a enviar.',
   delivery_unknown:'No pudimos confirmar el resultado. Revisa los registros de Brevo antes de intentar otro envío.',
+  configuration_unavailable:'No pudimos consultar la configuración del envío. Pulsa Actualizar usuarios para reintentar.',
+  provider_authentication:'Brevo no aceptó la clave API. Revisa BREVO_API_KEY en Vercel: debe ser una clave API activa, no una contraseña SMTP, y vuelve a desplegar.',
+  provider_forbidden:'Brevo bloqueó el envío. Revisa los permisos de la clave, el estado de la cuenta y las restricciones de IP en Brevo.',
+  provider_credits:'Brevo indicó que no hay crédito disponible para este envío. Revisa el saldo y el límite del plan en Brevo.',
+  provider_rate_limited:'Brevo alcanzó su límite de solicitudes. Espera antes de volver a enviar; no se reintentará automáticamente.',
+  provider_sender:'Brevo no aceptó el remitente. Comprueba que BREVO_SENDER_EMAIL corresponde a un remitente verificado y vuelve a desplegar.',
   provider_rejected:'Brevo rechazó el envío. Revisa la clave API, el remitente verificado y los registros de Brevo.'
 }
 const csvCell = value => `"${String(value || '').replace(/^[\s]*[=+@-]/, "'$&").replaceAll('"','""')}"`
-export function Communications({ client, user, onBusy = () => {} }) {
+export function Communications({ client, user, onBusy = () => {}, disabled = false }) {
   const [users,setUsers] = useState([]), [query,setQuery] = useState(''), [selected,setSelected] = useState(null)
   const [draft,setDraft] = useState(INITIAL), [state,setState] = useState('loading'), [connection,setConnection] = useState(null)
   const [error,setError] = useState(''), [notice,setNotice] = useState(''), [review,setReview] = useState(false), [sent,setSent] = useState(false), [busy,setBusy] = useState(false)
   const alive = useRef(true), lock = useRef(false), revision = useRef(0)
+  const pending = busy || disabled
   useEffect(() => { alive.current=true; load(); return () => { alive.current=false; revision.current++ } }, [client,user.id])
   async function sessionToken() {
     const verified = await client.auth.getUser()
@@ -40,10 +47,10 @@ export function Communications({ client, user, onBusy = () => {} }) {
       setUsers(result.data.filter(p=>p.email).map(({id,email,alias,created_at})=>({id,email,alias,created_at})));setState('ready')
       try {
         const token=await sessionToken()
-        const status=await fetch('/api/communications',{headers:{Authorization:`Bearer ${token}`},cache:'no-store'})
+        const status=await fetch('/api/communications',{headers:{Authorization:`Bearer ${token}`},cache:'no-store',signal:AbortSignal.timeout(10000)})
         const value=await status.json()
-        if(alive.current && revision.current===version)setConnection(status.ok?value:{ready:false})
-      } catch { if(alive.current && revision.current===version)setConnection({ready:false}) }
+        if(alive.current && revision.current===version)setConnection(status.ok && typeof value?.ready==='boolean'?value:{ready:false,error:value?.error||'configuration_unavailable'})
+      } catch { if(alive.current && revision.current===version)setConnection({ready:false,error:'configuration_unavailable'}) }
     } catch { if(alive.current && revision.current===version){setState('error');setError('No se pudieron cargar los usuarios. Comprueba tu permiso de administrador y pulsa Actualizar usuarios.')} }
   }
   const found=users.filter(p=>`${p.alias||''} ${p.email}`.toLocaleLowerCase().includes(query.toLocaleLowerCase().trim()))
@@ -51,35 +58,45 @@ export function Communications({ client, user, onBusy = () => {} }) {
   async function copy(){try{await navigator.clipboard.writeText(selected.email);setNotice('Correo copiado.')}catch{setError('No se pudo copiar. Selecciona el correo visible y cópialo manualmente.')}}
   function exportContact(){const blob=new Blob(['\ufeffEMAIL,FIRSTNAME\r\n'+csvCell(selected.email)+','+csvCell(selected.alias)+'\r\n'],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download='Lyra_destinatario_Brevo.csv';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);setNotice('CSV descargado con una sola persona. En Brevo, importa EMAIL como correo y FIRSTNAME como nombre. La importación no envía mensajes.')}
   async function send(){
-    if(lock.current||!review||!selected||sent)return
+    if(lock.current||disabled||!review||!selected||sent)return
+    const version=revision.current
     lock.current=true;setBusy(true);onBusy(true);setError('');setNotice('')
     try{
       const token=await sessionToken()
       const response=await fetch('/api/communications',{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({userId:selected.id,expectedEmail:selected.email,...draft}),signal:AbortSignal.timeout(30000)})
       const result=await response.json().catch(()=>({error:'delivery_unknown'}))
       if(!response.ok||!result.accepted)throw new Error(result.error||'delivery_unknown')
-      if(alive.current){setSent(true);setReview(false);setNotice(`Brevo aceptó el mensaje para ${selected.email}. Esto no confirma su entrega en la bandeja. Referencia: ${result.messageId}`)}
-    }catch(e){if(alive.current)setError(ERRORS[e.message]||ERRORS.delivery_unknown)}
+      if(alive.current && revision.current===version){setSent(true);setReview(false);setNotice(`Brevo aceptó el mensaje para ${selected.email}. Esto no confirma su entrega en la bandeja. Referencia: ${result.messageId}`)}
+    }catch(e){if(alive.current && revision.current===version)setError(ERRORS[e.message]||ERRORS.delivery_unknown)}
     finally{lock.current=false;if(alive.current)setBusy(false);onBusy(false)}
   }
   return <section className="blk communications" aria-labelledby="communications-heading"><h2 id="communications-heading">Comunicaciones</h2>
     <p>Elige una persona registrada en Lyra y revisa el mensaje antes de enviarlo. Cada envío tiene un solo destinatario.</p>
-    <div className="system-actions"><button className="h-btn" type="button" disabled={busy||state==='loading'} onClick={load}>Actualizar usuarios</button></div>
+    <div className="system-actions"><button className="h-btn" type="button" disabled={pending||state==='loading'} onClick={load}>Actualizar usuarios</button></div>
     {state==='loading'&&<p role="status">Cargando usuarios registrados…</p>}
-    {state==='ready'&&<><label className="communications-search">Buscar por nombre o correo<input type="search" value={query} disabled={busy} onChange={e=>setQuery(e.target.value)} placeholder="Nombre o correo del estudiante"/></label>
+    {state==='ready'&&<><label className="communications-search">Buscar por nombre o correo<input type="search" value={query} disabled={pending} onChange={e=>setQuery(e.target.value)} placeholder="Nombre o correo del estudiante"/></label>
       <p>{found.length} {found.length===1?'usuario encontrado':'usuarios encontrados'}{found.length>30?' · Se muestran los primeros 30; escribe para filtrar.':''}</p>
-      {found.length>0?<ul className="system-list communications-users">{found.slice(0,30).map(p=><li key={p.id}><div><strong>{p.alias||'Sin apodo'}</strong><span>{p.email}</span><small>Registro: {p.created_at?new Date(p.created_at).toLocaleDateString('es-PE',{timeZone:'America/Lima'}):'Sin fecha'}</small></div><button type="button" className="h-btn" disabled={busy} aria-pressed={selected?.id===p.id} onClick={()=>{setSelected(p);setReview(false);setSent(false);setNotice('');setError('')}}>{selected?.id===p.id?'Seleccionado':'Seleccionar'}<span className="communications-sr"> a {p.email}</span></button></li>)}</ul>:<p>No hay usuarios que coincidan con la búsqueda.</p>}
+      {found.length>0?<ul className="system-list communications-users">{found.slice(0,30).map(p=><li key={p.id}><div><strong>{p.alias||'Sin apodo'}</strong><span>{p.email}</span><small>Registro: {p.created_at?new Date(p.created_at).toLocaleDateString('es-PE',{timeZone:'America/Lima'}):'Sin fecha'}</small></div><button type="button" className="h-btn" disabled={pending} aria-pressed={selected?.id===p.id} onClick={()=>{setSelected(p);setReview(false);setSent(false);setNotice('');setError('')}}>{selected?.id===p.id?'Seleccionado':'Seleccionar'}<span className="communications-sr"> a {p.email}</span></button></li>)}</ul>:<p>No hay usuarios que coincidan con la búsqueda.</p>}
     </>}
     {selected&&<div className="communications-compose"><h3>Mensaje para {selected.alias||'el usuario seleccionado'}</h3><p><strong>Para:</strong> {selected.email}</p>
-      <div className="system-actions"><button className="h-btn" disabled={busy} onClick={copy}>Copiar correo</button><button className="h-btn" disabled={busy} onClick={exportContact}>Exportar contacto para Brevo</button></div>
+      <div className="system-actions"><button className="h-btn" disabled={pending} onClick={copy}>Copiar correo</button><button className="h-btn" disabled={pending} onClick={exportContact}>Exportar contacto para Brevo</button></div>
       <p>El CSV incluye únicamente esta persona. No identifica quién dio feedback ni suscribe a nadie a novedades.</p>
       <form onSubmit={e=>{e.preventDefault();setError('');setReview(true)}}>
-        <fieldset disabled={busy}><label>Asunto<input required maxLength={160} value={draft.subject} onChange={e=>change('subject',e.target.value)}/></label><label>Texto de vista previa<input maxLength={200} value={draft.preview} onChange={e=>change('preview',e.target.value)}/></label><label>Mensaje<textarea required maxLength={5000} rows={9} value={draft.message} onChange={e=>change('message',e.target.value)}/></label><button className="h-btn" disabled={sent}>Revisar mensaje</button></fieldset>
+        <fieldset disabled={pending}>
+          <label htmlFor="communications-subject">Asunto</label><input id="communications-subject" required maxLength={160} value={draft.subject} onChange={e=>change('subject',e.target.value)}/>
+          <label htmlFor="communications-preview">Texto de vista previa</label><input id="communications-preview" maxLength={200} value={draft.preview} onChange={e=>change('preview',e.target.value)}/>
+          <label htmlFor="communications-message">Mensaje</label><textarea id="communications-message" required maxLength={5000} rows={9} value={draft.message} onChange={e=>change('message',e.target.value)}/>
+          <button className="h-btn" disabled={sent}>Revisar mensaje</button>
+        </fieldset>
       </form>
       {review&&<div className="communications-preview"><h3>Vista previa del mensaje</h3><p><strong>Para:</strong> {selected.email}</p><p><strong>Asunto:</strong> {draft.subject}</p><p><small>{draft.preview}</small></p><div className="communications-message">{draft.message}</div>
         <p>Se enviará a una sola persona. Comprueba que participó en el feedback inicial antes de agradecerle su colaboración.</p>
-        {connection?.ready?<p>Remitente: {connection.sender}</p>:<p>Envío desde Lyra pendiente de configuración. Puedes usar Copiar correo o Exportar contacto para enviarlo desde Brevo.</p>}
-        <button type="button" className="h-btn primary" disabled={busy||!connection?.ready||sent} onClick={send}>{busy?'Enviando…':'Enviar a esta persona'}</button>
+        {connection===null?<p role="status">Comprobando configuración del envío…</p>:connection.error?<p role="alert">{ERRORS[connection.error]||ERRORS.configuration_unavailable}</p>:connection.ready?<p>Remitente: {connection.sender}</p>:<>
+          <p>Envío desde Lyra pendiente de configuración. Puedes usar Copiar correo o Exportar contacto para enviarlo desde Brevo.</p>
+          {connection.missing?.length>0&&<p>Variables pendientes en Vercel: {connection.missing.join(', ')}.</p>}
+          {connection.invalid?.length>0&&<p>Revisa el formato de estas variables en Vercel: {connection.invalid.join(', ')}.</p>}
+        </>}
+        <button type="button" className="h-btn primary" disabled={pending||!connection?.ready||sent} onClick={send}>{busy?'Enviando…':'Enviar a esta persona'}</button>
       </div>}
     </div>}
     {notice&&<p role="status">{notice}</p>}{error&&<p role="alert">{error}</p>}

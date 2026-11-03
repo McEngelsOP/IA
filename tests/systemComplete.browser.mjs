@@ -10,7 +10,7 @@ const now=Date.now(),id='11111111-1111-4111-8111-111111111111',authKey='sb-setup
 const user={id,email:'fixture@example.invalid',aud:'authenticated',role:'authenticated',app_metadata:{provider:'email'},user_metadata:{},created_at:new Date(now).toISOString()}
 const encode=v=>Buffer.from(JSON.stringify(v)).toString('base64url')
 const session={access_token:`${encode({alg:'HS256',typ:'JWT'})}.${encode({sub:id,session_id:sessionId,exp:Math.floor(now/1000)+86400,role:'authenticated'})}.fixture`,refresh_token:'fixture',expires_at:Math.floor(now/1000)+86400,expires_in:86400,token_type:'bearer',user}
-let preferences={},reports=[],providerReads=0,aiCalls=0,mailSends=0;const errors=[]
+let preferences={},reports=[],providerReads=0,aiCalls=0,mailSends=0,mailFailure=null,releaseMail=null,mailStarted=null,holdMail=false,mailConfigFailure=false;const errors=[]
 const date=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Lima',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date())
 const events=[{id:'a',student_id:id,title:'Física',date,start_time:'08:00',end_time:'09:00',event_type:'clase'},{id:'b',student_id:id,title:'Biología',date,start_time:'08:30',end_time:'09:30',event_type:'clase'}]
 async function fixture(width=1440,admin=false){
@@ -40,7 +40,7 @@ async function fixture(width=1440,admin=false){
   if(route.request().headers()['accept']?.includes('application/vnd.pgrst.object'))data=Array.isArray(data)?data[0]||null:data
   await route.fulfill({status,contentType:'application/json',body:JSON.stringify(data)})
  })
- await context.route('**/api/communications',async route=>{if(route.request().method()==='POST'){mailSends++;const body=route.request().postDataJSON();assert.equal(body.userId,id);assert.equal(body.expectedEmail,'fixture@example.invalid');assert(!('to' in body));await route.fulfill({json:{accepted:true,messageId:'fixture-brevo-id'}})}else await route.fulfill({json:{ready:true,sender:'lyra@example.invalid'}})})
+ await context.route('**/api/communications',async route=>{if(route.request().method()==='POST'){mailSends++;const body=route.request().postDataJSON();assert.equal(body.userId,id);assert.equal(body.expectedEmail,'fixture@example.invalid');assert(!('to' in body));if(holdMail)await new Promise(resolve=>{releaseMail=resolve;mailStarted()});await route.fulfill(mailFailure?{status:502,json:{error:mailFailure}}:{json:{accepted:true,messageId:'fixture-brevo-id'}})}else await route.fulfill(mailConfigFailure?{status:503,json:{error:'service_unavailable'}}:{json:{ready:true,sender:'lyra@example.invalid'}})})
  const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));await page.goto(base+'/pagina.html');await page.locator('.hoy').waitFor();return{context,page}
 }
 try{
@@ -81,9 +81,29 @@ try{
   assert(await admin.page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1))
   if(shots)await admin.page.screenshot({path:shots+`/communications-${theme}-${width}.png`,fullPage:true})
  }
+ const draft=await communications.getByLabel('Mensaje',{exact:true}).inputValue()
+ mailFailure='provider_authentication'
  await communications.getByRole('button',{name:'Enviar a esta persona',exact:true}).click()
- await communications.getByRole('status').filter({hasText:'Brevo aceptó el mensaje'}).waitFor()
+ await communications.getByRole('alert').filter({hasText:'Brevo no aceptó la clave API'}).waitFor()
+ assert.equal(await communications.getByLabel('Mensaje',{exact:true}).inputValue(),draft)
  assert.equal(mailSends,1)
+ mailFailure=null;holdMail=true
+ const started=new Promise(resolve=>{mailStarted=resolve})
+ await communications.getByRole('button',{name:'Enviar a esta persona',exact:true}).click()
+ await started
+ await admin.page.getByRole('button',{name:'Enviando…',exact:true}).waitFor()
+ assert(await admin.page.getByRole('button',{name:'Actualizar panel',exact:true}).isDisabled())
+ await admin.page.waitForFunction(()=>document.querySelector('.communications button.primary')?.disabled)
+ releaseMail();holdMail=false
+ await communications.getByRole('status').filter({hasText:'Brevo aceptó el mensaje'}).waitFor()
+ assert.equal(mailSends,2)
+ mailConfigFailure=true
+ await communications.getByRole('button',{name:'Actualizar usuarios',exact:true}).click()
+ await communications.getByRole('button',{name:'Seleccionar a fixture@example.invalid',exact:true}).click()
+ await communications.getByRole('button',{name:'Revisar mensaje',exact:true}).click()
+ await communications.getByRole('alert').filter({hasText:'No se pudo consultar el servicio'}).waitFor()
+ assert(await communications.getByRole('button',{name:'Enviar a esta persona',exact:true}).isDisabled())
+ assert.equal(mailSends,2)
  await admin.page.setViewportSize({width:1440,height:1000})
  if(shots)await admin.page.screenshot({path:shots+'/desktop.png',fullPage:true})
  const publication=admin.page.locator('.lyra-system>section').filter({has:admin.page.getByRole('heading',{name:'Publicar una versión de malla'})})
