@@ -1,6 +1,6 @@
 # Lyra Campus
 
-**[Descargar Lyra-V1.0-android.apk](https://github.com/McEngelsOP/IA/releases/download/v1.0-android/Lyra-V1.0-android.apk)** · **[Ver todas las versiones](https://github.com/McEngelsOP/IA/releases)**
+**[Descargar Lyra-V1.1-android.apk](https://github.com/McEngelsOP/IA/releases/download/v1.1-android/Lyra-V1.1-android.apk)** · **[Ver todas las versiones](https://github.com/McEngelsOP/IA/releases)**
 
 Lyra ayuda a estudiantes de Universidad ESAN a entender su avance, planificar sus cursos y organizar el semestre. El catálogo activo incluye las 18 carreras ESAN presentes en las fuentes del proyecto. Es una herramienta independiente de apoyo; no confirma matrícula ni sustituye información institucional.
 
