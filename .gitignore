@@ -58,3 +58,13 @@ Thumbs.db
 *.jks
 *.keystore
 /android/.kotlin/
+
+# Local clones and temporary snapshots
+/IA/
+/lyra-actualizacion/
+
+# AI agent environments and local analysis tools
+.agents/
+.codex/
+graphify-out/
+.graphifyignore
