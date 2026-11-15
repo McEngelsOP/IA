@@ -94,9 +94,9 @@ En Mi carrera, el botón **Ficha del curso** y su selector abren directamente lo
 
 Recursos conserva la descripción editable por su autor y recupera los comentarios anteriores en **Comentarios de la comunidad**. Se consultan al desplegarlos, con paginación de 20 y solo las columnas públicas; no se leen identificadores de autores. Esta corrección reutiliza las tablas y permisos existentes, sin cambios de SQL.
 
-## Acceso al código
+## Licencia y acceso al código
 
-El repositorio de desarrollo debe mantenerse privado y compartirse solo con colaboradores. Para probar Lyra, compartir la web publicada. Ver [seguridad](SECURITY.md) y [uso del código](NOTICE.md). Las guías administrativas y los informes de producción se conservan fuera de GitHub.
+El código original de Lyra se distribuye bajo la licencia **[PolyForm Noncommercial License 1.0.0](LICENSE)**. Se permite su uso, estudio y modificación exclusivamente para fines personales, educativos, de investigación y no comerciales. Consulta [NOTICE.md](NOTICE.md) para detalles sobre recursos de terceros y [SECURITY.md](SECURITY.md) para políticas de seguridad. Las guías administrativas y los informes de producción se conservan fuera de GitHub.
 
 ## Ampliación del sistema en revisión
 

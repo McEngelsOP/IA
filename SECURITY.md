@@ -1,8 +1,8 @@
 # Seguridad y acceso
 
-El repositorio de desarrollo debe mantenerse privado. Solo sus colaboradores
-necesitan acceso al código; quienes prueban la aplicación pueden usar la web.
-Una persona con acceso de lectura al repositorio puede descargarlo completo.
+El código de Lyra se distribuye bajo la licencia PolyForm Noncommercial 1.0.0.
+El repositorio de desarrollo y su mantenimiento directo corresponden a sus colaboradores.
+Quienes prueban la aplicación pueden utilizar la versión web publicada.
 
 Mantener aquí las migraciones y pruebas necesarias para reproducir cambios.
 Guardar fuera del repositorio las guías administrativas, informes de producción,
